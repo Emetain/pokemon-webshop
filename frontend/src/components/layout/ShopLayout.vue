@@ -33,8 +33,8 @@ import { t } from '../../utils/i18n'
   z-index: 10;
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  background: var(--color-brand);
+  color: var(--color-on-brand);
   transform: translateY(-200%);
 }
 

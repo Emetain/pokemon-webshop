@@ -44,13 +44,13 @@ import { t } from '../../utils/i18n'
 .site-footer {
   margin-top: var(--space-7);
   padding-block: var(--space-6) var(--space-5);
-  background: var(--color-binder);
-  color: var(--color-on-binder-soft);
+  background: var(--color-brand-deep);
+  color: var(--color-on-brand-soft);
   font-size: var(--text-sm);
 }
 
 .site-footer :focus-visible {
-  outline-color: var(--color-focus-on-binder);
+  outline-color: var(--color-focus-on-brand);
 }
 
 .columns {
@@ -65,7 +65,7 @@ import { t } from '../../utils/i18n'
 
 .column-title {
   margin-bottom: var(--space-2);
-  color: var(--color-on-binder);
+  color: var(--color-on-brand);
   font-size: var(--text-md);
 }
 
@@ -79,12 +79,12 @@ import { t } from '../../utils/i18n'
 .link-list a {
   display: inline-block;
   padding-block: var(--space-1);
-  color: var(--color-on-binder-soft);
+  color: var(--color-on-brand-soft);
   text-decoration: none;
 }
 
 .link-list a:hover {
-  color: var(--color-on-binder);
+  color: var(--color-on-brand);
   text-decoration: underline;
 }
 
@@ -97,8 +97,8 @@ import { t } from '../../utils/i18n'
 .payment-method {
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-sm);
-  background: var(--color-binder-raised);
-  color: var(--color-on-binder);
+  background: var(--color-brand-raised);
+  color: var(--color-on-brand);
   font-size: var(--text-xs);
   font-weight: 600;
 }
@@ -106,7 +106,7 @@ import { t } from '../../utils/i18n'
 .attribution {
   margin-top: var(--space-5);
   padding-top: var(--space-4);
-  border-top: 1px solid var(--color-binder-raised);
+  border-top: 1px solid var(--color-brand-raised);
   font-size: var(--text-xs);
 }
 

@@ -7,7 +7,7 @@ import { t } from '../../utils/i18n'
 <template>
   <div class="admin">
     <aside class="sidebar">
-      <AppLogo class="sidebar-logo" />
+      <AppLogo class="sidebar-logo" inverse />
       <nav class="sidebar-nav" :aria-label="t('admin.navigation')">
         <router-link class="sidebar-link" to="/admin" exact-active-class="is-active">
           <LayoutDashboard :size="18" aria-hidden="true" />
@@ -38,12 +38,12 @@ import { t } from '../../utils/i18n'
   justify-content: space-between;
   gap: var(--space-2) var(--space-4);
   padding: var(--space-3) var(--gutter);
-  background: var(--color-binder);
-  color: var(--color-on-binder);
+  background: var(--color-brand-deep);
+  color: var(--color-on-brand);
 }
 
 .sidebar :focus-visible {
-  outline-color: var(--color-focus-on-binder);
+  outline-color: var(--color-focus-on-brand);
 }
 
 .sidebar-nav {
@@ -58,21 +58,21 @@ import { t } from '../../utils/i18n'
   min-height: var(--touch-target);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
-  color: var(--color-on-binder-soft);
+  color: var(--color-on-brand-soft);
   font-size: var(--text-sm);
   font-weight: 550;
   text-decoration: none;
 }
 
 .sidebar-link:hover {
-  background: var(--color-binder-raised);
-  color: var(--color-on-binder);
+  background: var(--color-brand-raised);
+  color: var(--color-on-brand);
 }
 
 .sidebar-link.is-active {
-  background: var(--color-binder-raised);
-  box-shadow: inset 3px 0 0 var(--color-primary);
-  color: var(--color-on-binder);
+  background: var(--color-brand-raised);
+  box-shadow: inset 3px 0 0 var(--color-on-brand);
+  color: var(--color-on-brand);
 }
 
 .admin-main {

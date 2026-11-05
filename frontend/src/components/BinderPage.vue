@@ -1,8 +1,19 @@
 <script setup>
+import BallMark from './BallMark.vue'
 import { t } from '../utils/i18n'
 
-// One binder page: filled pockets are owned cards, empty pockets are still missing.
-const pockets = ['pokemon', null, 'lorcana', 'mtg', 'pokemon', null, null, 'one-piece', 'pokemon']
+// One page of the Pokédex: a slot per Pokémon, filled once you own a card of it.
+const slots = [
+  { number: '#001', filled: true },
+  { number: '#002', filled: false },
+  { number: '#003', filled: true },
+  { number: '#004', filled: true },
+  { number: '#005', filled: true },
+  { number: '#006', filled: false },
+  { number: '#007', filled: false },
+  { number: '#008', filled: true },
+  { number: '#009', filled: true },
+]
 </script>
 
 <template>
@@ -11,13 +22,15 @@ const pockets = ['pokemon', null, 'lorcana', 'mtg', 'pokemon', null, null, 'one-
       <span v-for="hole in 3" :key="hole" class="hole"></span>
       <div class="pockets">
         <span
-          v-for="(game, index) in pockets"
-          :key="index"
+          v-for="(slot, index) in slots"
+          :key="slot.number"
           class="pocket"
-          :class="{ filled: game }"
-          :data-game="game"
+          :class="{ filled: slot.filled }"
           :style="{ '--order': index }"
-        ></span>
+        >
+          <span v-if="slot.filled" class="art"><BallMark class="art-ball" /></span>
+          <span class="number">{{ slot.number }}</span>
+        </span>
       </div>
     </div>
     <figcaption class="caption">{{ t('binder.caption') }}</figcaption>
@@ -33,7 +46,7 @@ const pockets = ['pokemon', null, 'lorcana', 'mtg', 'pokemon', null, null, 'one-
   position: relative;
   padding: var(--space-4) var(--space-4) var(--space-4) var(--space-6);
   border-radius: var(--radius-md);
-  background: var(--color-binder-raised);
+  background: var(--color-brand-deep);
 }
 
 .hole {
@@ -42,7 +55,7 @@ const pockets = ['pokemon', null, 'lorcana', 'mtg', 'pokemon', null, null, 'one-
   width: 0.75rem;
   aspect-ratio: 1;
   border-radius: var(--radius-round);
-  background: var(--color-binder-deep);
+  background: var(--color-brand);
 }
 
 .hole:nth-of-type(1) {
@@ -64,37 +77,43 @@ const pockets = ['pokemon', null, 'lorcana', 'mtg', 'pokemon', null, null, 'one-
 }
 
 .pocket {
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   aspect-ratio: 5 / 7;
-  border: 1.5px dashed var(--color-on-binder-soft);
+  border: 1.5px dashed var(--color-on-brand-soft);
   border-radius: var(--radius-card);
+  color: var(--color-on-brand-soft);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .pocket.filled {
+  justify-content: space-between;
+  padding: 9% 9% 6%;
   border: 0;
-  background: var(--accent);
+  background: var(--color-surface);
+  color: var(--color-ink);
   animation: slot-in 420ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
   animation-delay: calc(var(--order) * 70ms);
 }
 
 /* The art window of a card. */
-.pocket.filled::before {
-  content: '';
-  position: absolute;
-  inset: 11% 9% 42%;
+.art {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 8%;
   border-radius: var(--radius-xs);
-  background: var(--accent-ink);
-  opacity: 0.22;
+  background: var(--color-tint-strong);
 }
 
-/* Its text box. */
-.pocket.filled::after {
-  content: '';
-  position: absolute;
-  inset: 64% 9% 9%;
-  border-radius: var(--radius-xs);
-  background: var(--accent-ink);
-  opacity: 0.12;
+.art-ball {
+  width: 58%;
 }
 
 @keyframes slot-in {
@@ -112,7 +131,7 @@ const pockets = ['pokemon', null, 'lorcana', 'mtg', 'pokemon', null, null, 'one-
 
 .caption {
   margin-top: var(--space-3);
-  color: var(--color-on-binder-soft);
+  color: var(--color-on-brand-soft);
   font-size: var(--text-sm);
 }
 </style>

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { footerInfoLinks, footerShopLinks, navDestinations } from './data/navigation'
 import { useSession } from './stores/session'
 
 const ShopLayout = () => import('./components/layout/ShopLayout.vue')
@@ -10,6 +11,17 @@ const placeholder = (path, titleKey, meta = {}) => ({
   component: PlaceholderView,
   meta: { titleKey, ...meta },
 })
+
+/** Menu and footer destinations that have no real page yet. Later phases replace these. */
+function placeholderPages() {
+  const pages = [
+    ...navDestinations(),
+    ...footerInfoLinks,
+    ...footerShopLinks,
+    { to: '/winkelwagen', labelKey: 'layout.cart' },
+  ]
+  return pages.map(({ to, labelKey, game }) => placeholder(to.slice(1), labelKey, { game }))
+}
 
 const router = createRouter({
   history: createWebHistory(),
@@ -27,23 +39,7 @@ const router = createRouter({
         { path: 'wachtwoord-herstellen', component: () => import('./views/ResetPasswordView.vue') },
         { path: 'account', component: () => import('./views/AccountView.vue'), meta: { requiresLogin: true } },
 
-        placeholder('pokemon', 'nav.pokemon', { game: 'pokemon' }),
-        placeholder('lorcana', 'nav.lorcana', { game: 'lorcana' }),
-        placeholder('magic', 'nav.magic', { game: 'mtg' }),
-        placeholder('one-piece', 'nav.onePiece', { game: 'one-piece' }),
-        placeholder('accessoires', 'nav.accessories'),
-        placeholder('pre-order', 'nav.preOrder'),
-        placeholder('drops', 'nav.drops'),
-        placeholder('collectie', 'nav.collection'),
-        placeholder('verlanglijst', 'layout.wishlist'),
-        placeholder('winkelwagen', 'layout.cart'),
-        placeholder('info/verzending', 'footer.shipping'),
-        placeholder('info/retourneren', 'footer.returns'),
-        placeholder('info/veelgestelde-vragen', 'footer.faq'),
-        placeholder('info/contact', 'footer.contact'),
-        placeholder('info/over-ons', 'footer.about'),
-        placeholder('info/algemene-voorwaarden', 'footer.terms'),
-        placeholder('info/privacybeleid', 'footer.privacy'),
+        ...placeholderPages(),
       ],
     },
     {

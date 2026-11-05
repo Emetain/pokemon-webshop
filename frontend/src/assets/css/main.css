@@ -1,29 +1,30 @@
 /* Design tokens. Components only use these variables, never raw values for colour. */
 :root {
   /* Page and surfaces */
-  --color-page: #f2f3f9;
+  --color-page: #ffffff;
   --color-surface: #ffffff;
-  --color-line: #d5d8e8;
-  --color-line-strong: #7f84ab;
+  --color-tint: #eef4fe;
+  --color-tint-strong: #dbe7fd;
+  --color-line: #d8e3f5;
+  --color-line-strong: #7b93bd;
 
-  /* Binder blue: header, footer and admin sidebar */
-  --color-binder: #1b1e4b;
-  --color-binder-deep: #121433;
-  --color-binder-raised: #2c3070;
-  --color-on-binder: #f4f5fb;
-  --color-on-binder-soft: #c3c6e0;
+  /* Brand blue: hero and main actions. Deep blue: footer, top bar and admin sidebar. */
+  --color-brand: #1a56db;
+  --color-brand-hover: #1546b8;
+  --color-brand-edge: #123a99;
+  --color-brand-deep: #0b2a6f;
+  --color-brand-raised: #1a3f96;
+  --color-on-brand: #ffffff;
+  --color-on-brand-soft: #d6e4ff;
 
   /* Text */
-  --color-ink: #16183c;
-  --color-ink-soft: #4d5178;
+  --color-ink: #0c1f4a;
+  --color-ink-soft: #4a5f85;
 
-  /* Actions */
-  --color-primary: #ffc933;
-  --color-primary-edge: #d99e00;
-  --color-on-primary: #16183c;
-  --color-link: #2c3fb8;
-  --color-focus: #2c3fb8;
-  --color-focus-on-binder: #ffc933;
+  /* Interaction */
+  --color-link: #1a56db;
+  --color-focus: #1a56db;
+  --color-focus-on-brand: #ffffff;
 
   /* Feedback */
   --color-danger: #a81e2c;
@@ -31,9 +32,10 @@
   --color-success: #0d6b43;
   --color-success-soft: #e2f4ec;
 
-  /* Game accents. Every game has a colour and the text colour that is readable on it. */
-  --game-pokemon: #ffc933;
-  --game-pokemon-ink: #16183c;
+  /* Game accents. Every game has a colour and the text colour that is readable on it.
+     Pokémon is the main game of the shop, so it uses the brand blue. */
+  --game-pokemon: #1a56db;
+  --game-pokemon-ink: #ffffff;
   --game-lorcana: #6a3fc8;
   --game-lorcana-ink: #ffffff;
   --game-mtg: #14795a;
@@ -42,8 +44,8 @@
   --game-one-piece-ink: #ffffff;
 
   /* The accent of the current context. [data-game] below overrides it. */
-  --accent: var(--color-primary);
-  --accent-ink: var(--color-on-primary);
+  --accent: var(--color-brand);
+  --accent-ink: var(--color-on-brand);
 
   /* Type */
   --font-display: 'Bricolage Grotesque Variable', 'Arial Narrow', sans-serif;
@@ -78,12 +80,16 @@
   --radius-card: 5% / 3.6%;
   --radius-round: 999px;
 
+  /* Elevation */
+  --shadow-panel: 0 22px 32px var(--color-shadow);
+  --color-shadow: rgb(11 42 111 / 15%);
+
   /* Layout */
   --gutter: var(--space-4);
-  --container: 1240px;
+  --container: 1320px;
   --control-height: 3rem;
   --touch-target: 2.75rem;
-  --spine-width: 4px;
+  --header-layer: 30;
 }
 
 [data-game='pokemon'] {
@@ -222,17 +228,39 @@ main:focus {
 
 /* The solid lower edge makes the main action feel like something you can press. */
 .btn-primary {
-  background: var(--color-primary);
-  box-shadow: inset 0 -3px 0 var(--color-primary-edge);
-  color: var(--color-on-primary);
+  background: var(--color-brand);
+  box-shadow: inset 0 -3px 0 var(--color-brand-edge);
+  color: var(--color-on-brand);
 }
 
 .btn-primary:hover:not(:disabled) {
-  box-shadow: inset 0 -5px 0 var(--color-primary-edge);
+  background: var(--color-brand-hover);
+  box-shadow: inset 0 -5px 0 var(--color-brand-edge);
 }
 
 .btn-primary:active:not(:disabled) {
-  box-shadow: inset 0 -1px 0 var(--color-primary-edge);
+  box-shadow: inset 0 -1px 0 var(--color-brand-edge);
+}
+
+/* For use on a blue background. */
+.btn-on-brand {
+  background: var(--color-surface);
+  box-shadow: inset 0 -3px 0 var(--color-tint-strong);
+  color: var(--color-brand);
+}
+
+.btn-on-brand:hover {
+  background: var(--color-tint);
+}
+
+.btn-outline-on-brand {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--color-on-brand-soft);
+  color: var(--color-on-brand);
+}
+
+.btn-outline-on-brand:hover {
+  box-shadow: inset 0 0 0 2px var(--color-on-brand);
 }
 
 .btn-secondary {

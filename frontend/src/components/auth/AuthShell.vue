@@ -66,7 +66,7 @@ defineProps({
     display: block;
     padding: var(--space-5);
     border-radius: var(--radius-lg);
-    background: var(--color-binder);
+    background: var(--color-brand);
   }
 }
 </style>

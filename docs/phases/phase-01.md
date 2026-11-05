@@ -98,9 +98,23 @@ The browser run caught a real bug that the backend tests couldn't see: logging o
 - **Form validation** lives on the backend only. Browser validation bubbles follow the browser's language, not Dutch.
 - **Countries:** NL and BE, matching the shipping start in phase 5. `User.country` is a plain code rather than an enum, because phase 5 makes shipping countries manageable in admin.
 - **Fonts** (Bricolage Grotesque, Schibsted Grotesk) are self-hosted through npm, so visitors make no requests to Google.
-- **Placeholder name:** the shop is called "TCG Shop" in `nl.js` until there is a real name and logo.
+
+## Changes after the first review
+
+The first version was reviewed in the browser. These changes replace the design and the placeholder name described above.
+
+- **Name:** the shop is now called Uithoorn TCG.
+- **Colours:** white and blue, with a white page and a strong blue hero. Deep blue is used for the top bar, footer and admin sidebar. Pokémon uses the brand blue as its game accent, the other games keep their own.
+- **Navigation:** the binder tabs are gone. The header now follows catchyourcards.nl: a white sticky header with a wide search field, and a row of text links with chevrons under it. Items turn blue on hover and open a full-width dropdown with columns, a "Bekijk alles" link and a feature tile. On mobile a full-height drawer has icon rows with a sub-menu level.
+- **Dropdown behaviour:** in the reference, the dropdown opened on click only in our test. Here it opens on hover too, after 120 ms, and closes 220 ms after the mouse leaves, so passing over the menu doesn't make it flicker. A click keeps it open until the visitor closes it. It also works with the keyboard, and Escape closes it.
+- **Pokémon elements:** a ball emblem in blue and white, drawn for this project, in the logo and behind the hero. The binder page became a Pokédex page with numbered slots, which previews the Pokédex in phase 3.
+- **Menu contents:** the links in the dropdowns come from `data/navigation.js`, using the product types and accessory types of phase 4. They lead to placeholder pages for now. The router generates those pages from the same list, so every menu link works. The series under Pokémon are a fixed list until the card catalog of phase 2 can supply them.
+
+Checks after these changes: `npm run build` passes, and the temporary browser script passes 71 of 71 checks (the earlier flows plus hover timing, click to keep open, keyboard use, closing, and all menu destinations). All colour pairs meet WCAG AA, with text at 4.6:1 or higher and input borders at 3.1:1. The backend didn't change.
 
 ## Open issues
+
+- **Ball emblem:** it resembles the Poké Ball, which is a trademark of the Pokémon rights holders. Using it in the logo carries more risk than using it as decoration. Replace it with a real logo before going live, and have someone check how the shop uses Pokémon names and symbols.
 
 - **Before deploying behind a proxy:** set `FORWARD_HEADERS_STRATEGY=native`, otherwise all visitors share one IP and one rate limit.
 - **Real mail:** there are no SMTP username and password settings yet, only Mailpit. Needed before going live.

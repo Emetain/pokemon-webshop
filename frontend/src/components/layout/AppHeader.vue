@@ -1,34 +1,42 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { Heart, Menu, Search, ShoppingCart, Truck, User } from 'lucide-vue-next'
+import { computed, nextTick, ref } from 'vue'
+import { Heart, Menu, Search, ShoppingBag, Truck, User } from 'lucide-vue-next'
 import AppLogo from './AppLogo.vue'
+import MegaMenu from './MegaMenu.vue'
 import MobileMenu from './MobileMenu.vue'
-import { gameLinks, pageLinks } from '../../data/navigation'
 import { useSession } from '../../stores/session'
 import { t } from '../../utils/i18n'
 
-const route = useRoute()
 const session = useSession()
 
 const mobileMenu = ref(null)
+const searchInput = ref(null)
+const searchOpen = ref(false)
 const cartCount = 0
 
 const accountLabel = computed(() =>
   session.isLoggedIn.value ? t('layout.account') : t('layout.login'),
 )
+
+async function toggleSearch() {
+  searchOpen.value = !searchOpen.value
+  if (searchOpen.value) {
+    await nextTick()
+    searchInput.value.focus()
+  }
+}
 </script>
 
 <template>
-  <header class="site-header" :data-game="route.meta.game">
-    <p class="top-bar">
-      <Truck :size="16" aria-hidden="true" />
-      {{ t('layout.shippingNotice') }}
-    </p>
+  <p class="top-bar">
+    <Truck :size="16" aria-hidden="true" />
+    {{ t('layout.shippingNotice') }}
+  </p>
 
+  <header class="site-header">
     <div class="container bar">
       <button
-        class="icon-button menu-button"
+        class="action menu-button"
         type="button"
         :aria-label="t('layout.openMenu')"
         @click="mobileMenu.open()"
@@ -38,79 +46,71 @@ const accountLabel = computed(() =>
 
       <AppLogo class="bar-logo" />
 
-      <form class="search" role="search" @submit.prevent>
+      <form class="search" :class="{ open: searchOpen }" role="search" @submit.prevent>
         <label class="visually-hidden" for="site-search">{{ t('layout.search') }}</label>
-        <Search class="search-icon" :size="18" aria-hidden="true" />
         <input
           id="site-search"
+          ref="searchInput"
           class="search-input"
           type="search"
           :placeholder="t('layout.searchPlaceholder')"
         />
+        <Search class="search-icon" :size="20" aria-hidden="true" />
       </form>
 
       <div class="actions">
-        <router-link class="icon-button" to="/account" :aria-label="accountLabel">
+        <button
+          class="action search-toggle"
+          type="button"
+          :aria-label="t('layout.search')"
+          :aria-expanded="searchOpen"
+          @click="toggleSearch"
+        >
+          <Search :size="22" aria-hidden="true" />
+        </button>
+        <router-link class="action" to="/account" :aria-label="accountLabel">
           <User :size="22" aria-hidden="true" />
           <span class="action-label">{{ accountLabel }}</span>
         </router-link>
-        <router-link class="icon-button" to="/verlanglijst" :aria-label="t('layout.wishlist')">
+        <router-link class="action wishlist" to="/verlanglijst" :aria-label="t('layout.wishlist')">
           <Heart :size="22" aria-hidden="true" />
         </router-link>
         <router-link
-          class="icon-button"
+          class="action"
           to="/winkelwagen"
           :aria-label="t('layout.cartWithCount', { count: cartCount })"
         >
-          <ShoppingCart :size="22" aria-hidden="true" />
+          <ShoppingBag :size="22" aria-hidden="true" />
+          <span class="action-label">{{ t('layout.cart') }}</span>
           <span class="cart-count" aria-hidden="true">{{ cartCount }}</span>
         </router-link>
       </div>
     </div>
 
-    <nav class="container tabs" :aria-label="t('layout.mainNavigation')">
-      <ul class="tab-list">
-        <li v-for="link in gameLinks" :key="link.to">
-          <router-link class="tab" :to="link.to" :data-game="link.game">{{ t(link.labelKey) }}</router-link>
-        </li>
-      </ul>
-      <ul class="page-list">
-        <li v-for="link in pageLinks" :key="link.to">
-          <router-link class="page-link" :to="link.to">{{ t(link.labelKey) }}</router-link>
-        </li>
-      </ul>
-    </nav>
-
+    <MegaMenu />
     <MobileMenu ref="mobileMenu" />
   </header>
 </template>
 
 <style scoped>
-.site-header {
-  --spine: var(--color-binder-raised);
-  background: var(--color-binder);
-  border-bottom: var(--spine-width) solid var(--spine);
-  color: var(--color-on-binder);
-}
-
-.site-header[data-game] {
-  --spine: var(--accent);
-}
-
-.site-header :focus-visible {
-  outline-color: var(--color-focus-on-binder);
-}
-
 .top-bar {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--gutter);
-  background: var(--color-binder-deep);
-  color: var(--color-on-binder-soft);
+  background: var(--color-brand-deep);
+  color: var(--color-on-brand-soft);
   font-size: var(--text-xs);
   text-align: center;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--header-layer);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-line);
 }
 
 .bar {
@@ -121,8 +121,7 @@ const accountLabel = computed(() =>
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: var(--space-1);
-  row-gap: var(--space-2);
-  padding-block: var(--space-2) var(--space-3);
+  padding-block: var(--space-2);
 }
 
 .menu-button {
@@ -142,7 +141,7 @@ const accountLabel = computed(() =>
   margin-right: calc(var(--space-2) * -1);
 }
 
-.icon-button {
+.action {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -154,19 +153,24 @@ const accountLabel = computed(() =>
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-on-binder);
+  color: var(--color-ink);
   cursor: pointer;
   text-decoration: none;
+  transition: color 0.2s;
 }
 
-.icon-button:hover {
-  background: var(--color-binder-raised);
+.action:hover {
+  color: var(--color-brand);
 }
 
 .action-label {
   display: none;
   font-size: var(--text-sm);
-  font-weight: 550;
+  font-weight: 600;
+}
+
+.wishlist {
+  display: none;
 }
 
 .cart-count {
@@ -176,8 +180,8 @@ const accountLabel = computed(() =>
   min-width: 1.125rem;
   padding-inline: var(--space-1);
   border-radius: var(--radius-round);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  background: var(--color-brand);
+  color: var(--color-on-brand);
   font-size: var(--text-2xs);
   font-weight: 700;
   line-height: 1.125rem;
@@ -187,23 +191,21 @@ const accountLabel = computed(() =>
 .search {
   grid-area: search;
   position: relative;
+  display: none;
+  margin-top: var(--space-2);
 }
 
-.search-icon {
-  position: absolute;
-  top: 50%;
-  left: var(--space-3);
-  color: var(--color-ink-soft);
-  transform: translateY(-50%);
+.search.open {
+  display: block;
 }
 
 .search-input {
   width: 100%;
-  height: var(--touch-target);
-  padding: 0 var(--space-3) 0 2.5rem;
-  border: 0;
+  height: var(--control-height);
+  padding: 0 var(--space-7) 0 var(--space-4);
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  background: var(--color-tint);
   color: var(--color-ink);
 }
 
@@ -212,91 +214,57 @@ const accountLabel = computed(() =>
   opacity: 1;
 }
 
-.tabs {
-  display: none;
+.search-input:hover {
+  border-color: var(--color-line-strong);
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  right: var(--space-4);
+  color: var(--color-ink);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+@media (min-width: 480px) {
+  .wishlist {
+    display: inline-flex;
+  }
 }
 
 @media (min-width: 1024px) {
   .bar {
     grid-template-areas: 'logo search actions';
-    grid-template-columns: auto minmax(0, 1fr) auto;
     column-gap: var(--space-6);
     padding-block: var(--space-3);
   }
 
-  .menu-button {
+  .menu-button,
+  .search-toggle {
     display: none;
   }
 
-  .search {
-    max-width: 38rem;
+  .search,
+  .search.open {
+    display: block;
+    margin-top: 0;
+  }
+
+  .actions {
+    gap: var(--space-2);
   }
 
   .action-label {
     display: inline;
   }
 
-  .tabs {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--space-5);
-    padding-top: var(--space-1);
-  }
-
-  .tab-list,
-  .page-list {
-    display: flex;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .tab-list {
-    gap: var(--space-1);
-  }
-
-  .page-list {
-    gap: var(--space-5);
-  }
-
-  /* Index tabs of a binder. The active tab runs into the spine under the header. */
-  .tab {
-    display: block;
-    padding: var(--space-2) var(--space-5);
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
-    background: var(--color-binder-raised);
-    box-shadow: inset 0 3px 0 var(--accent);
-    color: var(--color-on-binder);
-    font-family: var(--font-display);
-    font-size: var(--text-md);
-    font-stretch: 88%;
-    font-weight: 700;
-    text-decoration: none;
-  }
-
-  .tab:hover,
-  .tab.router-link-active {
-    background: var(--accent);
-    box-shadow: none;
-    color: var(--accent-ink);
-  }
-
-  .page-link {
-    display: block;
-    padding-block: var(--space-2);
-    color: var(--color-on-binder-soft);
-    font-size: var(--text-sm);
-    font-weight: 550;
-    text-decoration: none;
-  }
-
-  .page-link:hover,
-  .page-link.router-link-active {
-    color: var(--color-on-binder);
-    text-decoration: underline;
-    text-decoration-color: var(--color-primary);
-    text-decoration-thickness: 2px;
+  .cart-count {
+    position: static;
+    min-width: 1.5rem;
+    background: var(--color-tint-strong);
+    color: var(--color-brand);
+    line-height: 1.5rem;
   }
 }
 </style>
