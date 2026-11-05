@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/pokemonwebshop}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:pokemonwebshop}
+    password: ${DB_PASSWORD:pokemonwebshop}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect

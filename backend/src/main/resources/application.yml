@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: pokemon-webshop
+  config:
+    # The repo-root .env, whether the app starts from the root or from backend/.
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
+  profiles:
+    default: dev
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+  flyway:
+    enabled: false
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+tcgdex:
+  base-url: ${TCGDEX_BASE_URL:https://api.tcgdex.net/v2}
