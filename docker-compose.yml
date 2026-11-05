@@ -47,6 +47,10 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD:-pokemonwebshop}
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
+      MAIL_FROM: ${MAIL_FROM:-noreply@example.com}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:5173}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      FORWARD_HEADERS_STRATEGY: ${FORWARD_HEADERS_STRATEGY:-none}
       TCGDEX_BASE_URL: ${TCGDEX_BASE_URL:-https://api.tcgdex.net/v2}
     depends_on:
       postgres:

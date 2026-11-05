@@ -1,0 +1,33 @@
+package com.emetain.pokemonwebshop.exception
+
+import org.springframework.http.HttpStatus
+
+/** An expected failure. [code] is stable for the frontend, [message] is shown to the customer in Dutch. */
+class ApiException(
+    val status: HttpStatus,
+    val code: String,
+    override val message: String,
+    val retryAfterSeconds: Long? = null,
+) : RuntimeException(message) {
+
+    companion object {
+        fun notAuthenticated() =
+            ApiException(HttpStatus.UNAUTHORIZED, "not_authenticated", "Log in om verder te gaan.")
+
+        fun forbidden() =
+            ApiException(HttpStatus.FORBIDDEN, "forbidden", "Je hebt geen toegang tot deze pagina.")
+
+        fun notFound(message: String = "We konden dit niet vinden.") =
+            ApiException(HttpStatus.NOT_FOUND, "not_found", message)
+
+        fun validation(message: String) =
+            ApiException(HttpStatus.BAD_REQUEST, "validation_failed", message)
+
+        fun rateLimited(retryAfterSeconds: Long) = ApiException(
+            HttpStatus.TOO_MANY_REQUESTS,
+            "rate_limited",
+            "Te veel pogingen. Probeer het over een minuut opnieuw.",
+            retryAfterSeconds,
+        )
+    }
+}

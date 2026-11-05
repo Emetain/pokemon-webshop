@@ -13,11 +13,15 @@ spring:
     port: ${MAIL_PORT:1025}
   flyway:
     enabled: false
+  jpa:
+    open-in-view: false
 
 server:
   port: 8080
   servlet:
     context-path: /api
+  # Set to "native" behind a reverse proxy, otherwise every visitor shares the proxy's IP for rate limiting.
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
 
 springdoc:
   swagger-ui:
@@ -27,3 +31,18 @@ springdoc:
 
 tcgdex:
   base-url: ${TCGDEX_BASE_URL:https://api.tcgdex.net/v2}
+
+app:
+  # Public address of the frontend, used for links in emails.
+  base-url: ${APP_BASE_URL:http://localhost:5173}
+  mail:
+    from: ${MAIL_FROM:noreply@example.com}
+  auth:
+    cookie-name: session
+    cookie-secure: ${AUTH_COOKIE_SECURE:true}
+    session-ttl: 30d
+    password-reset-ttl: 1h
+    cleanup-cron: "0 30 3 * * *"
+  rate-limit:
+    max-attempts: 10
+    window: 1m

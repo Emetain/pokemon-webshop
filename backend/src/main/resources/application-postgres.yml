@@ -11,3 +11,8 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+app:
+  auth:
+    # Local profile on plain http. Only prod requires the Secure flag.
+    cookie-secure: ${AUTH_COOKIE_SECURE:false}
