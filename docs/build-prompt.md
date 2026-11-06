@@ -4,7 +4,7 @@ The skeleton from the setup prompt is already in this repository (Kotlin + Sprin
 
 ## What we are building
 
-A Dutch trading card game webshop that focuses on Pokémon, but also sells Disney Lorcana, Magic: The Gathering and One Piece Card Game products. Next to the shop, customers get a free collection tracker: they can mark which cards they own for every set of all four games, see how far along they are per set, and see what their collection is worth based on Cardmarket prices. Pokémon collectors also get a Pokédex collection: one slot per Pokémon, filled when they own at least one card of it.
+A Dutch trading card game webshop that focuses on Pokémon, but also sells Disney Lorcana, Magic: The Gathering and One Piece Card Game products. Next to the shop, customers get a free collection tracker: they can mark which cards they own for every set of all four games, see how far along they are per set, and see what their collection is worth based on market prices. Pokémon collectors also get a Pokédex collection: one slot per Pokémon, filled when they own at least one card of it.
 
 The shop owner manages products, stock, orders and drops in an admin area.
 
@@ -33,6 +33,21 @@ Do the phases below in order. For each phase:
 5. Stop and give me a short summary. Wait until I say "next" before you start the next phase.
 
 Don't push, and don't start the next phase on your own.
+
+## Changes made during the build
+
+These decisions came up while building and apply to every later phase. The phase texts below already include them. Details and research are in `docs/phases/`.
+
+- **Shop name and design:** the shop is called Uithoorn TCG, white and blue, with visible Pokémon touches. Follow the familiar patterns of big Dutch TCG shops such as catchyourcards.nl for shop pages. Never copy their logo, images or text.
+- **Prices:** Pokémon and Magic use Cardmarket (EUR). Lorcana and One Piece use TCGplayer prices (USD), delivered by Lorcast and the OPTCG API, because Cardmarket's files can't be matched to these cards reliably. A card price always shows its source and date.
+- **Dollar prices are converted, not left out.** A converted price is better than "geen prijs". Customers on the default euro setting see every price in euros. Lists sort on `Card.sortPriceCents`, the list price in euro cents.
+- **Currency setting:** customers choose EUR or USD in their profile. This only changes how card prices are shown. No "≈" sign in front of converted prices: the card page says in a small line that a price was converted.
+- **Prices stay as the source gives them.** Some Pokémon cards share a price with a card of the same name, sometimes because TCGdex links them to one Cardmarket product. The owner decided to keep showing these. Don't hide or correct them.
+- **Addresses have no name.** They use the name from the profile.
+- **Card images are never changed.** Scryfall's terms forbid covering, cropping, distorting, blurring or tinting images, and adding anything on top. Use `CardImage.vue` for every card image, and put prices, labels and badges below the image.
+- **Skipped on purpose:** TCG Pocket and digital Magic cards, because they aren't physical cards.
+- **Card lists:** use the sorting, filters and URL pattern of `CardFilters.vue` for new lists of cards. Filters and sorting live in the URL, so every view can be shared.
+- **Before going live:** the owner does a legal check and has asked to be reminded. See phase 8.
 
 ---
 
@@ -100,18 +115,18 @@ Goal: customers track what they own and see their progress and value.
 Backend:
 - `CollectionEntry`: user, card, variant, quantity, condition (optional), added at. Unique per user + card + variant.
 - Endpoints to add, update quantity and remove; bulk add (a whole list of card ids at once).
-- Progress per set: owned unique cards / total cards in the set, as a percentage. Count variants separately only for "master set" progress; the normal progress counts each card number once.
+- Progress per set: owned unique cards / total cards in the set, as a percentage. Count variants separately only for "master set" progress; the normal progress counts each card number once. Use the number of cards in our own database as the total, not `CardSet.cardCount`: some sources announce more cards than they deliver, and those sets could never reach 100%.
 - Progress per game and overall.
-- Collection value: sum of quantity × trend price, converted to the customer's currency, plus how many cards have no price.
+- Collection value: sum of quantity × trend price of the owned variant, converted to the customer's currency with the stored ECB rate, plus how many cards have no price. Prices can be in EUR or USD, so add a backend conversion with unit tests. Do the sum in cents with `BigDecimal`, never `Double`.
 - Pokédex: import the list of all Pokémon species (National Pokédex number, name, generation) from PokéAPI during the Pokémon sync. A slot is filled when the user owns at least one card with that Pokédex number. Progress overall and per generation.
 - Wishlist for cards (separate from product wishlist).
 - Option to make a collection public through a share link with a random slug (off by default).
-- Home binder: the data for the 9-pocket binder in the home hero, with pages. Sources: popular, own selection, most expensive cards owned, Pokédex, most expensive cards in general. Save the choice on the user. Define "popular" (for example, the cards in the most collections).
+- Home binder: the data for the 9-pocket binder in the home hero, with pages. Sources: popular, own selection, most expensive cards owned, Pokédex, most expensive cards in general. Save the choice on the user. Define "popular" (for example, the cards in the most collections). `Card.sortPriceCents` already gives the most expensive cards. Add an index when a query needs it.
 
 Frontend:
 - Home binder: the binder in the hero shows real cards and has page buttons. Logged-in customers see their most expensive cards by default, logged-out visitors see the most popular cards. Customers change what it shows in their settings. Nothing goes on top of the card images.
 - `/collectie`: overview per game with progress bars, total value, most valuable cards.
-- On set pages, logged-in users see owned cards in full colour and missing cards greyed out, and can tick cards off with one click, plus quantity +/-.
+- On set pages, logged-in users can see which cards they own and which are missing, and can tick cards off with one click, plus quantity +/-. Greying out images isn't allowed for Magic under Scryfall's terms, so show the difference outside the image: a border, a "gemist" label below it, or a placeholder. Discuss the look with the owner before building it.
 - Toggle per set between "normale set" and "master set" progress.
 - `/collectie/pokedex`: a grid of all Pokémon with Pokédex number and name, filled slots show the image of one of the owned cards, filter per generation, and a progress bar per generation. Clicking a slot shows all cards of that Pokémon and which ones you own.
 - Missing-cards list per set, with a link to the matching singles in the shop (once products exist).
@@ -138,14 +153,14 @@ Backend:
 
 Frontend:
 - Home page: hero banner area (managed in admin), upcoming/live drop block, new arrivals, bestsellers, browse per game, latest pre-orders.
-- Category pages per game, with navigation by series → set (like the big Dutch shops) and by product type.
+- Category pages per game, with navigation by series → set (like the big Dutch shops) and by product type. The Pokémon series in `data/navigation.js` are a fixed list that real sets from the catalog can replace now.
 - Product cards: image, name, price, sale price with strike-through, badges ("Pre-order", "Uitverkocht", "Aanbieding", "Laatste X"), add-to-cart button (cart arrives in phase 5, so show the button but disable it for now).
-- Product page: image gallery, price, stock status, pre-order ship date, description, for singles a link to the card in the catalog and its Cardmarket price as a reference, related products from the same set.
-- Card set pages from phase 2 show "te koop" on cards that have a single in stock.
+- Product page: image gallery, price, stock status, pre-order ship date, description, for singles a link to the card in the catalog and its market price with source as a reference, related products from the same set.
+- Card set pages from phase 2 show "te koop" below cards that have a single in stock, never on the image.
 
 Admin:
 - Products: table with search and filters, create/edit form with image upload, duplicate product, archive.
-- Quick-add a single by searching the card catalog and choosing condition and price, with the Cardmarket trend price shown as a suggestion.
+- Quick-add a single by searching the card catalog and choosing condition and price, with the market trend price in euros shown as a suggestion. Never use it as the shop price automatically: Scryfall says its prices aren't fit for a storefront.
 - Stock: adjust stock with a reason, movement history per product, low-stock overview.
 - CSV import and export for products and stock.
 
@@ -163,10 +178,10 @@ Backend:
 - Checkout reserves stock for 15 minutes; a scheduled job releases expired reservations.
 - Shipping: `ShippingRate` per country with price, free-shipping threshold and delivery time text, managed in admin. Start with NL and BE.
 - Payments with Stripe Checkout in test mode: iDEAL, Bancontact (BE), card. Keys from `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`. The order becomes paid only through the verified webhook, never through the redirect.
-- `Order` and `OrderLine` with copies of name and price at the time of purchase, status (`PENDING_PAYMENT`, `PAID`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`, `REFUNDED`), shipping address, totals, track & trace code.
+- `Order` and `OrderLine` with copies of name and price at the time of purchase, always in EUR whatever currency the customer chose for card prices, status (`PENDING_PAYMENT`, `PAID`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`, `REFUNDED`), shipping address, totals, track & trace code.
 - Orders with pre-order products show their expected ship date. Option per order: ship everything together, or ship in-stock items first.
 - Emails (HTML + text): order confirmation, payment received, shipped with track & trace, cancelled.
-- Guest checkout allowed, with an option to create an account after paying.
+- Guest checkout allowed, with an option to create an account after paying. Addresses have no name of their own: an order copies the profile name for logged-in customers, and guests fill in a name at checkout.
 
 Frontend:
 - Cart drawer and cart page, quantity changes, shipping estimate for the selected country, progress to free shipping ("nog €X tot gratis verzending").
@@ -242,6 +257,8 @@ Goal: ready to show, ready to deploy.
 - Security review: authorization on every admin and account endpoint (add tests), input validation, file upload checks (type and size), no secrets in the repo, security headers.
 - Start the app with the `prod` profile against the Docker Postgres and check that all Flyway migrations run and Hibernate validation passes.
 - Update the root `README.md`: what the app does, how to run it, environment variables, how to sync card data, how to test payments with the Stripe CLI, and the phase overview with links to `docs/phases/`.
+- Production basics left open by earlier phases: a way to create the first admin (only `dev` seeds accounts), SMTP username and password settings, Swagger closed in `prod`, `FORWARD_HEADERS_STRATEGY=native` behind a proxy, a heap of at least 2 GB for the Magic sync, and the `npm audit` issue in dev tooling.
+- **Go-live reminder:** before anything goes live, remind the owner to do the legal check. They asked for this reminder. It covers the Wizards Fan Content Policy, Ravensburger's Community Code and Lorcast's "prohibited from charging" notice for a commercial shop, reusing TCGplayer prices from Lorcast and the OPTCG API, Cardmarket and ECB data, the ball emblem in the logo, and the draft legal pages. Also bring up the One Piece images: they load from one person's server and carry a "SAMPLE" watermark. Full notes are in `docs/phases/phase-02.md`.
 
 Done when:
 - All tests pass, the production build works, and the `prod` profile starts cleanly on an empty database.
