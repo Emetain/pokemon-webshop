@@ -16,3 +16,5 @@ app:
     cookie-secure: true
   rate-limit:
     max-attempts: 5
+  catalog:
+    sync-cron: "-"

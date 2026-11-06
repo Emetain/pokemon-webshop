@@ -9,6 +9,7 @@ data class AppProperties(
     val mail: Mail,
     val auth: Auth,
     val rateLimit: RateLimit,
+    val catalog: Catalog,
 ) {
     data class Mail(
         val from: String,
@@ -24,5 +25,21 @@ data class AppProperties(
     data class RateLimit(
         val maxAttempts: Int,
         val window: Duration,
+    )
+
+    data class Catalog(
+        val userAgent: String,
+        val rateLimitDelay: Duration,
+        val retryDelay: Duration,
+        val tcgdex: CatalogSource,
+        val scryfall: CatalogSource,
+        val lorcast: CatalogSource,
+        val optcg: CatalogSource,
+        val ecb: CatalogSource,
+    )
+
+    data class CatalogSource(
+        val baseUrl: String,
+        val requestDelay: Duration,
     )
 }

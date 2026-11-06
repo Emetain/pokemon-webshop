@@ -16,7 +16,6 @@ const emit = defineEmits(['cancel'])
 const { country } = useRegion()
 
 const form = reactive({
-  name: props.address?.name ?? '',
   street: props.address?.street ?? '',
   houseNumber: props.address?.houseNumber ?? '',
   postcode: props.address?.postcode ?? '',
@@ -43,7 +42,6 @@ async function submit() {
 <template>
   <form class="address-form" novalidate @submit.prevent="submit">
     <FormMessage v-if="error">{{ error }}</FormMessage>
-    <FormField v-model="form.name" :label="t('account.addresses.name')" autocomplete="name" />
     <div class="row street-row">
       <FormField v-model="form.street" :label="t('account.addresses.street')" autocomplete="address-line1" />
       <FormField v-model="form.houseNumber" :label="t('account.addresses.houseNumber')" autocomplete="address-line2" />

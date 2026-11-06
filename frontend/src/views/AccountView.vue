@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { LogOut, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import AddressForm from '../components/account/AddressForm.vue'
 import CountrySelect from '../components/account/CountrySelect.vue'
+import CurrencySelect from '../components/account/CurrencySelect.vue'
 import FormField from '../components/FormField.vue'
 import FormMessage from '../components/FormMessage.vue'
 import { accountApi } from '../services/api'
@@ -55,6 +56,22 @@ const selectedCountry = computed({
   },
 })
 
+const currencyStatus = reactive({ saved: false, error: '' })
+
+const selectedCurrency = computed({
+  get: () => user.value.currency,
+  set: async (currency) => {
+    currencyStatus.error = ''
+    currencyStatus.saved = false
+    try {
+      await session.updateProfile({ currency })
+      currencyStatus.saved = true
+    } catch (exception) {
+      currencyStatus.error = exception.message
+    }
+  },
+})
+
 const addresses = ref([])
 const addressesLoading = ref(true)
 const addressesError = ref('')
@@ -93,6 +110,8 @@ async function deleteAddress(address) {
     addressesError.value = exception.message
   }
 }
+
+const addressLabel = (address) => `${address.street} ${address.houseNumber}`
 
 const logoutError = ref('')
 
@@ -157,11 +176,22 @@ onMounted(loadAddresses)
     </section>
 
     <section class="account-section">
+      <h2>{{ t('account.currency.title') }}</h2>
+      <div class="section-body form-stack">
+        <p class="section-intro">{{ t('account.currency.intro') }}</p>
+        <FormMessage v-if="currencyStatus.error">{{ currencyStatus.error }}</FormMessage>
+        <FormMessage v-if="currencyStatus.saved" type="success">{{ t('account.currency.saved') }}</FormMessage>
+        <CurrencySelect v-model="selectedCurrency" :label="t('account.currency.label')" />
+      </div>
+    </section>
+
+    <section class="account-section">
       <h2>{{ t('account.addresses.title') }}</h2>
       <div class="section-body">
+        <p class="section-intro addresses-intro">{{ t('account.addresses.intro') }}</p>
         <FormMessage v-if="addressesError">{{ addressesError }}</FormMessage>
         <p v-if="addressesLoading" class="section-intro">{{ t('account.addresses.loading') }}</p>
-        <p v-else-if="!addresses.length && editing === null" class="section-intro">
+        <p v-else-if="!addresses.length && editing === null" class="section-intro addresses-intro">
           {{ t('account.addresses.empty') }}
         </p>
 
@@ -175,7 +205,7 @@ onMounted(loadAddresses)
             />
             <template v-else>
               <address class="address-text">
-                <strong>{{ address.name }}</strong><br />
+                <strong>{{ user.displayName }}</strong><br />
                 {{ address.street }} {{ address.houseNumber }}<br />
                 {{ address.postcode }} {{ address.city }}<br />
                 {{ t(`countries.${address.country}`) }}
@@ -184,7 +214,7 @@ onMounted(loadAddresses)
                 <button
                   class="text-button"
                   type="button"
-                  :aria-label="t('account.addresses.editLabel', { name: address.name })"
+                  :aria-label="t('account.addresses.editLabel', { address: addressLabel(address) })"
                   @click="editing = address.id"
                 >
                   <Pencil :size="16" aria-hidden="true" />
@@ -193,7 +223,7 @@ onMounted(loadAddresses)
                 <button
                   class="text-button danger"
                   type="button"
-                  :aria-label="t('account.addresses.deleteLabel', { name: address.name })"
+                  :aria-label="t('account.addresses.deleteLabel', { address: addressLabel(address) })"
                   @click="deleteAddress(address)"
                 >
                   <Trash2 :size="16" aria-hidden="true" />
@@ -256,6 +286,10 @@ onMounted(loadAddresses)
 .section-intro {
   color: var(--color-ink-soft);
   font-size: var(--text-sm);
+}
+
+.addresses-intro {
+  margin-bottom: var(--space-3);
 }
 
 .static-label {

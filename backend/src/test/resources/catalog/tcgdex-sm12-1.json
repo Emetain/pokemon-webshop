@@ -1,0 +1,36 @@
+{
+  "id": "sm12-1",
+  "localId": "1",
+  "name": "Venusaur & Snivy GX",
+  "rarity": "Ultra Rare",
+  "category": "Pokemon",
+  "dexId": [
+    3,
+    495
+  ],
+  "variants": {
+    "firstEdition": false,
+    "holo": false,
+    "normal": true,
+    "reverse": false,
+    "wPromo": false
+  },
+  "pricing": {
+    "cardmarket": {
+      "updated": "2026-11-05T13:11:39.052Z",
+      "unit": "EUR",
+      "idProduct": 398449,
+      "avg": 23.22,
+      "trend": 19.37,
+      "avg-holo": null,
+      "trend-holo": 4.68
+    }
+  },
+  "variants_detailed": [
+    {
+      "type": "normal",
+      "size": "standard"
+    }
+  ],
+  "image": "https://assets.tcgdex.net/en/sm/sm12/1"
+}

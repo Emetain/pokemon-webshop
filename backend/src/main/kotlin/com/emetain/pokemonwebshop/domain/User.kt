@@ -29,6 +29,11 @@ class User(
     @Column(nullable = false, length = 2)
     var country: String = DEFAULT_COUNTRY,
 
+    /** The currency card prices are shown in. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 3)
+    var currency: Currency = Currency.EUR,
+
     @Column(nullable = false, updatable = false)
     val createdAt: Instant,
 

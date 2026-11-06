@@ -1,0 +1,64 @@
+{
+  "id": "neo1-9",
+  "localId": "9",
+  "name": "Lugia",
+  "rarity": "Rare",
+  "category": "Pokemon",
+  "dexId": [
+    249
+  ],
+  "variants": {
+    "firstEdition": true,
+    "holo": true,
+    "normal": false,
+    "reverse": false,
+    "wPromo": false
+  },
+  "pricing": {
+    "cardmarket": {
+      "updated": "2026-11-05T13:07:54.166Z",
+      "unit": "EUR",
+      "idProduct": 274409,
+      "avg": 900.06,
+      "trend": 1261.15,
+      "avg-holo": null,
+      "trend-holo": 48.89
+    }
+  },
+  "variants_detailed": [
+    {
+      "type": "holo",
+      "size": "standard",
+      "pricing": {
+        "cardmarket": {
+          "updated": "2026-11-05T13:07:54.166Z",
+          "unit": "EUR",
+          "idProduct": 274409,
+          "avg": 900.06,
+          "trend": 1261.15,
+          "avg-holo": null,
+          "trend-holo": 48.89
+        }
+      }
+    },
+    {
+      "type": "holo",
+      "size": "standard",
+      "stamp": [
+        "1st-edition"
+      ],
+      "pricing": {
+        "cardmarket": {
+          "updated": "2026-11-05T13:07:54.166Z",
+          "unit": "EUR",
+          "idProduct": 274409,
+          "avg": 900.06,
+          "trend": 1261.15,
+          "avg-holo": null,
+          "trend-holo": 48.89
+        }
+      }
+    }
+  ],
+  "image": "https://assets.tcgdex.net/en/neo/neo1/9"
+}

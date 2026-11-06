@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.dto
 
+import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.domain.User
 import jakarta.validation.constraints.Email
@@ -49,6 +50,7 @@ data class UserDto(
     val displayName: String,
     val role: Role,
     val country: String,
+    val currency: Currency,
     val createdAt: Instant,
 ) {
     companion object {
@@ -58,6 +60,7 @@ data class UserDto(
             displayName = user.displayName,
             role = user.role,
             country = user.country,
+            currency = user.currency,
             createdAt = user.createdAt,
         )
     }

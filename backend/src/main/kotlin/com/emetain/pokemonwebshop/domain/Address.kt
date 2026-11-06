@@ -12,6 +12,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import java.time.Instant
 
+/** Always in the name of [user], so the profile holds the name and it can't get out of step. */
 @Entity
 @Table(
     name = "addresses",
@@ -21,9 +22,6 @@ class Address(
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     val user: User,
-
-    @Column(nullable = false, length = 100)
-    var name: String,
 
     @Column(nullable = false, length = 100)
     var street: String,

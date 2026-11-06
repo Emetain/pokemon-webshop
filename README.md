@@ -55,7 +55,34 @@ To add a new API key:
 
 Keep API keys on the backend. Anything in a `VITE_` variable ends up in the browser.
 
-Card data and Cardmarket prices come from [TCGdex](https://tcgdex.dev), a public API that needs no key. Its base URL is `TCGDEX_BASE_URL`.
+## Card data
+
+The card catalog comes from four public APIs that need no key. Their base URLs are in `.env.example`.
+
+| Game | Source | Prices |
+|------|--------|--------|
+| Pokémon | [TCGdex](https://tcgdex.dev) | Cardmarket, EUR |
+| Magic: The Gathering | [Scryfall](https://scryfall.com/docs/api) | Cardmarket, EUR |
+| Disney Lorcana | [Lorcast](https://lorcast.com) | TCGplayer, USD |
+| One Piece Card Game | [OPTCG API](https://optcgapi.com) | TCGplayer, USD |
+
+Every sync also fetches the [ECB reference rate](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html). Customers choose EUR or USD in their profile, and card prices are converted for display only. Shop prices stay in EUR.
+
+Customer requests never reach these APIs. A job imports everything into our own database at the time in `CATALOG_SYNC_CRON` (03:00 Dutch time by default, `-` switches it off), and an admin can start a game by hand at `/admin/sync`. The job is off in `dev`, because the in-memory database starts empty anyway.
+
+A full sync takes about an hour and a half for Pokémon, because TCGdex needs a request per card, and under a minute for each other game. Keep the computer awake: a sync slows to a crawl while it sleeps. To keep the data between restarts, run on the `postgres` profile. Switch off the SQL log for a sync, or it floods the console:
+
+```sh
+SPRING_PROFILES_ACTIVE=postgres SPRING_JPA_SHOW_SQL=false ./gradlew bootRun
+```
+
+Only the `dev` profile has demo accounts. To reach `/admin` on another profile, register an account and run this in Adminer:
+
+```sql
+UPDATE users SET role = 'ADMIN' WHERE email = '<email>';
+```
+
+Run one backend per database during a sync: a second instance that starts up marks the running sync as failed.
 
 ## Profiles
 

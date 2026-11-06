@@ -34,7 +34,7 @@ import { t } from '../../utils/i18n'
 
     <div class="container">
       <div class="attribution">
-        <p>{{ t('footer.attribution') }}</p>
+        <p v-for="line in t('footer.attribution')" :key="line">{{ line }}</p>
       </div>
     </div>
   </footer>
@@ -110,8 +110,13 @@ import { t } from '../../utils/i18n'
   font-size: var(--text-xs);
 }
 
+.attribution {
+  display: grid;
+  gap: var(--space-2);
+}
+
 .attribution p {
-  max-width: 70ch;
+  max-width: 80ch;
 }
 
 @media (min-width: 768px) {

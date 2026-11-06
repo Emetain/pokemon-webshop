@@ -48,6 +48,25 @@ export const accountApi = {
   deleteAddress: (id) => request('DELETE', `/account/addresses/${id}`),
 }
 
+/** Leaves out empty values, so a filter that isn't set doesn't end up in the URL. */
+function queryString(params) {
+  const filled = Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+  return filled.length ? `?${new URLSearchParams(filled)}` : ''
+}
+
+const setPath = (game, code) => `/catalog/${game}/sets/${encodeURIComponent(code)}`
+
+export const catalogApi = {
+  sets: (game) => request('GET', `/catalog/${game}/sets`),
+  set: (game, code) => request('GET', setPath(game, code)),
+  cards: (game, code, params) => request('GET', `${setPath(game, code)}/cards${queryString(params)}`),
+  card: (id) => request('GET', `/catalog/cards/${id}`),
+  search: (params) => request('GET', `/catalog/search${queryString(params)}`),
+  exchangeRates: () => request('GET', '/catalog/exchange-rates'),
+}
+
 export const adminApi = {
   status: () => request('GET', '/admin/status'),
+  syncStatus: () => request('GET', '/admin/catalog/sync'),
+  startSync: (game) => request('POST', `/admin/catalog/sync/${game}`),
 }

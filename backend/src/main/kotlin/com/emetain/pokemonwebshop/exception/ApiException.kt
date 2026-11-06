@@ -23,6 +23,9 @@ class ApiException(
         fun validation(message: String) =
             ApiException(HttpStatus.BAD_REQUEST, "validation_failed", message)
 
+        fun syncRunning() =
+            ApiException(HttpStatus.CONFLICT, "sync_running", "Er loopt al een synchronisatie voor dit spel.")
+
         fun rateLimited(retryAfterSeconds: Long) = ApiException(
             HttpStatus.TOO_MANY_REQUESTS,
             "rate_limited",

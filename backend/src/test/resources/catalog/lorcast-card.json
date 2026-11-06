@@ -1,0 +1,21 @@
+{
+  "id": "crd_d9f3b86af85f48579ed9d0d7ce0de129",
+  "name": "Ariel",
+  "version": "On Human Legs",
+  "image_uris": {
+    "digital": {
+      "small": "https://cards.lorcast.io/card/digital/small/crd_d9f3b86af85f48579ed9d0d7ce0de129.avif?1709690747",
+      "normal": "https://cards.lorcast.io/card/digital/normal/crd_d9f3b86af85f48579ed9d0d7ce0de129.avif?1709690747",
+      "large": "https://cards.lorcast.io/card/digital/large/crd_d9f3b86af85f48579ed9d0d7ce0de129.avif?1709690747"
+    }
+  },
+  "type": [
+    "Character"
+  ],
+  "rarity": "Uncommon",
+  "collector_number": "1",
+  "prices": {
+    "usd": "0.13",
+    "usd_foil": "0.72"
+  }
+}

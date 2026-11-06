@@ -1,6 +1,7 @@
 package com.emetain.pokemonwebshop.dto
 
 import com.emetain.pokemonwebshop.domain.Address
+import com.emetain.pokemonwebshop.domain.Currency
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
@@ -12,13 +13,11 @@ data class UpdateProfileRequest(
     val displayName: String? = null,
 
     val country: String? = null,
+
+    val currency: Currency? = null,
 )
 
 data class AddressRequest(
-    @field:NotBlank(message = "Vul de naam in.")
-    @field:Size(max = 100, message = "De naam mag maximaal 100 tekens lang zijn.")
-    val name: String = "",
-
     @field:NotBlank(message = "Vul de straat in.")
     @field:Size(max = 100, message = "De straat mag maximaal 100 tekens lang zijn.")
     val street: String = "",
@@ -41,7 +40,6 @@ data class AddressRequest(
 
 data class AddressDto(
     val id: Long,
-    val name: String,
     val street: String,
     val houseNumber: String,
     val postcode: String,
@@ -51,7 +49,6 @@ data class AddressDto(
     companion object {
         fun from(address: Address) = AddressDto(
             id = address.id,
-            name = address.name,
             street = address.street,
             houseNumber = address.houseNumber,
             postcode = address.postcode,

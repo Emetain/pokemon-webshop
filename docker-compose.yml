@@ -52,6 +52,11 @@ services:
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
       FORWARD_HEADERS_STRATEGY: ${FORWARD_HEADERS_STRATEGY:-none}
       TCGDEX_BASE_URL: ${TCGDEX_BASE_URL:-https://api.tcgdex.net/v2}
+      SCRYFALL_BASE_URL: ${SCRYFALL_BASE_URL:-https://api.scryfall.com}
+      LORCAST_BASE_URL: ${LORCAST_BASE_URL:-https://api.lorcast.com/v0}
+      OPTCG_BASE_URL: ${OPTCG_BASE_URL:-https://optcgapi.com/api}
+      ECB_BASE_URL: ${ECB_BASE_URL:-https://www.ecb.europa.eu}
+      CATALOG_SYNC_CRON: ${CATALOG_SYNC_CRON:-0 0 3 * * *}
     depends_on:
       postgres:
         condition: service_healthy

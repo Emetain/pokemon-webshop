@@ -12,6 +12,17 @@ const placeholder = (path, titleKey, meta = {}) => ({
   meta: { titleKey, ...meta },
 })
 
+/** Passes the route params and the named query values to a view as props. A repeated value counts once. */
+const withQuery = (...names) => (route) => ({
+  ...route.params,
+  ...Object.fromEntries(names.map((name) => [name, [route.query[name]].flat()[0] ?? undefined])),
+})
+
+const CARD_FILTERS = ['sort', 'category', 'color', 'rarity', 'variant', 'priced']
+
+// Leaves room for the sticky header above the element.
+const HASH_SCROLL_OFFSET = 160
+
 /** Menu and footer destinations that have no real page yet. Later phases replace these. */
 function placeholderPages() {
   const pages = [
@@ -25,7 +36,10 @@ function placeholderPages() {
 
 const router = createRouter({
   history: createWebHistory(),
-  scrollBehavior: (to, from, savedPosition) => savedPosition ?? { top: 0 },
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    return to.hash ? { el: to.hash, top: HASH_SCROLL_OFFSET } : { top: 0 }
+  },
   routes: [
     {
       path: '/',
@@ -39,6 +53,31 @@ const router = createRouter({
         { path: 'wachtwoord-herstellen', component: () => import('./views/ResetPasswordView.vue') },
         { path: 'account', component: () => import('./views/AccountView.vue'), meta: { requiresLogin: true } },
 
+        {
+          path: 'kaarten/:game',
+          name: 'sets',
+          component: () => import('./views/catalog/SetListView.vue'),
+          props: true,
+        },
+        {
+          path: 'kaarten/:game/:setCode',
+          name: 'set',
+          component: () => import('./views/catalog/SetView.vue'),
+          props: withQuery(...CARD_FILTERS, 'page'),
+        },
+        {
+          path: 'kaarten/:game/:setCode/:cardId',
+          name: 'card',
+          component: () => import('./views/catalog/CardView.vue'),
+          props: true,
+        },
+        {
+          path: 'zoeken',
+          name: 'search',
+          component: () => import('./views/SearchView.vue'),
+          props: withQuery('q', 'game', ...CARD_FILTERS, 'page'),
+        },
+
         ...placeholderPages(),
       ],
     },
@@ -46,7 +85,10 @@ const router = createRouter({
       path: '/admin',
       component: AdminLayout,
       meta: { requiresAdmin: true },
-      children: [{ path: '', component: () => import('./views/admin/AdminDashboardView.vue') }],
+      children: [
+        { path: '', component: () => import('./views/admin/AdminDashboardView.vue') },
+        { path: 'sync', component: () => import('./views/admin/AdminSyncView.vue') },
+      ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

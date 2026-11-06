@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.service
 
+import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.domain.User
 import com.emetain.pokemonwebshop.exception.ApiException
@@ -96,6 +97,17 @@ class UserServiceTest {
 
         assertEquals("Ash", user.displayName)
         assertEquals("BE", user.country)
+    }
+
+    @Test
+    fun `updateProfile changes the currency and leaves the rest alone`() {
+        val user = user()
+        whenever(repository.findById(7)) doReturn Optional.of(user)
+
+        service.updateProfile(7, displayName = null, country = null, currency = Currency.USD)
+
+        assertEquals(Currency.USD, user.currency)
+        assertEquals("NL", user.country)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.service
 
+import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.domain.SUPPORTED_COUNTRIES
 import com.emetain.pokemonwebshop.domain.User
@@ -54,13 +55,14 @@ class UserService(
     fun findByEmail(email: String): User? = userRepository.findByEmail(normalizeEmail(email))
 
     @Transactional
-    fun updateProfile(userId: Long, displayName: String?, country: String?): User {
+    fun updateProfile(userId: Long, displayName: String?, country: String?, currency: Currency? = null): User {
         val user = userRepository.findById(userId).orElseThrow { ApiException.notAuthenticated() }
         displayName?.let { user.displayName = it.trim() }
         country?.let {
             requireSupportedCountry(it)
             user.country = it
         }
+        currency?.let { user.currency = it }
         return user
     }
 

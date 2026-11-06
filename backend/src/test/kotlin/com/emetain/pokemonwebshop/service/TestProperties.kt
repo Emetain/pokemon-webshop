@@ -13,4 +13,16 @@ fun testProperties(maxAttempts: Int = 3, window: Duration = Duration.ofMinutes(1
         passwordResetTtl = Duration.ofHours(1),
     ),
     rateLimit = AppProperties.RateLimit(maxAttempts = maxAttempts, window = window),
+    catalog = testCatalogProperties(),
+)
+
+fun testCatalogProperties(baseUrl: String = "http://localhost") = AppProperties.Catalog(
+    userAgent = "UithoornTCG/test",
+    rateLimitDelay = Duration.ZERO,
+    retryDelay = Duration.ZERO,
+    tcgdex = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
+    scryfall = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
+    lorcast = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
+    optcg = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
+    ecb = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
 )

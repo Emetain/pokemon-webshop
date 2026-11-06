@@ -1,0 +1,87 @@
+{
+  "id": "base1-4",
+  "localId": "4",
+  "name": "Charizard",
+  "rarity": "Rare",
+  "category": "Pokemon",
+  "dexId": [
+    6
+  ],
+  "variants": {
+    "firstEdition": true,
+    "holo": true,
+    "normal": false,
+    "reverse": false,
+    "wPromo": false
+  },
+  "pricing": {
+    "cardmarket": {
+      "updated": "2026-11-05T13:07:54.166Z",
+      "unit": "EUR",
+      "idProduct": 273699,
+      "avg": 458.1,
+      "trend": 353.81,
+      "avg-holo": null,
+      "trend-holo": 123.63
+    }
+  },
+  "variants_detailed": [
+    {
+      "type": "holo",
+      "subtype": "unlimited",
+      "size": "standard",
+      "pricing": {
+        "cardmarket": {
+          "updated": "2026-11-05T13:07:54.166Z",
+          "unit": "EUR",
+          "idProduct": 273699,
+          "avg": 458.1,
+          "trend": 353.81,
+          "avg-holo": null,
+          "trend-holo": 123.63
+        }
+      }
+    },
+    {
+      "type": "holo",
+      "subtype": "shadowless",
+      "size": "standard",
+      "stamp": [
+        "1st-edition"
+      ],
+      "pricing": {
+        "cardmarket": {
+          "updated": "2026-11-05T13:07:54.166Z",
+          "unit": "EUR",
+          "idProduct": 660224,
+          "avg": 3400,
+          "trend": 3489.25,
+          "avg-holo": null,
+          "trend-holo": 0
+        }
+      }
+    },
+    {
+      "type": "holo",
+      "subtype": "shadowless",
+      "size": "standard",
+      "pricing": {
+        "cardmarket": {
+          "updated": "2026-11-05T13:07:54.166Z",
+          "unit": "EUR",
+          "idProduct": 660224,
+          "avg": 3400,
+          "trend": 3489.25,
+          "avg-holo": null,
+          "trend-holo": 0
+        }
+      }
+    },
+    {
+      "type": "holo",
+      "subtype": "1999-2000-copyright",
+      "size": "standard"
+    }
+  ],
+  "image": "https://assets.tcgdex.net/en/base/base1/4"
+}

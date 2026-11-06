@@ -1,5 +1,6 @@
 <script setup>
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Heart, Menu, Search, ShoppingBag, Truck, User } from 'lucide-vue-next'
 import AppLogo from './AppLogo.vue'
 import MegaMenu from './MegaMenu.vue'
@@ -7,11 +8,14 @@ import MobileMenu from './MobileMenu.vue'
 import { useSession } from '../../stores/session'
 import { t } from '../../utils/i18n'
 
+const route = useRoute()
+const router = useRouter()
 const session = useSession()
 
 const mobileMenu = ref(null)
 const searchInput = ref(null)
 const searchOpen = ref(false)
+const searchQuery = ref('')
 const cartCount = 0
 
 const accountLabel = computed(() =>
@@ -25,6 +29,23 @@ async function toggleSearch() {
     searchInput.value.focus()
   }
 }
+
+function submitSearch() {
+  const q = searchQuery.value.trim()
+  if (!q) return
+  searchOpen.value = false
+  searchInput.value.blur()
+  router.push({ name: 'search', query: { q } })
+}
+
+// Keeps the field in step with the results, also after going back in the browser.
+watch(
+  () => route.query.q,
+  (q) => {
+    if (route.name === 'search') searchQuery.value = q ?? ''
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -46,16 +67,19 @@ async function toggleSearch() {
 
       <AppLogo class="bar-logo" />
 
-      <form class="search" :class="{ open: searchOpen }" role="search" @submit.prevent>
+      <form class="search" :class="{ open: searchOpen }" role="search" @submit.prevent="submitSearch">
         <label class="visually-hidden" for="site-search">{{ t('layout.search') }}</label>
         <input
           id="site-search"
           ref="searchInput"
+          v-model="searchQuery"
           class="search-input"
           type="search"
           :placeholder="t('layout.searchPlaceholder')"
         />
-        <Search class="search-icon" :size="20" aria-hidden="true" />
+        <button class="search-submit" type="submit" :aria-label="t('layout.search')">
+          <Search :size="20" aria-hidden="true" />
+        </button>
       </form>
 
       <div class="actions">
@@ -218,13 +242,26 @@ async function toggleSearch() {
   border-color: var(--color-line-strong);
 }
 
-.search-icon {
+.search-submit {
   position: absolute;
   top: 50%;
-  right: var(--space-4);
+  right: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--color-ink);
-  pointer-events: none;
+  cursor: pointer;
   transform: translateY(-50%);
+}
+
+.search-submit:hover {
+  color: var(--color-brand);
 }
 
 @media (min-width: 480px) {

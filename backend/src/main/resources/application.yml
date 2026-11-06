@@ -15,6 +15,14 @@ spring:
     enabled: false
   jpa:
     open-in-view: false
+    properties:
+      hibernate:
+        # The card sync writes tens of thousands of rows, so it needs batched statements.
+        jdbc:
+          batch_size: 500
+        order_inserts: true
+        order_updates: true
+        default_batch_fetch_size: 200
 
 server:
   port: 8080
@@ -28,9 +36,6 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /v3/api-docs
-
-tcgdex:
-  base-url: ${TCGDEX_BASE_URL:https://api.tcgdex.net/v2}
 
 app:
   # Public address of the frontend, used for links in emails.
@@ -46,3 +51,24 @@ app:
   rate-limit:
     max-attempts: 10
     window: 1m
+  catalog:
+    # When the daily card sync starts, in Dutch time. "-" switches it off.
+    sync-cron: ${CATALOG_SYNC_CRON:0 0 3 * * *}
+    user-agent: UithoornTCG/1.0
+    rate-limit-delay: 30s
+    retry-delay: 2s
+    tcgdex:
+      base-url: ${TCGDEX_BASE_URL:https://api.tcgdex.net/v2}
+      request-delay: 100ms
+    scryfall:
+      base-url: ${SCRYFALL_BASE_URL:https://api.scryfall.com}
+      request-delay: 100ms
+    lorcast:
+      base-url: ${LORCAST_BASE_URL:https://api.lorcast.com/v0}
+      request-delay: 100ms
+    optcg:
+      base-url: ${OPTCG_BASE_URL:https://optcgapi.com/api}
+      request-delay: 1s
+    ecb:
+      base-url: ${ECB_BASE_URL:https://www.ecb.europa.eu}
+      request-delay: 100ms

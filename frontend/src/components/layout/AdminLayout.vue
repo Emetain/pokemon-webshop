@@ -1,5 +1,5 @@
 <script setup>
-import { ArrowLeft, LayoutDashboard } from 'lucide-vue-next'
+import { ArrowLeft, DatabaseZap, LayoutDashboard } from 'lucide-vue-next'
 import AppLogo from './AppLogo.vue'
 import { t } from '../../utils/i18n'
 </script>
@@ -12,6 +12,10 @@ import { t } from '../../utils/i18n'
         <router-link class="sidebar-link" to="/admin" exact-active-class="is-active">
           <LayoutDashboard :size="18" aria-hidden="true" />
           {{ t('admin.overview') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/sync" active-class="is-active">
+          <DatabaseZap :size="18" aria-hidden="true" />
+          {{ t('admin.sync.nav') }}
         </router-link>
       </nav>
       <router-link class="sidebar-link back-link" to="/">

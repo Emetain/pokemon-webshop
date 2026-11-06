@@ -1,0 +1,43 @@
+{
+  "id": "11bf83bb-c95b-4b4f-9a56-ce7a1816307a",
+  "name": "Delver of Secrets // Insectile Aberration",
+  "collector_number": "51",
+  "rarity": "common",
+  "type_line": "Creature — Human Wizard // Creature — Human Insect",
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "prices": {
+    "usd": "0.30",
+    "usd_foil": "2.11",
+    "usd_etched": null,
+    "eur": "0.64",
+    "eur_foil": "3.18",
+    "tix": "0.03"
+  },
+  "digital": false,
+  "set": "isd",
+  "card_faces": [
+    {
+      "name": "Delver of Secrets",
+      "image_uris": {
+        "normal": "https://cards.scryfall.io/normal/front/1/1/11bf83bb-c95b-4b4f-9a56-ce7a1816307a.jpg?1783940984",
+        "large": "https://cards.scryfall.io/large/front/1/1/11bf83bb-c95b-4b4f-9a56-ce7a1816307a.jpg?1783940984"
+      },
+      "colors": [
+        "U"
+      ]
+    },
+    {
+      "name": "Insectile Aberration",
+      "image_uris": {
+        "normal": "https://cards.scryfall.io/normal/back/1/1/11bf83bb-c95b-4b4f-9a56-ce7a1816307a.jpg?1783940984",
+        "large": "https://cards.scryfall.io/large/back/1/1/11bf83bb-c95b-4b4f-9a56-ce7a1816307a.jpg?1783940984"
+      },
+      "colors": [
+        "U"
+      ]
+    }
+  ]
+}

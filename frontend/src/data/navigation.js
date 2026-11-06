@@ -22,15 +22,16 @@ const collectionFeature = {
   actionKey: 'nav.feature.collection.action',
 }
 
-/** A game without series of its own yet: the sets arrive with the card catalog in phase 2. */
-const gameColumns = (base) => [
+const catalogLink = (slug) => link(`/kaarten/${slug}`, 'nav.allSets')
+
+const gameColumns = (slug) => [
   {
     titleKey: 'nav.groups.products',
-    links: productLinks(base, [BOOSTER_BOX, BOOSTER_PACK, COLLECTION_BOX, STARTER_DECK]),
+    links: productLinks(`/${slug}`, [BOOSTER_BOX, BOOSTER_PACK, COLLECTION_BOX, STARTER_DECK]),
   },
   {
     titleKey: 'nav.groups.singles',
-    links: productLinks(base, [SINGLE, GRADED_SLAB, BULK, MYSTERY_BOX]),
+    links: [catalogLink(slug), ...productLinks(`/${slug}`, [SINGLE, GRADED_SLAB, BULK, MYSTERY_BOX])],
   },
 ]
 
@@ -69,7 +70,7 @@ export const mainNav = [
       },
       {
         titleKey: 'nav.groups.singles',
-        links: productLinks('/pokemon', [SINGLE, GRADED_SLAB, BULK, MYSTERY_BOX]),
+        links: [catalogLink('pokemon'), ...productLinks('/pokemon', [SINGLE, GRADED_SLAB, BULK, MYSTERY_BOX])],
       },
     ],
     feature: {
@@ -85,7 +86,7 @@ export const mainNav = [
     labelKey: 'nav.lorcana',
     game: 'lorcana',
     icon: Sparkles,
-    columns: gameColumns('/lorcana'),
+    columns: gameColumns('lorcana'),
     feature: collectionFeature,
   },
   {
@@ -94,7 +95,7 @@ export const mainNav = [
     labelKey: 'nav.magic',
     game: 'mtg',
     icon: Flame,
-    columns: gameColumns('/magic'),
+    columns: gameColumns('magic'),
     feature: collectionFeature,
   },
   {
@@ -103,7 +104,7 @@ export const mainNav = [
     labelKey: 'nav.onePiece',
     game: 'one-piece',
     icon: Anchor,
-    columns: gameColumns('/one-piece'),
+    columns: gameColumns('one-piece'),
     feature: collectionFeature,
   },
   {
@@ -167,11 +168,11 @@ export const mainNav = [
   },
 ]
 
-/** Every destination in the menu, once. The router uses this until the real pages exist. */
+/** Every destination in the menu that has no real page yet, once. The router shows a placeholder for these. */
 export function navDestinations() {
   const destinations = new Map()
   const add = (to, labelKey, game) => {
-    if (!destinations.has(to)) destinations.set(to, { to, labelKey, game })
+    if (!to.startsWith('/kaarten/') && !destinations.has(to)) destinations.set(to, { to, labelKey, game })
   }
 
   for (const item of mainNav) {

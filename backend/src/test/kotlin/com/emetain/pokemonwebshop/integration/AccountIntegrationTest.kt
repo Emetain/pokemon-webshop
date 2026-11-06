@@ -13,7 +13,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class AccountIntegrationTest : IntegrationTest() {
 
     private val address = mapOf(
-        "name" to "Ash Ketchum",
         "street" to "Pallet Town",
         "houseNumber" to "1a",
         "postcode" to "1234ab",
@@ -55,6 +54,37 @@ class AccountIntegrationTest : IntegrationTest() {
         mockMvc.perform(patch("/v1/account").cookie(session).json(mapOf("country" to "US")))
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error").value("validation_failed"))
+    }
+
+    @Test
+    fun `the currency starts as euro and can be changed`() {
+        val session = loggedInUser()
+
+        mockMvc.perform(get("/v1/auth/me").cookie(session)).andExpect(jsonPath("$.currency").value("EUR"))
+
+        mockMvc.perform(patch("/v1/account").cookie(session).json(mapOf("currency" to "USD")))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.currency").value("USD"))
+
+        mockMvc.perform(get("/v1/auth/me").cookie(session)).andExpect(jsonPath("$.currency").value("USD"))
+    }
+
+    @Test
+    fun `an unknown currency is refused`() {
+        val session = loggedInUser()
+
+        mockMvc.perform(patch("/v1/account").cookie(session).json(mapOf("currency" to "BTC")))
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `an address has no name of its own`() {
+        val session = loggedInUser()
+        createAddress(session)
+
+        mockMvc.perform(get("/v1/account/addresses").cookie(session))
+            .andExpect(jsonPath("$[0].street").value("Pallet Town"))
+            .andExpect(jsonPath("$[0].name").doesNotExist())
     }
 
     @Test

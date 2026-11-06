@@ -16,7 +16,7 @@ class AccountOrchestrator(
 ) {
 
     fun updateProfile(user: User, request: UpdateProfileRequest): UserDto =
-        UserDto.from(userService.updateProfile(user.id, request.displayName, request.country))
+        UserDto.from(userService.updateProfile(user.id, request.displayName, request.country, request.currency))
 
     fun addresses(user: User): List<AddressDto> =
         addressService.list(user.id).map(AddressDto::from)

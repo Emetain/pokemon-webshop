@@ -25,7 +25,6 @@ class AddressService(
         return addressRepository.save(
             Address(
                 user = user,
-                name = request.name.trim(),
                 street = request.street.trim(),
                 houseNumber = request.houseNumber.trim(),
                 postcode = normalizePostcode(request.postcode, request.country),
@@ -40,7 +39,6 @@ class AddressService(
     fun update(userId: Long, addressId: Long, request: AddressRequest): Address {
         userService.requireSupportedCountry(request.country)
         val address = findOwned(userId, addressId)
-        address.name = request.name.trim()
         address.street = request.street.trim()
         address.houseNumber = request.houseNumber.trim()
         address.postcode = normalizePostcode(request.postcode, request.country)
