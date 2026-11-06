@@ -53,3 +53,6 @@ CREATE TABLE pokemon_species (
 );
 
 CREATE INDEX idx_cards_sort_price_cents ON cards (sort_price_cents);
+
+ALTER TABLE cards ADD COLUMN custom_image_url VARCHAR(500);
+ALTER TABLE card_sets ADD COLUMN custom_logo_url VARCHAR(500);

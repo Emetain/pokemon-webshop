@@ -18,8 +18,9 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 
 /**
- * The 9-pocket binder in the home hero. "Popular" means the cards in the most collections. A new shop has no
- * collections yet, so the most expensive Pokémon cards fill up what's left: this is mainly a Pokémon shop.
+ * The 9-pocket binder in the home hero. Visitors see the most expensive cards in general, and customers their
+ * own most expensive cards until they choose something else. "Popular" means the cards in the most collections.
+ * A new shop has no collections yet, so the most expensive Pokémon cards fill up that list.
  */
 @Service
 class BinderService(
@@ -37,21 +38,22 @@ class BinderService(
 
     @Transactional(readOnly = true)
     fun page(user: User?, page: Int): BinderPageDto {
-        val wanted = when (user) {
-            null -> BinderSource.POPULAR
-            else -> user.binderSource ?: BinderSource.DEFAULT
-        }
         val index = page.coerceAtLeast(0)
-        val result = when (wanted) {
+        if (user == null) return mostExpensive(index)
+
+        val result = when (user.binderSource ?: BinderSource.DEFAULT) {
             BinderSource.POPULAR -> slice(BinderSource.POPULAR, popular.get(), index)
-            BinderSource.MOST_EXPENSIVE -> slice(BinderSource.MOST_EXPENSIVE, mostExpensive.get(), index)
-            BinderSource.MOST_EXPENSIVE_OWNED -> mostExpensiveOwned(requireNotNull(user), index)
-            BinderSource.OWN_SELECTION -> ownSelection(requireNotNull(user), index)
-            BinderSource.POKEDEX -> pokedex(requireNotNull(user), index)
+            BinderSource.MOST_EXPENSIVE -> mostExpensive(index)
+            BinderSource.MOST_EXPENSIVE_OWNED -> mostExpensiveOwned(user, index)
+            BinderSource.OWN_SELECTION -> ownSelection(user, index)
+            BinderSource.POKEDEX -> pokedex(user, index)
         }
-        if (result.slots.isNotEmpty() || wanted == BinderSource.POPULAR) return result
-        return slice(BinderSource.POPULAR, popular.get(), index).copy(fallback = true)
+        // Someone who chose a source always sees that source, even while it's empty.
+        val nothingChosenAndNothingOwned = user.binderSource == null && result.totalPages == 0
+        return if (nothingChosenAndNothingOwned) mostExpensive(index).copy(fallback = true) else result
     }
+
+    private fun mostExpensive(page: Int) = slice(BinderSource.MOST_EXPENSIVE, mostExpensive.get(), page)
 
     @Transactional(readOnly = true)
     fun selection(userId: Long): List<BinderCardDto> =

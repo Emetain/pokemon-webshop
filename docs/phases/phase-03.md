@@ -10,24 +10,27 @@ Customers track what they own in all four games, see their progress and what it'
 - Progress per set, per game and overall, for normal and master set. Totals come from the cards we really have, not from `CardSet.cardCount`, so a set can always reach 100%.
 - Collection value: quantity × trend price of the owned variant, added up per currency in `BigDecimal` and converted and rounded once. Cards without a usable price are counted separately.
 - `ExchangeRates` does all currency conversion, including the sort price from phase 2.
-- `PokemonSpecies`, imported from PokéAPI at the start of every Pokémon sync. `GET /api/v1/pokedex` gives all slots with progress overall and per generation, and `/pokedex/{number}/cards` the cards of one Pokémon.
+- `PokemonSpecies`, imported from PokéAPI right after startup and at the start of every Pokémon sync. `GET /api/v1/pokedex` gives all slots with progress overall and per generation, and `/pokedex/{number}/cards` the cards of one Pokémon.
 - Card wishlist, separate from the product wishlist in phase 4.
 - Public share link with a random slug, off by default. Stopping closes the link for good.
 - `CollectionValueSnapshot`: one value per customer per day, saved by `CollectionSnapshotJob`. `GET /api/v1/collection/history` returns these with today's live value as the last point.
 - Home binder: `GET /api/v1/binder` with five sources, the choice saved on the user, and a list of chosen cards for "own selection".
+- `Card.customImageUrl` and `CardSet.customLogoUrl`: pictures the shop uploaded, which go before those of the source. `MediaStorage` keeps the files on disk, and `/api/v1/media/...` serves them. Phase 4 can use it for product images.
 - Card lists now show what the viewer owns, and filter on owned and missing. `CardListOrchestrator` holds what all lists share. `@CurrentUser` can be nullable on public endpoints.
 
 **Frontend**
 
-- Set pages: a blue frame around owned cards, "In bezit" or "Gemist" below the image, one-click add, quantity +/-, a progress panel with a toggle between normal and master set, a collection filter, and a button to add a whole page.
+- Card tiles: a + button next to the price for logged-in customers. Clicking it adds the card and shows the count with a - in the same element, while the + stays in its place.
+- Set pages: a blue frame around owned cards, "In bezit" or "Gemist" below the image, a progress panel with a toggle between normal and master set, a collection filter, and a button to add a whole page.
 - `/collectie`: total value, a value graph, progress per game, Pokédex progress, most valuable cards and all started sets.
 - `/kaarten/:game/:setCode/gemist`: the list of missing cards, with the usual sorting and filters.
 - `/collectie/pokedex`: all 1,025 Pokémon with a filter and progress bar per generation. `/collectie/pokedex/:number` shows all cards of one Pokémon.
 - `/verlanglijst`: the card wishlist.
 - `/collectie/gedeeld/:slug`: the public page.
-- Home: the binder in the hero shows real cards with page buttons.
+- Home: the binder in the hero shows real cards with page buttons, and says what it shows.
 - Card page: what you own per variant with condition, the wishlist and the binder.
 - My account: what the binder shows, the own selection, and the share link.
+- `/admin/afbeeldingen`: search a card or set, upload a picture, or go back to the original.
 - Logged-out visitors get a short explanation and a register button on `/collectie`, `/collectie/pokedex` and `/verlanglijst`.
 
 ## Main files
@@ -39,24 +42,26 @@ Customers track what they own in all four games, see their progress and what it'
 | Services | `service/CollectionService.kt`, `CollectionStatsService.kt`, `CollectionHistoryService.kt`, `CollectionSnapshotJob.kt`, `SetTotalsService.kt`, `BinderService.kt`, `PokedexService.kt`, `PokedexImportService.kt`, `CardWishlistService.kt`, `TimedCache.kt` |
 | Sources | `service/provider/PokeApiProvider.kt`, `PokeApiMapper.kt` |
 | API | `controller/CollectionController.kt`, `SharedCollectionController.kt`, `PokedexController.kt`, `CardWishlistController.kt`, `BinderController.kt`, their orchestrators, `orchestration/CardListOrchestrator.kt`, `repository/CollectionProjections.kt` |
+| Images | `service/MediaStorage.kt`, `CatalogImageService.kt`, `controller/AdminCatalogImageController.kt`, `MediaController.kt`, `views/admin/AdminImagesView.vue` |
 | Migration | `db/migration/V4__collection_and_pokedex.sql` |
 | Pages | `views/collection/` |
 | Building blocks | `components/collection/` (`ValueChart.vue`, `CollectionControls.vue`, `ProgressBar.vue`), `components/BinderPage.vue`, `components/account/BinderSettings.vue`, `CollectionShare.vue` |
 
 ## New environment variables
 
-Both are in `.env.example` and passed to the `backend` service in `docker-compose.yml`.
+All are in `.env.example` and passed to the `backend` service in `docker-compose.yml`.
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `POKEAPI_BASE_URL` | PokéAPI | `https://pokeapi.co/api/v2` |
 | `COLLECTION_SNAPSHOT_CRON` | When the value of every collection is saved, in Dutch time. Keep this after the card sync. `-` switches it off | `0 0 7 * * *` |
+| `MEDIA_DIRECTORY` | Where uploaded images are stored. A relative path starts at the folder the backend runs in | `data/media` |
 
 ## Upgrading a local database
 
-Nothing to do by hand. Hibernate adds the new tables and the two new columns on `users` at startup, which was tested on a copy of a full database.
+Nothing to do by hand, but the backend has to be restarted: a running Phase 2 build answers 404 on everything from this phase. Hibernate then adds the new tables and columns at startup, which was tested on a copy of a full database.
 
-The Pokédex stays empty until the next Pokémon sync, the nightly one or one started at `/admin/sync`. The first import makes 1,025 requests and takes about 14 minutes, before the cards start. Later runs make one request. The value graph starts at the first morning snapshot.
+The Pokédex fills by itself after startup, in about 14 minutes the first time, while the rest of the site works normally. Later starts make one request. The value graph starts at the first morning snapshot.
 
 ## Checks
 
@@ -64,16 +69,17 @@ The tests with real data ran on a throwaway copy of the local database, with the
 
 | Check | Result |
 |-------|--------|
-| `./gradlew test` | 420 tests, 0 failed |
+| `./gradlew test` | 433 tests, 0 failed |
 | `npm run build` | Passes |
-| Browser, 360 and 1280px | 274 checks, 0 failed, no console errors or Vue warnings. No horizontal scroll on any page |
+| Browser, 360 and 1280px | 340 checks, 0 failed, no console errors or Vue warnings. No horizontal scroll on any page |
 | Done when: progress and value update right away | Adding, changing and removing a card updates the bars and value without a reload, and it survives a reload |
-| Done when: home binder | Source follows the setting, page buttons work, a logged-out visitor sees popular cards |
+| Done when: home binder | Source follows the setting, page buttons work, a logged-out visitor sees the most expensive cards |
 | Done when: Pokédex matches owned cards | A test collection with Base Set Charizard and Pikachu filled exactly #006 and #025. The API and a separate SQL query both counted 2 |
 | Done when: unit tests | Progress, value, Pokédex and history calculations are covered |
 | Value on real cards | €372,92 + €33.768,47 + $7.191,99 at 1,1224 = €40.549,08, worked out by hand and the same on the page |
 | Pokédex import | Through a real Pokémon sync: 1,025 species, every generation boundary right, names such as `Farfetch’d`, `Type: Null` and `Nidoran♀` correct |
-| Upgrade of a full database | The `postgres` profile adds everything at startup, no manual SQL |
+| Upgrade of a full database | The `postgres` profile adds everything at startup, no manual SQL, and the Pokédex fills without a sync |
+| Image upload | A real upload shows for a logged-out visitor, a sync leaves it alone, going back removes the file. A fake image and a file over 5 MB are refused with a Dutch message, also past the browser check |
 | `prod` on an empty Postgres database | Flyway applies V1 to V4, Hibernate validation passes. A full Lorcana sync, the collection flow, the binder, sharing and the scheduled snapshot job all work on that schema |
 | Simultaneous requests on Postgres | 20 additions of a new card at once: all succeed, quantity 20. Double clicks on the wishlist and binder succeed |
 | Speed | Overview: 1.9s on the first load, then about 40ms. Most expensive cards: under 7ms with the new index |
@@ -91,6 +97,8 @@ Checks and screenshots found these bugs, all fixed:
 - The "added" message appeared before the numbers refreshed.
 - The line of the graph ran through the axis label in the corner.
 
+After the first review the owner reported that adding cards, the binder choice, the Pokédex and the wishlist didn't work. All four came from one cause: the backend on port 8080 was still the Phase 2 build, so the new endpoints answered 404. The Pokédex now also fills without a sync, so a restart is all an upgrade needs.
+
 ## Decisions
 
 - **Owned cards get a blue frame,** chosen by the owner. There is a white gap between the frame and the image, so nothing touches the card. Every tile keeps room for the frame, so a row stays aligned. Missing cards show "Gemist" below the image.
@@ -100,6 +108,8 @@ Checks and screenshots found these bugs, all fixed:
 - **The line includes cards added or removed.** It shows the value of the collection, not a market gain. A small line below the graph says so.
 - **The scale of the graph doesn't start at zero,** like a stock chart, or a small move would be a flat line. The numbers along the side show the real size.
 - **Saved values are in euros and converted at today's rate,** so a moving exchange rate can't look like a moving collection.
+- **The binder shows the most expensive cards in general to logged-out visitors,** and a customer's own most expensive cards after logging in, as the owner asked. This replaces the popular cards the plan had for visitors. All games count, so the first page is mostly Magic.
+- **A choice for the binder always stays.** A customer who chose something sees that source, even while it's empty, with a line saying how to fill it. Only a customer who chose nothing and has no cards gets the most expensive cards in general. The choice is made in My account only: the owner tried a picker on the home page and didn't want it there.
 - **"Popular" means the cards in the most collections,** counted per customer and not per copy. A new shop has no collections, so the most expensive Pokémon cards fill up what's left, because this is mainly a Pokémon shop. Cards without an image are left out. The list has 45 cards and stays in memory for 10 minutes.
 - **Normal progress counts card numbers,** as the plan says. Only One Piece has cards sharing a number: 4,988 cards with 3,711 numbers. The "Gemist" filter follows this: a card isn't missing when another card with its number is owned. The tile still shows "Gemist" for the alternate art itself.
 - **Master progress counts every variant of every card,** and only variants the card still has, so a source that drops one can't push it past 100%.
@@ -107,6 +117,9 @@ Checks and screenshots found these bugs, all fixed:
 - **Prices that can't be converted count as cards without a price,** never as if a dollar is a euro.
 - **Bulk add leaves cards you already have alone,** so doing it twice changes nothing. It works per page: a page has 60 cards.
 - **Catalog totals stay in memory for 10 minutes.** Counting them takes about 1.7 seconds. A single set is always counted live, so set pages are exact.
+- **Uploaded pictures sit next to the source's images, not over them.** A sync keeps updating the source's URL, and going back shows it again. The rule that card images are never changed is about the source's images: replacing one with your own is not changing it. The owner has to have the right to use what they upload.
+- **Only JPG, PNG and WebP, up to 5 MB.** The type comes from the first bytes of the file and not from its name. SVG is left out because it can hold scripts. Files get a random name, and only names we made can be fetched.
+- **The Pokédex loads right after startup,** because waiting for a sync left the page empty after an upgrade. Not in `dev`, where the database starts empty every time and it would cost 1,025 requests per restart.
 - **Reference-style pages stay pages:** a Pokédex slot opens its own URL rather than a modal, so it can be shared.
 - **"Own selection" can hold any card,** owned or not, up to 81.
 
@@ -124,7 +137,7 @@ The graph follows the idea of their portfolio screen: a large total, the change 
 
 ## Open issues
 
-- **Three Mew cards of set `30th` link to images that don't exist** (404 at TCGdex, cards R, G and B). They're expensive, so a logged-out visitor sees them on page 1 of the home binder as empty pockets with the name. It goes away once customers have collections, or when TCGdex adds the images. Broken images can't be checked during a customer request.
+- **Three Mew cards of set `30th` link to images that don't exist** (404 at TCGdex, cards R, G and B). The owner can upload a picture for these at `/admin/afbeeldingen`. In the binder such a card shows as an empty pocket with its name. Broken images can't be checked during a customer request.
 - **The value graph starts empty for everyone.** Nothing can fill in the past, so a customer sees a first line on their second day.
 - **A price history per card,** like the card page in Collectr, isn't built. It needs a daily copy of all prices, and can't be filled in afterwards either. The owner should decide if it's worth starting.
 - **One Piece alternate arts** can show "Gemist" while their number counts as owned, see Decisions.
@@ -134,6 +147,7 @@ The graph follows the idea of their portfolio screen: a large total, the change 
 - **Phase 4:** the list of missing cards needs a link to the matching single per row, in `SetMissingView.vue`.
 - **Phase 4:** `/verlanglijst` exists for cards. Add products there, as a second part of the page.
 - **Phase 4:** `CardCondition` is ready for singles.
+- **Phase 4:** use `MediaStorage` and `ImageFormat` for product images.
 - **Phase 7:** the buylist form can pick cards from the collection through `collection=owned` on the card endpoints.
 - **Phase 8:** keep `/collectie/gedeeld/` out of the sitemap and add `noindex`, because these pages show a first name and a value.
 - **Phase 8:** the privacy page has to mention the share link and the saved value history. Deleting an account has to remove collection data too.

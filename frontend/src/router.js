@@ -125,6 +125,7 @@ const router = createRouter({
       children: [
         { path: '', component: () => import('./views/admin/AdminDashboardView.vue') },
         { path: 'sync', component: () => import('./views/admin/AdminSyncView.vue') },
+        { path: 'afbeeldingen', component: () => import('./views/admin/AdminImagesView.vue') },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },

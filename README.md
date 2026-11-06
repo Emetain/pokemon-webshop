@@ -66,7 +66,9 @@ The card catalog comes from four public APIs that need no key. Their base URLs a
 | Disney Lorcana | [Lorcast](https://lorcast.com) | TCGplayer, USD |
 | One Piece Card Game | [OPTCG API](https://optcgapi.com) | TCGplayer, USD |
 
-The Pokédex comes from [PokéAPI](https://pokeapi.co). The Pokémon sync imports new species first, which takes about 14 minutes the first time and one request after that.
+The Pokédex comes from [PokéAPI](https://pokeapi.co). The backend imports new species right after startup and at every Pokémon sync. The first import takes about 14 minutes in the background, and later runs make one request. The `dev` profile only does this during a Pokémon sync.
+
+An admin can replace the picture of a card or set at `/admin/afbeeldingen`. Uploads go to `MEDIA_DIRECTORY` (`data/media` by default), and a sync leaves them alone.
 
 Every sync also fetches the [ECB reference rate](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html). Customers choose EUR or USD in their profile, and card prices are converted for display only. Shop prices stay in EUR.
 

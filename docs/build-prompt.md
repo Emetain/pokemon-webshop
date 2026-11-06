@@ -49,6 +49,9 @@ These decisions came up while building and apply to every later phase. The phase
 - **Card lists:** use the sorting, filters and URL pattern of `CardFilters.vue` for new lists of cards. Filters and sorting live in the URL, so every view can be shared.
 - **Owned and missing cards:** a blue frame around the image of owned cards, with "In bezit" or "Gemist" below it. Never change the image itself. Use `CollectionControls.vue` for adding and removing.
 - **Share page:** shows the first name, progress, cards and value. Never the full name, because that is also the name on orders.
+- **Home binder:** logged-out visitors see the most expensive cards in general, logged-in customers their own most expensive cards. A choice always stays, and is made in My account only, not on the home page.
+- **Card tiles:** logged-in customers get a + next to the price. It turns into `- count +` in the same element.
+- **Admin images:** the owner can replace the picture of a card or set at `/admin/afbeeldingen`. Uploads sit next to the source's images and a sync leaves them alone. `MediaStorage` handles the files.
 - **Value graph:** added at the owner's request, inspired by the portfolio graph in the Collectr app. Card prices have no history, so one value per customer per day is saved. It only starts when a customer starts, and can't be filled in afterwards.
 - **Viewer on public endpoints:** a nullable `@CurrentUser` parameter gives the logged-in user when there is one. Card lists then include what the viewer owns.
 - **Before going live:** the owner does a legal check and has asked to be reminded. See phase 8.
@@ -126,21 +129,25 @@ Backend:
 - Wishlist for cards (separate from product wishlist).
 - Option to make a collection public through a share link with a random slug (off by default). The public page shows the first name, progress, cards and value, without the value graph.
 - Value history: save the value of every collection once a day after the card sync, in euros, one row per customer per day. The last point of the history is today's live value.
-- Home binder: the data for the 9-pocket binder in the home hero, with pages. Sources: popular, own selection, most expensive cards owned, Pokédex, most expensive cards in general. Save the choice on the user. Define "popular" (for example, the cards in the most collections). `Card.sortPriceCents` already gives the most expensive cards. Add an index when a query needs it.
+- Home binder: the data for the 9-pocket binder in the home hero, with pages. Sources: popular, own selection, most expensive cards owned, Pokédex, most expensive cards in general. Save the choice on the user, and always show that choice, even while it's empty. Define "popular" (for example, the cards in the most collections). `Card.sortPriceCents` already gives the most expensive cards. Add an index when a query needs it.
+- Custom images: the admin can upload a picture for a card or set, which goes before the image of the source. A sync never touches it, and the admin can go back to the original.
 
 Frontend:
-- Home binder: the binder in the hero shows real cards and has page buttons. Logged-in customers see their most expensive cards by default, logged-out visitors see the most popular cards. Customers change what it shows in their settings. Nothing goes on top of the card images.
+- Home binder: the binder in the hero shows real cards and has page buttons. Logged-in customers see their most expensive cards by default, logged-out visitors see the most expensive cards in general. Customers change what it shows in their settings. Nothing goes on top of the card images.
 - `/collectie`: overview per game with progress bars, total value, most valuable cards.
 - Value graph on `/collectie`, like a stock chart: the change over the chosen period, a line with a tooltip, and the periods 7D, 1M, 3M, 6M, 1J and Alles.
-- On set pages, logged-in users can see which cards they own and which are missing, and can tick cards off with one click, plus quantity +/-. Greying out images isn't allowed for Magic under Scryfall's terms, so owned cards get a blue frame around the image and missing cards a "Gemist" label below it.
+- On set pages, logged-in users can see which cards they own and which are missing. A + button next to the price adds a card with one click, and then shows the count with a - in the same element. Greying out images isn't allowed for Magic under Scryfall's terms, so owned cards get a blue frame around the image and missing cards a "Gemist" label below it.
 - Toggle per set between "normale set" and "master set" progress.
 - `/collectie/pokedex`: a grid of all Pokémon with Pokédex number and name, filled slots show the image of one of the owned cards, filter per generation, and a progress bar per generation. Clicking a slot shows all cards of that Pokémon and which ones you own.
 - Missing-cards list per set, with a link to the matching singles in the shop (once products exist).
 - Logged-out visitors see a short explanation and a register button.
 
+Admin:
+- `/admin/afbeeldingen`: search a card or set, upload a picture, or go back to the original.
+
 Done when:
 - Adding and removing cards updates progress and value right away.
-- The home binder shows the chosen source, pages work, and a logged-out visitor sees the popular cards.
+- The home binder shows the chosen source, pages work, and a logged-out visitor sees the most expensive cards.
 - Pokédex progress matches the owned cards (test with a few known cards).
 - The value graph shows saved days, and adding a card moves today's point right away.
 - Unit tests cover the progress and value calculations.
@@ -154,7 +161,7 @@ Backend:
 - Accessory sub-types: sleeves, toploaders, binders, deck boxes, playmats, display cases, storage boxes.
 - Stock: quantity on hand, quantity reserved, and a `StockMovement` log (product, change, reason: `PURCHASE`, `SALE`, `RETURN`, `CORRECTION`, `DROP_ALLOCATION`, `RESERVATION`, `RELEASE`, note, admin user, time). Stock only changes through a `StockService` that always writes a movement. Use optimistic locking so two people can't buy the last item.
 - Low-stock threshold per product.
-- Image upload for products (store files on disk in a configurable folder, served under `/api/v1/media/...`; keep it behind an interface so cloud storage can be added later).
+- Image upload for products. `MediaStorage` from phase 3 already stores files on disk in a configurable folder, serves them under `/api/v1/media/...`, and sits behind an interface so cloud storage can be added later.
 - Public endpoints: list with filters (game, type, set, language, price range, in stock, pre-order, on sale), sorting (new, price, popularity), search, product detail, "new arrivals", "bestsellers" (based on order lines later; newest active products until then).
 - Product wishlist and a "mail me when back in stock" signup. `/verlanglijst` already exists for cards from phase 3: add products there.
 
@@ -266,7 +273,7 @@ Goal: ready to show, ready to deploy.
 - Start the app with the `prod` profile against the Docker Postgres and check that all Flyway migrations run and Hibernate validation passes.
 - Update the root `README.md`: what the app does, how to run it, environment variables, how to sync card data, how to test payments with the Stripe CLI, and the phase overview with links to `docs/phases/`.
 - Production basics left open by earlier phases: a way to create the first admin (only `dev` seeds accounts), SMTP username and password settings, Swagger closed in `prod`, `FORWARD_HEADERS_STRATEGY=native` behind a proxy, a heap of at least 2 GB for the Magic sync, and the `npm audit` issue in dev tooling.
-- **Go-live reminder:** before anything goes live, remind the owner to do the legal check. They asked for this reminder. It covers the Wizards Fan Content Policy, Ravensburger's Community Code and Lorcast's "prohibited from charging" notice for a commercial shop, reusing TCGplayer prices from Lorcast and the OPTCG API, Cardmarket and ECB data, the PokéAPI data, the ball emblem in the logo, the public collection pages and saved value history in the privacy policy, and the draft legal pages. Also bring up the One Piece images: they load from one person's server and carry a "SAMPLE" watermark. Full notes are in `docs/phases/phase-02.md` and `docs/phases/phase-03.md`.
+- **Go-live reminder:** before anything goes live, remind the owner to do the legal check. They asked for this reminder. It covers the Wizards Fan Content Policy, Ravensburger's Community Code and Lorcast's "prohibited from charging" notice for a commercial shop, reusing TCGplayer prices from Lorcast and the OPTCG API, Cardmarket and ECB data, the PokéAPI data, pictures uploaded at `/admin/afbeeldingen`, the ball emblem in the logo, the public collection pages and saved value history in the privacy policy, and the draft legal pages. Also bring up the One Piece images: they load from one person's server and carry a "SAMPLE" watermark. Full notes are in `docs/phases/phase-02.md` and `docs/phases/phase-03.md`.
 
 Done when:
 - All tests pass, the production build works, and the `prod` profile starts cleanly on an empty database.

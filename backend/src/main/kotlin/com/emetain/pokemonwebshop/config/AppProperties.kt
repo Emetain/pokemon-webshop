@@ -11,6 +11,7 @@ data class AppProperties(
     val rateLimit: RateLimit,
     val catalog: Catalog,
     val collection: Collection,
+    val media: Media,
 ) {
     data class Mail(
         val from: String,
@@ -38,6 +39,7 @@ data class AppProperties(
         val optcg: CatalogSource,
         val ecb: CatalogSource,
         val pokeapi: CatalogSource,
+        val importPokedexOnStart: Boolean,
     )
 
     data class CatalogSource(
@@ -47,5 +49,9 @@ data class AppProperties(
 
     data class Collection(
         val cacheTtl: Duration,
+    )
+
+    data class Media(
+        val directory: String,
     )
 }

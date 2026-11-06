@@ -12,6 +12,8 @@ FROM eclipse-temurin:21-jre
 RUN useradd --uid 1001 --create-home appuser
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar /app/app.jar
+# A new volume takes over this owner, so the app can write its uploads there.
+RUN mkdir /app/media && chown appuser /app/media
 USER appuser
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

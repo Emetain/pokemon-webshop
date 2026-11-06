@@ -13,6 +13,10 @@ spring:
     port: ${MAIL_PORT:1025}
   flyway:
     enabled: false
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
   jpa:
     open-in-view: false
     properties:
@@ -51,7 +55,12 @@ app:
   rate-limit:
     max-attempts: 10
     window: 1m
+  media:
+    # Where uploaded images are stored.
+    directory: ${MEDIA_DIRECTORY:data/media}
   catalog:
+    # Fills the Pokédex right after startup instead of at the next Pokémon sync.
+    import-pokedex-on-start: true
     # When the daily card sync starts, in Dutch time. "-" switches it off.
     sync-cron: ${CATALOG_SYNC_CRON:0 0 3 * * *}
     user-agent: UithoornTCG/1.0

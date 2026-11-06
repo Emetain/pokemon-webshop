@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, useId, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { BookHeart, Heart, Plus } from 'lucide-vue-next'
+import { BookHeart, Heart } from 'lucide-vue-next'
 import QuantityStepper from './QuantityStepper.vue'
 import { binderApi, collectionApi, wishlistApi } from '../../services/api'
 import { useSession } from '../../stores/session'
@@ -105,41 +105,28 @@ watch(() => props.card.id, load, { immediate: true })
       <ul class="rows">
         <li v-for="row in rows" :key="row.variant" class="row">
           <span class="variant">{{ variantLabel(row.variant) }}</span>
-          <template v-if="row.entry">
-            <QuantityStepper
-              :quantity="row.entry.quantity"
-              :name="`${card.name}, ${variantLabel(row.variant)}`"
-              :disabled="busy"
-              @increase="add(row.variant)"
-              @decrease="decrease(row.entry)"
-            />
-            <div class="condition">
-              <label class="condition-label" :for="`${id}-${row.variant}`">{{ t('collection.card.condition') }}</label>
-              <select
-                :id="`${id}-${row.variant}`"
-                class="condition-input"
-                :value="row.entry.condition ?? ''"
-                :disabled="busy"
-                @change="setCondition(row.entry, $event.target.value)"
-              >
-                <option value="">{{ t('collection.card.noCondition') }}</option>
-                <option v-for="condition in CONDITIONS" :key="condition" :value="condition">
-                  {{ t(`collection.conditions.${condition}`) }}
-                </option>
-              </select>
-            </div>
-          </template>
-          <button
-            v-else
-            class="add"
-            type="button"
+          <QuantityStepper
+            :quantity="row.entry?.quantity ?? 0"
+            :name="`${card.name}, ${variantLabel(row.variant)}`"
             :disabled="busy"
-            :aria-label="t('collection.addVariant', { variant: `${card.name}, ${variantLabel(row.variant)}` })"
-            @click="add(row.variant)"
-          >
-            <Plus :size="16" aria-hidden="true" />
-            {{ t('collection.add') }}
-          </button>
+            @increase="add(row.variant)"
+            @decrease="decrease(row.entry)"
+          />
+          <div v-if="row.entry" class="condition">
+            <label class="condition-label" :for="`${id}-${row.variant}`">{{ t('collection.card.condition') }}</label>
+            <select
+              :id="`${id}-${row.variant}`"
+              class="condition-input"
+              :value="row.entry.condition ?? ''"
+              :disabled="busy"
+              @change="setCondition(row.entry, $event.target.value)"
+            >
+              <option value="">{{ t('collection.card.noCondition') }}</option>
+              <option v-for="condition in CONDITIONS" :key="condition" :value="condition">
+                {{ t(`collection.conditions.${condition}`) }}
+              </option>
+            </select>
+          </div>
         </li>
       </ul>
 
@@ -211,25 +198,6 @@ watch(() => props.card.id, load, { immediate: true })
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   font-size: var(--text-sm);
-}
-
-.add {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-height: var(--touch-target);
-  padding-inline: var(--space-3);
-  border: 1.5px solid var(--color-brand);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-brand);
-  cursor: pointer;
-  font-size: var(--text-sm);
-  font-weight: 650;
-}
-
-.add:hover:not(:disabled) {
-  background: var(--color-tint);
 }
 
 .actions {

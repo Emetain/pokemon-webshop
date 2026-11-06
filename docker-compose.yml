@@ -59,9 +59,13 @@ services:
       POKEAPI_BASE_URL: ${POKEAPI_BASE_URL:-https://pokeapi.co/api/v2}
       CATALOG_SYNC_CRON: ${CATALOG_SYNC_CRON:-0 0 3 * * *}
       COLLECTION_SNAPSHOT_CRON: ${COLLECTION_SNAPSHOT_CRON:-0 0 7 * * *}
+      MEDIA_DIRECTORY: /app/media
+    volumes:
+      - media-data:/app/media
     depends_on:
       postgres:
         condition: service_healthy
 
 volumes:
   postgres-data:
+  media-data:

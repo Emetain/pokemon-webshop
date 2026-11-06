@@ -22,6 +22,7 @@ data class CardSetDto(
     val cardCount: Int,
     val logoUrl: String?,
     val symbolUrl: String?,
+    val customLogo: Boolean,
 ) {
     companion object {
         fun from(set: CardSet) = CardSetDto(
@@ -31,8 +32,9 @@ data class CardSetDto(
             series = set.series,
             releaseDate = set.releaseDate,
             cardCount = set.cardCount,
-            logoUrl = set.logoUrl,
+            logoUrl = set.shownLogoUrl,
             symbolUrl = set.symbolUrl,
+            customLogo = set.customLogoUrl != null,
         )
     }
 }
@@ -71,6 +73,7 @@ data class CardSummaryDto(
     val name: String,
     val rarity: String?,
     val imageUrl: String?,
+    val customImage: Boolean,
     val trendCents: Long?,
     val currency: Currency?,
     val variants: List<String>,
@@ -88,7 +91,8 @@ data class CardSummaryDto(
                 number = card.number,
                 name = card.name,
                 rarity = card.rarity,
-                imageUrl = card.imageSmallUrl,
+                imageUrl = card.shownImageSmallUrl,
+                customImage = card.customImageUrl != null,
                 trendCents = price?.trendCents,
                 currency = price?.currency,
                 variants = CardVariants.displaySorted(card.variants),
@@ -142,8 +146,8 @@ data class CardDetailDto(
             name = card.name,
             rarity = card.rarity,
             cardType = card.cardType,
-            imageSmallUrl = card.imageSmallUrl,
-            imageLargeUrl = card.imageLargeUrl,
+            imageSmallUrl = card.shownImageSmallUrl,
+            imageLargeUrl = card.shownImageLargeUrl,
             variants = CardVariants.displaySorted(card.variants),
             colors = card.colors.sorted(),
             dexNumbers = card.dexNumbers.sorted(),

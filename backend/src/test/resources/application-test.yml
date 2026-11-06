@@ -16,8 +16,11 @@ app:
     cookie-secure: true
   rate-limit:
     max-attempts: 5
+  media:
+    directory: build/test-media
   catalog:
     sync-cron: "-"
+    import-pokedex-on-start: false
   collection:
     # Tests import cards and look at the result right away.
     cache-ttl: 0s

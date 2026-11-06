@@ -12,7 +12,7 @@ data class BinderCardDto(
 ) {
     companion object {
         /** Reads the set, so call this while it can still be loaded. */
-        fun from(card: Card) = BinderCardDto(card.id, card.game.slug, card.set.code, card.name, card.imageSmallUrl)
+        fun from(card: Card) = BinderCardDto(card.id, card.game.slug, card.set.code, card.name, card.shownImageSmallUrl)
     }
 }
 
@@ -25,7 +25,7 @@ data class BinderSlotDto(
 
 data class BinderPageDto(
     val source: BinderSource,
-    /** True when the chosen source has nothing to show yet and popular cards took its place. */
+    /** True for a customer who hasn't chosen and has no cards yet: the most expensive cards fill their binder. */
     val fallback: Boolean,
     val page: Int,
     val totalPages: Int,

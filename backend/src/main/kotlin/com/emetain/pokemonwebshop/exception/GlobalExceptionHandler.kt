@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
+import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
 
 /** Turns every failure into `{ "error": "<code>", "message": "<Dutch text>" }`. */
@@ -49,6 +50,14 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         val message = ex.bindingResult.fieldErrors.firstOrNull()?.defaultMessage ?: "Controleer de ingevulde gegevens."
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse("validation_failed", message))
     }
+
+    override fun handleMaxUploadSizeExceededException(
+        ex: MaxUploadSizeExceededException,
+        headers: HttpHeaders,
+        status: HttpStatusCode,
+        request: WebRequest,
+    ): ResponseEntity<Any>? = ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+        .body(ErrorResponse("file_too_large", "Dit bestand is te groot. Kies een afbeelding tot 5 MB."))
 
     override fun handleExceptionInternal(
         ex: Exception,

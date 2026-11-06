@@ -59,13 +59,15 @@ interface CardRepository : JpaRepository<Card, Long>, JpaSpecificationExecutor<C
 
     @Query(
         "select c from Card c join fetch c.set " +
-            "where c.sortPriceCents is not null and c.imageSmallUrl is not null order by c.sortPriceCents desc, c.id",
+            "where c.sortPriceCents is not null and (c.imageSmallUrl is not null or c.customImageUrl is not null) " +
+            "order by c.sortPriceCents desc, c.id",
     )
     fun findMostExpensive(pageable: Pageable): List<Card>
 
     @Query(
         "select c from Card c join fetch c.set where c.game = :game " +
-            "and c.sortPriceCents is not null and c.imageSmallUrl is not null order by c.sortPriceCents desc, c.id",
+            "and c.sortPriceCents is not null and (c.imageSmallUrl is not null or c.customImageUrl is not null) " +
+            "order by c.sortPriceCents desc, c.id",
     )
     fun findMostExpensiveOfGame(game: Game, pageable: Pageable): List<Card>
 
@@ -77,7 +79,8 @@ interface CardRepository : JpaRepository<Card, Long>, JpaSpecificationExecutor<C
     fun findOwnedMostExpensiveFirst(userId: Long, pageable: Pageable): Page<Card>
 
     @Query(
-        "select new com.emetain.pokemonwebshop.repository.OwnedDexCard(d, c.id, c.game, s.code, c.imageSmallUrl, c.sortPriceCents) " +
+        "select new com.emetain.pokemonwebshop.repository.OwnedDexCard(" +
+            "d, c.id, c.game, s.code, coalesce(c.customImageUrl, c.imageSmallUrl), c.sortPriceCents) " +
             "from Card c join c.set s join c.dexNumbers d " +
             "where c.id in (select e.card.id from CollectionEntry e where e.user.id = :userId)",
     )

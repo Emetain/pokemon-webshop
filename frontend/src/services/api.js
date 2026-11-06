@@ -10,14 +10,10 @@ export class ApiError extends Error {
   }
 }
 
-async function request(method, path, body) {
+async function send(method, path, options) {
   let response
   try {
-    response = await fetch(`${BASE_URL}${path}`, {
-      method,
-      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
+    response = await fetch(`${BASE_URL}${path}`, { method, ...options })
   } catch {
     throw new ApiError(0, 'network_error', t('errors.network'))
   }
@@ -29,6 +25,18 @@ async function request(method, path, body) {
     throw new ApiError(response.status, data?.error ?? 'unknown', data?.message ?? t('errors.generic'))
   }
   return data
+}
+
+function request(method, path, body) {
+  if (body === undefined) return send(method, path)
+  return send(method, path, { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+}
+
+/** The browser sets the content type of a form itself, with the boundary it needs. */
+function upload(path, file) {
+  const body = new FormData()
+  body.append('file', file)
+  return send('POST', path, { body })
 }
 
 export const authApi = {
@@ -103,4 +111,8 @@ export const adminApi = {
   status: () => request('GET', '/admin/status'),
   syncStatus: () => request('GET', '/admin/catalog/sync'),
   startSync: (game) => request('POST', `/admin/catalog/sync/${game}`),
+  uploadCardImage: (id, file) => upload(`/admin/catalog/images/cards/${id}`, file),
+  resetCardImage: (id) => request('DELETE', `/admin/catalog/images/cards/${id}`),
+  uploadSetLogo: (game, code, file) => upload(`/admin/catalog/images/sets/${game}/${encodeURIComponent(code)}`, file),
+  resetSetLogo: (game, code) => request('DELETE', `/admin/catalog/images/sets/${game}/${encodeURIComponent(code)}`),
 }

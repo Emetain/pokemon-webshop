@@ -25,9 +25,17 @@ const pockets = computed(() => {
 
 const totalPages = computed(() => binder.value?.totalPages ?? 0)
 
+const loggedIn = computed(() => session.isLoggedIn.value)
+
+/** What the binder shows. The fallback has a text of its own, because it isn't what the customer's setting says. */
 const caption = computed(() => {
   if (!binder.value) return ''
   return binder.value.fallback ? t('binder.fallback') : t(`binder.sources.${binder.value.source}`)
+})
+
+const hint = computed(() => {
+  if (!binder.value || !loggedIn.value || binder.value.fallback || binder.value.slots.length) return ''
+  return t(`binder.empty.${binder.value.source}`)
 })
 
 const cardLink = (card) => ({
@@ -90,7 +98,7 @@ watch(page, load, { immediate: true })
     <figcaption class="foot">
       <span class="caption">
         {{ caption }}
-        <router-link v-if="session.isLoggedIn.value" class="change" :to="{ path: '/account', hash: '#binder' }">
+        <router-link v-if="loggedIn" class="change" :to="{ path: '/account', hash: '#binder' }">
           {{ t('binder.change') }}
         </router-link>
       </span>
@@ -117,6 +125,7 @@ watch(page, load, { immediate: true })
           <ChevronRight :size="20" aria-hidden="true" />
         </button>
       </span>
+      <span v-if="hint" class="hint">{{ hint }}</span>
     </figcaption>
   </figure>
 </template>
@@ -222,7 +231,11 @@ watch(page, load, { immediate: true })
 }
 
 .caption {
-  flex: 1 1 10rem;
+  flex: 1 1 8rem;
+}
+
+.hint {
+  flex: 1 1 100%;
 }
 
 .change {
@@ -234,6 +247,7 @@ watch(page, load, { immediate: true })
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  margin-left: auto;
 }
 
 .page-number {

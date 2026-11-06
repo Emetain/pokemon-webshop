@@ -2,6 +2,10 @@
 import { Minus, Plus } from 'lucide-vue-next'
 import { t } from '../../utils/i18n'
 
+/**
+ * Starts as a single + button. Once there are copies, the count and a - appear in the same element, on the left
+ * of that same button, so the + never moves and can be pressed again right away.
+ */
 defineProps({
   quantity: { type: Number, required: true },
   /** What is being counted, for screen readers. */
@@ -14,53 +18,57 @@ defineEmits(['increase', 'decrease'])
 
 <template>
   <div class="stepper">
+    <template v-if="quantity > 0">
+      <button
+        class="step"
+        type="button"
+        :disabled="disabled"
+        :aria-label="t('collection.decrease', { name })"
+        @click="$emit('decrease')"
+      >
+        <Minus :size="16" aria-hidden="true" />
+      </button>
+      <output class="quantity" :aria-label="t('collection.quantity')">{{ quantity }}</output>
+    </template>
     <button
       class="step"
       type="button"
       :disabled="disabled"
-      :aria-label="t('collection.decrease', { name })"
-      @click="$emit('decrease')"
-    >
-      <Minus :size="16" aria-hidden="true" />
-    </button>
-    <output class="quantity" :aria-label="t('collection.quantity')">{{ quantity }}</output>
-    <button
-      class="step"
-      type="button"
-      :disabled="disabled"
-      :aria-label="t('collection.increase', { name })"
+      :aria-label="quantity > 0 ? t('collection.increase', { name }) : t('collection.addCard', { name })"
       @click="$emit('increase')"
     >
-      <Plus :size="16" aria-hidden="true" />
+      <Plus :size="18" aria-hidden="true" />
     </button>
   </div>
 </template>
 
 <style scoped>
 .stepper {
-  display: inline-grid;
-  grid-template-columns: var(--touch-target) minmax(1.75rem, 1fr) var(--touch-target);
+  display: inline-flex;
+  flex: none;
   align-items: center;
-  border: 1.5px solid var(--color-line-strong);
+  border: 1.5px solid var(--color-brand);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
+  color: var(--color-brand);
 }
 
 .step {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 2.25rem;
   height: calc(var(--touch-target) - 3px);
   padding: 0;
   border: 0;
+  border-radius: var(--radius-xs);
   background: transparent;
-  color: var(--color-ink);
+  color: inherit;
   cursor: pointer;
 }
 
 .step:hover:not(:disabled) {
   background: var(--color-tint);
-  color: var(--color-brand);
 }
 
 .step:disabled {
@@ -69,8 +77,9 @@ defineEmits(['increase', 'decrease'])
 }
 
 .quantity {
+  min-width: 1.25rem;
+  color: var(--color-ink);
   font-size: var(--text-sm);
-  font-variant-numeric: tabular-nums;
   font-weight: 700;
   text-align: center;
 }

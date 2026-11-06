@@ -3,6 +3,8 @@
 *.env
 !.env.example
 .DS_Store
+# Uploaded images
+backend/data/
 .idea/
 *.iml
 

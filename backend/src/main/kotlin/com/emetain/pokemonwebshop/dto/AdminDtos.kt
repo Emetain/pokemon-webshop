@@ -49,3 +49,9 @@ data class CatalogSyncStatusDto(
     val speciesCount: Long?,
     val lastRun: SyncRunDto?,
 )
+
+/** The picture a card or set now shows, and whether that is one the shop uploaded. */
+data class CatalogImageDto(
+    val imageUrl: String?,
+    val custom: Boolean,
+)

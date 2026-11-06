@@ -50,6 +50,10 @@ class CardSet(
     @Column(length = 500)
     var symbolUrl: String? = null,
 
+    /** A picture the shop uploaded. It goes before the logo of the source, and a sync never touches it. */
+    @Column(length = 500)
+    var customLogoUrl: String? = null,
+
     /** Orders sets without a release date. A higher number is newer. */
     @Column(nullable = false)
     var sortOrder: Int = 0,
@@ -57,4 +61,6 @@ class CardSet(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
-)
+) {
+    val shownLogoUrl: String? get() = customLogoUrl ?: logoUrl
+}

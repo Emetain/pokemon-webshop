@@ -70,14 +70,21 @@ class BinderIntegrationTest : CollectionTestSupport() {
         objectMapper.readTree(andReturn().response.contentAsString)["slots"].map { it["card"]["name"].asText() }
 
     @Test
-    fun `a new shop fills the binder of a visitor with the most expensive Pokémon cards`() {
+    fun `a visitor sees the most expensive cards in general, of any game`() {
+        val magic = uniqueCode()
+        importCards(
+            listOf(providerCard(magic, name = "Black Lotus", prices = listOf(providerPrice(trend = top * 2)))),
+            game = Game.MTG,
+        )
+
         val result = binder()
-            .andExpect(jsonPath("$.source").value("POPULAR"))
+            .andExpect(jsonPath("$.source").value("MOST_EXPENSIVE"))
             .andExpect(jsonPath("$.fallback").value(false))
             .andExpect(jsonPath("$.page").value(0))
             .andExpect(jsonPath("$.slots.length()").value(9))
 
-        assertEquals("Card 1", result.names().first())
+        assertEquals("Black Lotus", result.names().first())
+        assertEquals(true, "Card 1" in result.names())
     }
 
     @Test
@@ -87,8 +94,9 @@ class BinderIntegrationTest : CollectionTestSupport() {
         add(session, inTwoCollections)
         add(session, inOneCollection)
         add(loggedInUser(), inTwoCollections)
+        choose("POPULAR")
 
-        assertEquals(listOf("Card 11", "Card 10", "Card 1"), binder().names().take(3))
+        assertEquals(listOf("Card 11", "Card 10", "Card 1"), binder(session).names().take(3))
     }
 
     @Test
@@ -98,8 +106,21 @@ class BinderIntegrationTest : CollectionTestSupport() {
         add(session, first, quantity = 5)
         add(session, second)
         add(loggedInUser(), second)
+        choose("POPULAR")
 
-        assertEquals(listOf("Card 10", "Card 11"), binder().names().take(2))
+        assertEquals(listOf("Card 10", "Card 11"), binder(session).names().take(2))
+    }
+
+    @Test
+    fun `a new shop fills the popular list with the most expensive Pokémon cards`() {
+        val magic = uniqueCode()
+        importCards(
+            listOf(providerCard(magic, name = "Black Lotus", prices = listOf(providerPrice(trend = top * 2)))),
+            game = Game.MTG,
+        )
+        choose("POPULAR")
+
+        assertEquals("Card 1", binder(session).names().first())
     }
 
     @Test
@@ -107,8 +128,9 @@ class BinderIntegrationTest : CollectionTestSupport() {
         val noImage = uniqueCode()
         importCards(listOf(providerCard(noImage, name = "No image").copy(imageSmallUrl = null)))
         add(session, card(noImage).id)
+        choose("POPULAR")
 
-        assertEquals(false, "No image" in binder().names())
+        assertEquals(false, "No image" in binder(session).names())
     }
 
     @Test
@@ -135,11 +157,23 @@ class BinderIntegrationTest : CollectionTestSupport() {
     }
 
     @Test
-    fun `a customer without cards gets popular cards instead of an empty binder`() {
+    fun `a customer without cards who chose nothing gets the most expensive cards instead of an empty binder`() {
         binder(session)
-            .andExpect(jsonPath("$.source").value("POPULAR"))
+            .andExpect(jsonPath("$.source").value("MOST_EXPENSIVE"))
             .andExpect(jsonPath("$.fallback").value(true))
             .andExpect(jsonPath("$.slots.length()").value(9))
+    }
+
+    @Test
+    fun `a choice always stays what the binder shows, even while it's empty`() {
+        for (source in listOf("MOST_EXPENSIVE_OWNED", "OWN_SELECTION")) {
+            choose(source)
+
+            binder(session)
+                .andExpect(jsonPath("$.source").value(source))
+                .andExpect(jsonPath("$.fallback").value(false))
+                .andExpect(jsonPath("$.slots.length()").value(0))
+        }
     }
 
     @Test
@@ -150,7 +184,7 @@ class BinderIntegrationTest : CollectionTestSupport() {
             .andExpect(jsonPath("$.binderSource").value("MOST_EXPENSIVE"))
 
         val result = binder(session).andExpect(jsonPath("$.source").value("MOST_EXPENSIVE"))
-        assertEquals("Card 1", result.names().first())
+        assertEquals(true, "Card 1" in result.names())
     }
 
     @Test
@@ -162,7 +196,6 @@ class BinderIntegrationTest : CollectionTestSupport() {
     @Test
     fun `an own selection shows the chosen cards in the chosen order`() {
         choose("OWN_SELECTION")
-        binder(session).andExpect(jsonPath("$.fallback").value(true))
 
         val first = card(ids[7]).id
         val second = card(ids[1]).id
@@ -226,16 +259,4 @@ class BinderIntegrationTest : CollectionTestSupport() {
         mockMvc.perform(put("/v1/binder/selection/999999999").cookie(session)).andExpect(status().isNotFound)
     }
 
-    @Test
-    fun `games other than Pokémon only reach the popular list through collections`() {
-        val magic = uniqueCode()
-        importCards(
-            listOf(providerCard(magic, name = "Black Lotus", prices = listOf(providerPrice(trend = top * 2)))),
-            game = Game.MTG,
-        )
-
-        assertEquals("Card 1", binder().names().first())
-        choose("MOST_EXPENSIVE")
-        assertEquals("Black Lotus", binder(session).names().first())
-    }
 }

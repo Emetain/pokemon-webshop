@@ -72,6 +72,10 @@ class Card(
     @Column(length = 500)
     var imageLargeUrl: String? = null,
 
+    /** A picture the shop uploaded. It goes before the images of the source, and a sync never touches it. */
+    @Column(length = 500)
+    var customImageUrl: String? = null,
+
     @ElementCollection
     @CollectionTable(
         name = "card_variants",
@@ -110,4 +114,8 @@ class Card(
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "cards_seq")
     @SequenceGenerator(name = "cards_seq", sequenceName = "cards_seq", allocationSize = 500)
     val id: Long = 0,
-)
+) {
+    val shownImageSmallUrl: String? get() = customImageUrl ?: imageSmallUrl
+
+    val shownImageLargeUrl: String? get() = customImageUrl ?: imageLargeUrl
+}

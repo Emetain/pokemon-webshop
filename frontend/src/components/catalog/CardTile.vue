@@ -40,17 +40,22 @@ const owned = computed(() => tracking.value && props.card.owned.length > 0)
         <span>#{{ card.number }}</span>
         <span v-if="card.rarity">{{ card.rarity }}</span>
       </span>
-      <span v-if="card.trendCents !== null" class="price">{{ formatPrice(card.trendCents, card.currency) }}</span>
-      <span v-else class="no-price">{{ t('catalog.noPrice') }}</span>
     </router-link>
 
+    <!-- Outside the link, because a button can't sit inside one. -->
+    <div class="price-row">
+      <span v-if="card.trendCents !== null" class="price">{{ formatPrice(card.trendCents, card.currency) }}</span>
+      <span v-else class="no-price">{{ t('catalog.noPrice') }}</span>
+      <CollectionControls v-if="tracking && !master" :card="card" @change="$emit('change', $event)" />
+    </div>
+
     <template v-if="tracking">
-      <p v-if="owned && !master" class="status owned-status">
+      <CollectionControls v-if="master" :card="card" master @change="$emit('change', $event)" />
+      <p v-else-if="owned" class="status owned-status">
         <Check :size="14" aria-hidden="true" />
         {{ t('collection.owned') }}
       </p>
-      <p v-else-if="!master" class="status">{{ t('collection.missing') }}</p>
-      <CollectionControls :card="card" :master="master" @change="$emit('change', $event)" />
+      <p v-else class="status">{{ t('collection.missing') }}</p>
     </template>
     <slot />
   </article>
@@ -112,11 +117,19 @@ const owned = computed(() => tracking.value && props.card.owned.length > 0)
   gap: 0 var(--space-2);
 }
 
-/* The price lines up along the bottom of a row, however long the names above it are. */
-.price,
-.no-price {
-  margin-top: auto;
-  padding-top: var(--space-1);
+/* The price and button line up along the bottom of a row, however long the names above them are. */
+.price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+/* The button keeps its place on the right, also when it has wrapped below a long price. */
+.price-row > :last-child:not(:first-child) {
+  margin-left: auto;
 }
 
 .price {
