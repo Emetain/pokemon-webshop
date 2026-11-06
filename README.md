@@ -66,6 +66,8 @@ The card catalog comes from four public APIs that need no key. Their base URLs a
 | Disney Lorcana | [Lorcast](https://lorcast.com) | TCGplayer, USD |
 | One Piece Card Game | [OPTCG API](https://optcgapi.com) | TCGplayer, USD |
 
+The Pokédex comes from [PokéAPI](https://pokeapi.co). The Pokémon sync imports new species first, which takes about 14 minutes the first time and one request after that.
+
 Every sync also fetches the [ECB reference rate](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html). Customers choose EUR or USD in their profile, and card prices are converted for display only. Shop prices stay in EUR.
 
 Customer requests never reach these APIs. A job imports everything into our own database at the time in `CATALOG_SYNC_CRON` (03:00 Dutch time by default, `-` switches it off), and an admin can start a game by hand at `/admin/sync`. The job is off in `dev`, because the in-memory database starts empty anyway.
@@ -83,6 +85,10 @@ UPDATE users SET role = 'ADMIN' WHERE email = '<email>';
 ```
 
 Run one backend per database during a sync: a second instance that starts up marks the running sync as failed.
+
+## Collection value graph
+
+Card prices have no history, so the graph on `/collectie` is drawn from one saved value per customer per day. A job saves these at the time in `COLLECTION_SNAPSHOT_CRON` (07:00 Dutch time by default, `-` switches it off). Keep it after the card sync, so it uses the prices of that night. Saved days can't be filled in afterwards.
 
 ## Profiles
 

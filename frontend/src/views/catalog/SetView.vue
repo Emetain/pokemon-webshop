@@ -7,8 +7,11 @@ import CardGrid from '../../components/catalog/CardGrid.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
 import PageLinks from '../../components/catalog/PageLinks.vue'
+import SetProgressPanel from '../../components/collection/SetProgressPanel.vue'
+import FormMessage from '../../components/FormMessage.vue'
 import { findGame } from '../../data/games'
-import { catalogApi } from '../../services/api'
+import { catalogApi, collectionApi } from '../../services/api'
+import { useSession } from '../../stores/session'
 import { cardCountLabel, filterQuery, pageFromQuery, seriesLabel } from '../../utils/catalog'
 import { formatDate } from '../../utils/format'
 import { t } from '../../utils/i18n'
@@ -22,10 +25,13 @@ const props = defineProps({
   rarity: { type: String, default: '' },
   variant: { type: String, default: '' },
   priced: { type: String, default: '' },
+  collection: { type: String, default: '' },
+  master: { type: String, default: '' },
   page: { type: String, default: '1' },
 })
 
 const router = useRouter()
+const session = useSession()
 
 const detail = ref(null)
 const cards = ref(null)
@@ -33,6 +39,12 @@ const loadingSet = ref(true)
 const loadingCards = ref(true)
 const notFound = ref(false)
 const error = ref('')
+const stats = ref(null)
+const addingPage = ref(false)
+const pageMessage = ref('')
+
+const tracking = computed(() => session.isLoggedIn.value)
+const masterMode = computed(() => props.master === 'true')
 
 const game = computed(() => findGame(props.game))
 const gameLabel = computed(() => (game.value ? t(game.value.labelKey) : ''))
@@ -44,6 +56,7 @@ const filters = computed(() => ({
   rarity: props.rarity,
   variant: props.variant,
   priced: props.priced === 'true',
+  collection: props.collection,
 }))
 
 const hasFilters = computed(() => Object.entries(filters.value).some(([name, value]) => name !== 'sort' && value))
@@ -55,12 +68,22 @@ const breadcrumbs = computed(() => [
 ])
 
 function applyFilters(changes) {
-  router.push({ query: filterQuery({ ...filters.value, ...changes }) })
+  router.push({ query: filterQuery({ ...filters.value, master: masterMode.value, ...changes }) })
 }
 
 function clearFilters() {
-  router.push({ query: filterQuery({ sort: props.sort }) })
+  router.push({ query: filterQuery({ sort: props.sort, master: masterMode.value }) })
 }
+
+function setMode(master) {
+  applyFilters({ master })
+}
+
+const missingLink = computed(() => ({
+  name: 'set-missing',
+  params: { game: props.game, setCode: props.setCode },
+  query: filterQuery({ master: masterMode.value }),
+}))
 
 let latestSetRequest = 0
 let latestCardsRequest = 0
@@ -90,6 +113,7 @@ async function loadCards() {
   try {
     const result = await catalogApi.cards(props.game, props.setCode, {
       ...filters.value,
+      master: masterMode.value || undefined,
       page: currentPage.value - 1,
     })
     if (request === latestCardsRequest) cards.value = result
@@ -103,13 +127,57 @@ async function loadCards() {
   }
 }
 
+let latestStatsRequest = 0
+
+async function loadStats() {
+  if (!tracking.value) return
+  const request = ++latestStatsRequest
+  try {
+    const result = await collectionApi.set(props.game, props.setCode)
+    if (request === latestStatsRequest) stats.value = result
+  } catch {
+    // The cards still work without the numbers above them.
+    if (request === latestStatsRequest) stats.value = null
+  }
+}
+
 function reload() {
   loadSet()
   loadCards()
+  loadStats()
+}
+
+function onCollectionChange(card, change) {
+  card.owned = change.entries
+  stats.value = change.progress
+}
+
+async function addPage() {
+  addingPage.value = true
+  pageMessage.value = ''
+  try {
+    const { added } = await collectionApi.addBulk(cards.value.items.map((card) => card.id))
+    await Promise.all([loadCards(), loadStats()])
+    if (added === 0) pageMessage.value = t('collection.set.addedNothing')
+    else if (added === 1) pageMessage.value = t('collection.set.addedPageOne')
+    else pageMessage.value = t('collection.set.addedPage', { count: added })
+  } catch (exception) {
+    error.value = exception.message
+  } finally {
+    addingPage.value = false
+  }
 }
 
 watch(() => [props.game, props.setCode], loadSet, { immediate: true })
-watch(() => [props.game, props.setCode, filters.value, currentPage.value], loadCards, { immediate: true })
+watch(() => [props.game, props.setCode], loadStats, { immediate: true })
+watch(
+  () => [props.game, props.setCode, filters.value, masterMode.value, currentPage.value],
+  () => {
+    pageMessage.value = ''
+    loadCards()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -145,14 +213,35 @@ watch(() => [props.game, props.setCode, filters.value, currentPage.value], loadC
       </CatalogNotice>
 
       <template v-else>
+        <SetProgressPanel
+          v-if="stats"
+          :stats="stats"
+          :master="masterMode"
+          :set-name="detail?.set.name ?? setCode"
+          :missing-link="missingLink"
+          @mode="setMode"
+        />
         <CardFilters
           :game="props.game"
           :values="filters"
           :options="detail ?? {}"
+          :tracking="tracking"
           @change="applyFilters"
           @clear="clearFilters"
         />
-        <p v-if="cards && !loadingCards" class="count" role="status">{{ cardCountLabel(cards.totalItems) }}</p>
+        <div class="list-head">
+          <p v-if="cards && !loadingCards" class="count" role="status">{{ cardCountLabel(cards.totalItems) }}</p>
+          <button
+            v-if="tracking && cards?.items.length && !loadingCards"
+            class="add-page"
+            type="button"
+            :disabled="addingPage"
+            @click="addPage"
+          >
+            {{ t('collection.set.addPage') }}
+          </button>
+        </div>
+        <FormMessage v-if="pageMessage" type="success" class="page-message">{{ pageMessage }}</FormMessage>
 
         <CardGrid v-if="loadingCards || loadingSet" loading />
 
@@ -171,7 +260,7 @@ watch(() => [props.game, props.setCode, filters.value, currentPage.value], loadC
         />
 
         <template v-else>
-          <CardGrid :cards="cards.items" />
+          <CardGrid :cards="cards.items" :master="masterMode" @change="onCollectionChange" />
           <PageLinks :page="currentPage" :total-pages="cards.totalPages" />
         </template>
       </template>
@@ -220,10 +309,43 @@ watch(() => [props.game, props.setCode, filters.value, currentPage.value], loadC
   padding-block: var(--space-4) 0;
 }
 
+.list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--space-3);
+  min-height: var(--touch-target);
+  margin-block: var(--space-2);
+}
+
 .count {
-  margin-block: var(--space-3);
   color: var(--color-ink-soft);
   font-size: var(--text-sm);
+}
+
+.add-page {
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-link);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.add-page:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.add-page:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.page-message {
+  margin-bottom: var(--space-3);
 }
 
 @media (min-width: 640px) {

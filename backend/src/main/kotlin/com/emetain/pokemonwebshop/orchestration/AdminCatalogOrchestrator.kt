@@ -7,6 +7,7 @@ import com.emetain.pokemonwebshop.exception.ApiException
 import com.emetain.pokemonwebshop.repository.CardPriceRepository
 import com.emetain.pokemonwebshop.repository.CardRepository
 import com.emetain.pokemonwebshop.repository.CardSetRepository
+import com.emetain.pokemonwebshop.repository.PokemonSpeciesRepository
 import com.emetain.pokemonwebshop.repository.SyncRunRepository
 import com.emetain.pokemonwebshop.service.CardSyncService
 import org.springframework.stereotype.Component
@@ -18,6 +19,7 @@ class AdminCatalogOrchestrator(
     private val cardSetRepository: CardSetRepository,
     private val cardRepository: CardRepository,
     private val cardPriceRepository: CardPriceRepository,
+    private val speciesRepository: PokemonSpeciesRepository,
 ) {
 
     fun syncStatus(): List<CatalogSyncStatusDto> =
@@ -27,6 +29,7 @@ class AdminCatalogOrchestrator(
                 setCount = cardSetRepository.countByGame(game),
                 cardCount = cardRepository.countByGame(game),
                 priceCount = cardPriceRepository.countByGame(game),
+                speciesCount = if (game == Game.POKEMON) speciesRepository.count() else null,
                 lastRun = syncRunRepository.findFirstByGameOrderByStartedAtDescIdDesc(game)?.let(SyncRunDto::from),
             )
         }

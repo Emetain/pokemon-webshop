@@ -28,7 +28,7 @@ class UserServiceTest {
     private val repository = mock<UserRepository> {
         on { save(any<User>()) } doAnswer { it.getArgument(0) }
     }
-    private val service = UserService(repository, encoder, MutableClock())
+    private val service = UserService(repository, encoder, TokenService(), MutableClock())
 
     private fun user(password: String = "geheim123") = User(
         email = "ash@example.com",

@@ -1,0 +1,31 @@
+{
+  "id": 122,
+  "name": "mr-mime",
+  "generation": {
+    "name": "generation-i",
+    "url": "https://pokeapi.co/api/v2/generation/1/"
+  },
+  "names": [
+    {
+      "name": "M. Mime",
+      "language": {
+        "name": "fr",
+        "url": "https://pokeapi.co/api/v2/language/5/"
+      }
+    },
+    {
+      "name": "Mr. Mime",
+      "language": {
+        "name": "en",
+        "url": "https://pokeapi.co/api/v2/language/9/"
+      }
+    },
+    {
+      "name": "バリヤード",
+      "language": {
+        "name": "ja",
+        "url": "https://pokeapi.co/api/v2/language/11/"
+      }
+    }
+  ]
+}

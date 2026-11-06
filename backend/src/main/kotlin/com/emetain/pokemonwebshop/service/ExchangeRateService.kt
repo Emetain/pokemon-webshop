@@ -18,6 +18,8 @@ class ExchangeRateService(
 
     private val source = properties.catalog.ecb
 
+    fun current() = ExchangeRates(exchangeRateRepository.findAll().associate { it.currency to it.perEuro })
+
     /** One at a time, because the sync of every game asks for this when it starts. */
     @Synchronized
     fun refresh() {

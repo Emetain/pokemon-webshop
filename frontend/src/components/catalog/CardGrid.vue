@@ -8,7 +8,10 @@ defineProps({
   cards: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
   showSet: { type: Boolean, default: false },
+  master: { type: Boolean, default: false },
 })
+
+defineEmits(['change'])
 </script>
 
 <template>
@@ -17,7 +20,9 @@ defineProps({
   </ul>
   <ul v-else class="grid">
     <li v-for="card in cards" :key="card.id">
-      <CardTile :card="card" :show-set="showSet" />
+      <CardTile :card="card" :show-set="showSet" :master="master" @change="$emit('change', card, $event)">
+        <slot name="actions" :card="card" />
+      </CardTile>
     </li>
   </ul>
 </template>

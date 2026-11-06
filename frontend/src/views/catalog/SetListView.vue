@@ -5,7 +5,8 @@ import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
 import SetTile from '../../components/catalog/SetTile.vue'
 import { findGame } from '../../data/games'
-import { catalogApi } from '../../services/api'
+import { catalogApi, collectionApi } from '../../services/api'
+import { useSession } from '../../stores/session'
 import { seriesLabel } from '../../utils/catalog'
 import { t } from '../../utils/i18n'
 
@@ -13,9 +14,13 @@ const props = defineProps({
   game: { type: String, required: true },
 })
 
+const session = useSession()
+
 const sets = ref([])
 const loading = ref(true)
 const error = ref('')
+// Per set code: how far the customer is. Only sets they have cards of.
+const progress = ref({})
 
 const game = computed(() => findGame(props.game))
 const gameLabel = computed(() => (game.value ? t(game.value.labelKey) : ''))
@@ -53,7 +58,19 @@ async function load() {
   }
 }
 
+async function loadProgress() {
+  progress.value = {}
+  if (!game.value || !session.isLoggedIn.value) return
+  try {
+    const started = await collectionApi.startedSets(props.game)
+    progress.value = Object.fromEntries(started.map((set) => [set.code, set.progress]))
+  } catch {
+    // The list of sets still works without the bars.
+  }
+}
+
 watch(() => props.game, load, { immediate: true })
+watch(() => props.game, loadProgress, { immediate: true })
 </script>
 
 <template>
@@ -101,7 +118,7 @@ watch(() => props.game, load, { immediate: true })
           </div>
           <ul class="sets">
             <li v-for="set in group.sets" :key="set.code">
-              <SetTile :set="set" />
+              <SetTile :set="set" :progress="progress[set.code]" />
             </li>
           </ul>
         </section>

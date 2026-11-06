@@ -56,7 +56,9 @@ services:
       LORCAST_BASE_URL: ${LORCAST_BASE_URL:-https://api.lorcast.com/v0}
       OPTCG_BASE_URL: ${OPTCG_BASE_URL:-https://optcgapi.com/api}
       ECB_BASE_URL: ${ECB_BASE_URL:-https://www.ecb.europa.eu}
+      POKEAPI_BASE_URL: ${POKEAPI_BASE_URL:-https://pokeapi.co/api/v2}
       CATALOG_SYNC_CRON: ${CATALOG_SYNC_CRON:-0 0 3 * * *}
+      COLLECTION_SNAPSHOT_CRON: ${COLLECTION_SNAPSHOT_CRON:-0 0 7 * * *}
     depends_on:
       postgres:
         condition: service_healthy

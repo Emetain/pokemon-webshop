@@ -168,11 +168,13 @@ export const mainNav = [
   },
 ]
 
+const hasRealPage = (to) => ['/kaarten/', '/collectie', '/verlanglijst'].some((path) => to.startsWith(path))
+
 /** Every destination in the menu that has no real page yet, once. The router shows a placeholder for these. */
 export function navDestinations() {
   const destinations = new Map()
   const add = (to, labelKey, game) => {
-    if (!to.startsWith('/kaarten/') && !destinations.has(to)) destinations.set(to, { to, labelKey, game })
+    if (!hasRealPage(to) && !destinations.has(to)) destinations.set(to, { to, labelKey, game })
   }
 
   for (const item of mainNav) {

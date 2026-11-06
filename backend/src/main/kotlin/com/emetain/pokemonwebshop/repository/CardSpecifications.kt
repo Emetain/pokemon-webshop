@@ -2,7 +2,10 @@ package com.emetain.pokemonwebshop.repository
 
 import com.emetain.pokemonwebshop.domain.Card
 import com.emetain.pokemonwebshop.domain.CardSet
+import com.emetain.pokemonwebshop.domain.CardWishlistEntry
+import com.emetain.pokemonwebshop.domain.CollectionEntry
 import com.emetain.pokemonwebshop.domain.Game
+import com.emetain.pokemonwebshop.domain.User
 import org.springframework.data.jpa.domain.Specification
 
 /** The filters on card lists. A filter without a value is left out. */
@@ -38,6 +41,61 @@ object CardSpecifications {
 
     fun withPrice(required: Boolean): Specification<Card>? =
         if (required) Specification { root, _, builder -> builder.isNotNull(root.get<Long>("sortPriceCents")) } else null
+
+    fun withDexNumber(dexNumber: Int) = Specification<Card> { root, _, builder ->
+        builder.equal(root.join<Card, Int>("dexNumbers"), dexNumber)
+    }
+
+    fun ownedBy(userId: Long) = Specification<Card> { root, query, builder ->
+        val entries = requireNotNull(query).subquery(Long::class.javaObjectType)
+        val entry = entries.from(CollectionEntry::class.java)
+        entries.select(entry.get("id")).where(
+            builder.equal(entry.get<User>("user").get<Long>("id"), userId),
+            builder.equal(entry.get<Card>("card"), root),
+        )
+        builder.exists(entries)
+    }
+
+    /** Matches normal set progress: a number counts as owned when any card with that number is. */
+    fun numberMissingFor(userId: Long) = Specification<Card> { root, query, builder ->
+        val entries = requireNotNull(query).subquery(Long::class.javaObjectType)
+        val entry = entries.from(CollectionEntry::class.java)
+        val owned = entry.join<CollectionEntry, Card>("card")
+        entries.select(entry.get("id")).where(
+            builder.equal(entry.get<User>("user").get<Long>("id"), userId),
+            builder.equal(owned.get<CardSet>("set"), root.get<CardSet>("set")),
+            builder.equal(owned.get<String>("number"), root.get<String>("number")),
+        )
+        builder.not(builder.exists(entries))
+    }
+
+    /** Matches master set progress: a card counts as missing until every variant is owned. */
+    fun variantMissingFor(userId: Long) = Specification<Card> { root, query, builder ->
+        val variants = requireNotNull(query).subquery(String::class.java)
+        val card = variants.correlate(root)
+        val variant = card.join<Card, String>("variants")
+
+        val entries = variants.subquery(Long::class.javaObjectType)
+        val entry = entries.from(CollectionEntry::class.java)
+        entries.select(entry.get("id")).where(
+            builder.equal(entry.get<User>("user").get<Long>("id"), userId),
+            builder.equal(entry.get<Card>("card"), root),
+            builder.equal(entry.get<String>("variant"), variant),
+        )
+
+        variants.select(variant).where(builder.not(builder.exists(entries)))
+        builder.exists(variants)
+    }
+
+    fun onWishlistOf(userId: Long) = Specification<Card> { root, query, builder ->
+        val entries = requireNotNull(query).subquery(Long::class.javaObjectType)
+        val entry = entries.from(CardWishlistEntry::class.java)
+        entries.select(entry.get("id")).where(
+            builder.equal(entry.get<User>("user").get<Long>("id"), userId),
+            builder.equal(entry.get<Card>("card"), root),
+        )
+        builder.exists(entries)
+    }
 
     /** [term] is already in `nameSearch` form. */
     fun nameContains(term: String) = Specification<Card> { root, _, builder ->

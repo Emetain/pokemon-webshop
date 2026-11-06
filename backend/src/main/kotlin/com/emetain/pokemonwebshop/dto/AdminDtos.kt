@@ -45,5 +45,7 @@ data class CatalogSyncStatusDto(
     val setCount: Long,
     val cardCount: Long,
     val priceCount: Long,
+    /** Pokémon only: how many slots the Pokédex has. */
+    val speciesCount: Long?,
     val lastRun: SyncRunDto?,
 )

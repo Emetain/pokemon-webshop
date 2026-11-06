@@ -9,6 +9,7 @@ import FilterSelect from '../components/catalog/FilterSelect.vue'
 import PageLinks from '../components/catalog/PageLinks.vue'
 import { GAMES } from '../data/games'
 import { catalogApi } from '../services/api'
+import { useSession } from '../stores/session'
 import { cardCountLabel, filterQuery, pageFromQuery } from '../utils/catalog'
 import { t } from '../utils/i18n'
 
@@ -23,10 +24,12 @@ const props = defineProps({
   rarity: { type: String, default: '' },
   variant: { type: String, default: '' },
   priced: { type: String, default: '' },
+  collection: { type: String, default: '' },
   page: { type: String, default: '1' },
 })
 
 const router = useRouter()
+const session = useSession()
 
 const result = ref(null)
 const loading = ref(false)
@@ -44,6 +47,7 @@ const filters = computed(() => ({
   rarity: props.rarity,
   variant: props.variant,
   priced: props.priced === 'true',
+  collection: props.collection,
 }))
 
 const hasFilters = computed(() => Object.entries(filters.value).some(([name, value]) => name !== 'sort' && value))
@@ -91,6 +95,10 @@ async function search() {
   }
 }
 
+function onCollectionChange(card, change) {
+  card.owned = change.entries
+}
+
 watch(() => [query.value, filters.value, currentPage.value], search, { immediate: true })
 </script>
 
@@ -110,7 +118,8 @@ watch(() => [query.value, filters.value, currentPage.value], search, { immediate
         :game="game"
         :values="filters"
         :options="result ?? {}"
-        searching
+        default-sort="best-match"
+        :tracking="session.isLoggedIn.value"
         @change="applyFilters"
         @clear="clearFilters"
       >
@@ -136,7 +145,7 @@ watch(() => [query.value, filters.value, currentPage.value], search, { immediate
       </CatalogNotice>
 
       <template v-else>
-        <CardGrid :cards="result.results.items" show-set />
+        <CardGrid :cards="result.results.items" show-set @change="onCollectionChange" />
         <PageLinks :page="currentPage" :total-pages="result.results.totalPages" />
       </template>
     </template>

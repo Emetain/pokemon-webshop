@@ -9,8 +9,15 @@ const props = defineProps({
   eager: { type: Boolean, default: false },
 })
 
+const emit = defineEmits(['failed'])
+
 const failed = ref(false)
 const loaded = ref(false)
+
+function onError() {
+  failed.value = true
+  emit('failed')
+}
 
 watch(
   () => props.src,
@@ -35,7 +42,7 @@ watch(
       :loading="eager ? 'eager' : 'lazy'"
       decoding="async"
       @load="loaded = true"
-      @error="failed = true"
+      @error="onError"
     />
     <div v-else class="missing">
       <ImageOff :size="28" aria-hidden="true" />

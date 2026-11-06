@@ -1,10 +1,13 @@
 <script setup>
 import { computed, ref } from 'vue'
+import ProgressBar from '../collection/ProgressBar.vue'
 import { cardCountLabel } from '../../utils/catalog'
 import { formatDate } from '../../utils/format'
 
 const props = defineProps({
   set: { type: Object, required: true },
+  /** How far the customer is with this set, when they have cards of it. */
+  progress: { type: Object, default: null },
 })
 
 const failed = ref(false)
@@ -33,6 +36,7 @@ const isSymbol = computed(() => !props.set.logoUrl)
       <span v-if="set.releaseDate">{{ formatDate(set.releaseDate) }}</span>
       <span>{{ cardCountLabel(set.cardCount) }}</span>
     </span>
+    <ProgressBar v-if="progress" class="progress" :progress="progress" :name="set.name" compact />
   </router-link>
 </template>
 
@@ -112,6 +116,10 @@ const isSymbol = computed(() => !props.set.logoUrl)
   padding-top: var(--space-1);
   color: var(--color-ink-soft);
   font-size: var(--text-xs);
+}
+
+.progress {
+  margin-top: var(--space-2);
 }
 
 @media (min-width: 768px) {

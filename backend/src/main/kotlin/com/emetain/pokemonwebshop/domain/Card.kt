@@ -27,6 +27,7 @@ import jakarta.persistence.UniqueConstraint
         Index(name = "idx_cards_game_category", columnList = "game, category"),
         Index(name = "idx_cards_game_name_search", columnList = "game, name_search"),
         Index(name = "idx_cards_name_search", columnList = "name_search"),
+        Index(name = "idx_cards_sort_price_cents", columnList = "sort_price_cents"),
     ],
 )
 class Card(

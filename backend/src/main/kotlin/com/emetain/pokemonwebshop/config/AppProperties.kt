@@ -10,6 +10,7 @@ data class AppProperties(
     val auth: Auth,
     val rateLimit: RateLimit,
     val catalog: Catalog,
+    val collection: Collection,
 ) {
     data class Mail(
         val from: String,
@@ -36,10 +37,15 @@ data class AppProperties(
         val lorcast: CatalogSource,
         val optcg: CatalogSource,
         val ecb: CatalogSource,
+        val pokeapi: CatalogSource,
     )
 
     data class CatalogSource(
         val baseUrl: String,
         val requestDelay: Duration,
+    )
+
+    data class Collection(
+        val cacheTtl: Duration,
     )
 }

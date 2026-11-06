@@ -65,6 +65,40 @@ export const catalogApi = {
   exchangeRates: () => request('GET', '/catalog/exchange-rates'),
 }
 
+export const collectionApi = {
+  overview: () => request('GET', '/collection'),
+  history: () => request('GET', '/collection/history'),
+  startedSets: (game) => request('GET', `/collection/${game}/sets`),
+  set: (game, code) => request('GET', `/collection/${game}/sets/${encodeURIComponent(code)}`),
+  card: (id) => request('GET', `/collection/cards/${id}`),
+  add: (data) => request('POST', '/collection/entries', data),
+  addBulk: (cardIds) => request('POST', '/collection/entries/bulk', { cardIds }),
+  update: (id, data) => request('PUT', `/collection/entries/${id}`, data),
+  remove: (id) => request('DELETE', `/collection/entries/${id}`),
+  share: () => request('PUT', '/collection/share'),
+  stopSharing: () => request('DELETE', '/collection/share'),
+  shared: (slug) => request('GET', `/shared-collections/${encodeURIComponent(slug)}`),
+}
+
+export const pokedexApi = {
+  all: () => request('GET', '/pokedex'),
+  entry: (dexNumber) => request('GET', `/pokedex/${dexNumber}`),
+  cards: (dexNumber, params) => request('GET', `/pokedex/${dexNumber}/cards${queryString(params)}`),
+}
+
+export const wishlistApi = {
+  cards: (params) => request('GET', `/wishlist/cards${queryString(params)}`),
+  add: (cardId) => request('PUT', `/wishlist/cards/${cardId}`),
+  remove: (cardId) => request('DELETE', `/wishlist/cards/${cardId}`),
+}
+
+export const binderApi = {
+  page: (page) => request('GET', `/binder${queryString({ page })}`),
+  selection: () => request('GET', '/binder/selection'),
+  select: (cardId) => request('PUT', `/binder/selection/${cardId}`),
+  deselect: (cardId) => request('DELETE', `/binder/selection/${cardId}`),
+}
+
 export const adminApi = {
   status: () => request('GET', '/admin/status'),
   syncStatus: () => request('GET', '/admin/catalog/sync'),

@@ -17,6 +17,9 @@ object CardVariants {
     fun displayPrice(prices: List<CardPrice>): CardPrice? =
         prices.filter { it.trendCents != null }.minByOrNull { displayRank(it.variant) }
 
+    /** The variant a card counts as when nobody says which one: the most common finish it has. */
+    fun default(variants: Collection<String>): String = displaySorted(variants).firstOrNull() ?: NORMAL
+
     fun displaySorted(variants: Collection<String>): List<String> = variants.sortedBy(::displayRank)
 
     fun displayRank(variant: String): Int =

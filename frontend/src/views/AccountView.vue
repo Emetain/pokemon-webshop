@@ -3,6 +3,8 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { LogOut, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import AddressForm from '../components/account/AddressForm.vue'
+import BinderSettings from '../components/account/BinderSettings.vue'
+import CollectionShare from '../components/account/CollectionShare.vue'
 import CountrySelect from '../components/account/CountrySelect.vue'
 import CurrencySelect from '../components/account/CurrencySelect.vue'
 import FormField from '../components/FormField.vue'
@@ -183,6 +185,16 @@ onMounted(loadAddresses)
         <FormMessage v-if="currencyStatus.saved" type="success">{{ t('account.currency.saved') }}</FormMessage>
         <CurrencySelect v-model="selectedCurrency" :label="t('account.currency.label')" />
       </div>
+    </section>
+
+    <section id="binder" class="account-section">
+      <h2>{{ t('account.binder.title') }}</h2>
+      <BinderSettings class="section-body" />
+    </section>
+
+    <section class="account-section">
+      <h2>{{ t('account.share.title') }}</h2>
+      <CollectionShare class="section-body" />
     </section>
 
     <section class="account-section">

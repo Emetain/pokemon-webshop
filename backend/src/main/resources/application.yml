@@ -72,3 +72,13 @@ app:
     ecb:
       base-url: ${ECB_BASE_URL:https://www.ecb.europa.eu}
       request-delay: 100ms
+    pokeapi:
+      base-url: ${POKEAPI_BASE_URL:https://pokeapi.co/api/v2}
+      request-delay: 200ms
+  collection:
+    # How long totals of the whole catalog and the most popular cards stay in memory.
+    # They change slowly and are too costly to count on every request.
+    cache-ttl: 10m
+    # When the value of every collection is saved for the graph, in Dutch time. "-" switches it off.
+    # Keep this after the card sync, which takes about an hour and a half.
+    snapshot-cron: ${COLLECTION_SNAPSHOT_CRON:0 0 7 * * *}

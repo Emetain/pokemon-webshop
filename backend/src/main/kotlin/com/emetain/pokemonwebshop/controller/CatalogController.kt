@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.controller
 
+import com.emetain.pokemonwebshop.domain.User
 import com.emetain.pokemonwebshop.dto.CardDetailDto
 import com.emetain.pokemonwebshop.dto.CardListRequest
 import com.emetain.pokemonwebshop.dto.CardPageDto
@@ -8,6 +9,7 @@ import com.emetain.pokemonwebshop.dto.CardSetDetailDto
 import com.emetain.pokemonwebshop.dto.CardSetDto
 import com.emetain.pokemonwebshop.dto.ExchangeRateDto
 import com.emetain.pokemonwebshop.orchestration.CatalogOrchestrator
+import com.emetain.pokemonwebshop.security.CurrentUser
 import org.springdoc.core.annotations.ParameterObject
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -34,7 +36,8 @@ class CatalogController(
         @PathVariable game: String,
         @PathVariable code: String,
         @ParameterObject request: CardListRequest,
-    ): CardPageDto = catalogOrchestrator.cards(game, code, request)
+        @CurrentUser viewer: User?,
+    ): CardPageDto = catalogOrchestrator.cards(game, code, request, viewer)
 
     @GetMapping("/cards/{id}")
     fun card(@PathVariable id: Long): CardDetailDto =
@@ -46,7 +49,8 @@ class CatalogController(
         @RequestParam(required = false) game: String?,
         @RequestParam(required = false) set: String?,
         @ParameterObject request: CardListRequest,
-    ): CardSearchResultDto = catalogOrchestrator.search(q, game, set, request)
+        @CurrentUser viewer: User?,
+    ): CardSearchResultDto = catalogOrchestrator.search(q, game, set, request, viewer)
 
     @GetMapping("/exchange-rates")
     fun exchangeRates(): List<ExchangeRateDto> =

@@ -12,7 +12,10 @@ annotation class RequiresLogin
 @Retention(AnnotationRetention.RUNTIME)
 annotation class AdminOnly
 
-/** Injects the logged-in user. Use on endpoints guarded by [RequiresLogin] or [AdminOnly]. */
+/**
+ * Injects the logged-in user. Use on endpoints guarded by [RequiresLogin] or [AdminOnly]. On a public endpoint,
+ * make the parameter nullable to also get visitors who aren't logged in.
+ */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
 @Parameter(hidden = true)

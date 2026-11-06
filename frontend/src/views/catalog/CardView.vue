@@ -3,10 +3,11 @@ import { computed, ref, watch } from 'vue'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CardImage from '../../components/catalog/CardImage.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
+import CardCollectionPanel from '../../components/collection/CardCollectionPanel.vue'
 import { findGame } from '../../data/games'
 import { catalogApi } from '../../services/api'
 import { useCurrency } from '../../stores/currency'
-import { categoryLabel, colorFilterLabel, colorLabel, variantLabel } from '../../utils/catalog'
+import { categoryLabel, colorFilterLabel, colorLabel, dexLabel, variantLabel } from '../../utils/catalog'
 import { formatDate, formatRate } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
@@ -53,8 +54,6 @@ const conversionNote = computed(() => {
 })
 
 const priceText = (cents, currency) => (cents === null ? t('catalog.noPrice') : formatPrice(cents, currency))
-
-const dexLabel = (number) => `#${String(number).padStart(3, '0')}`
 
 let latestRequest = 0
 
@@ -141,9 +140,19 @@ watch(() => props.cardId, load, { immediate: true })
           </div>
           <div v-if="card.dexNumbers.length" class="fact">
             <dt>{{ t('catalog.card.pokedex') }}</dt>
-            <dd>{{ card.dexNumbers.map(dexLabel).join(', ') }}</dd>
+            <dd class="dex-links">
+              <router-link
+                v-for="number in card.dexNumbers"
+                :key="number"
+                :to="{ name: 'pokedex-entry', params: { dexNumber: number } }"
+              >
+                {{ dexLabel(number) }}
+              </router-link>
+            </dd>
           </div>
         </dl>
+
+        <CardCollectionPanel :card="card" />
 
         <section class="prices">
           <h2>{{ t('catalog.card.prices') }}</h2>
@@ -232,6 +241,12 @@ watch(() => props.cardId, load, { immediate: true })
 .fact dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.dex-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
 }
 
 .prices {

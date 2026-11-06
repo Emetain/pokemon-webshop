@@ -11,6 +11,7 @@ import com.emetain.pokemonwebshop.repository.CardRepository
 import com.emetain.pokemonwebshop.repository.SyncRunRepository
 import com.emetain.pokemonwebshop.service.CardSyncService
 import com.emetain.pokemonwebshop.service.ExchangeRateService
+import com.emetain.pokemonwebshop.service.PokedexImportService
 import com.emetain.pokemonwebshop.service.SyncRunService
 import com.emetain.pokemonwebshop.service.provider.CardDataProvider
 import com.emetain.pokemonwebshop.service.provider.CardDataProviders
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.never
+import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -43,6 +46,9 @@ class CatalogSyncIntegrationTest : IntegrationTest() {
 
     @MockBean
     private lateinit var exchangeRateService: ExchangeRateService
+
+    @MockBean
+    private lateinit var pokedexImportService: PokedexImportService
 
     @Autowired
     private lateinit var cardSyncService: CardSyncService
@@ -168,6 +174,36 @@ class CatalogSyncIntegrationTest : IntegrationTest() {
 
         assertEquals(SyncStatus.COMPLETED, run.status)
         assertEquals(1, run.cardsCreated)
+    }
+
+    @Test
+    fun `only a Pokémon sync refreshes the Pokédex`() {
+        runToEnd()
+
+        verify(pokedexImportService, never()).refresh()
+    }
+
+    @Test
+    fun `a Pokémon sync refreshes the Pokédex, and carries on when PokéAPI is down`() {
+        val cards = mutableListOf<ProviderSet>()
+        val provider = object : CardDataProvider {
+            override val game = Game.POKEMON
+            override fun fetchCatalog(onSet: (ProviderSet) -> Unit) {
+                cards += providerSet()
+            }
+        }
+        whenever(providers.forGame(Game.POKEMON)) doReturn provider
+        whenever(pokedexImportService.refresh()) doThrow IllegalStateException("PokéAPI is down")
+
+        val run = cardSyncService.start(Game.POKEMON)
+
+        verify(pokedexImportService, timeout(5000)).refresh()
+        repeat(500) {
+            if (syncRunRepository.findById(run.id).orElseThrow().status != SyncStatus.RUNNING) return@repeat
+            Thread.sleep(10)
+        }
+        assertEquals(SyncStatus.COMPLETED, syncRunRepository.findById(run.id).orElseThrow().status)
+        assertEquals(1, cards.size)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.emetain.pokemonwebshop.dto
 
 import com.emetain.pokemonwebshop.domain.Address
+import com.emetain.pokemonwebshop.domain.BinderSource
 import com.emetain.pokemonwebshop.domain.Currency
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
@@ -15,6 +16,8 @@ data class UpdateProfileRequest(
     val country: String? = null,
 
     val currency: Currency? = null,
+
+    val binderSource: BinderSource? = null,
 )
 
 data class AddressRequest(

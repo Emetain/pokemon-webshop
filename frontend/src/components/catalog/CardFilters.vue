@@ -13,7 +13,10 @@ const props = defineProps({
   game: { type: String, default: '' },
   values: { type: Object, required: true },
   options: { type: Object, default: () => ({}) },
-  searching: { type: Boolean, default: false },
+  /** The order of the list without a choice: `number`, `best-match` or `price-high`. */
+  defaultSort: { type: String, default: 'number' },
+  /** Shows the owned and missing filter, for customers with a collection. */
+  tracking: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['change', 'clear'])
@@ -23,13 +26,25 @@ const open = ref(false)
 const toOptions = (values, label = (value) => value) =>
   (values ?? []).map((value) => ({ value, label: label(value) }))
 
-const sortOptions = computed(() => [
-  ...(props.searching ? [{ value: 'number', label: t('catalog.sort.number') }] : []),
-  { value: 'name', label: t('catalog.sort.name') },
-  { value: 'name-desc', label: t('catalog.sort.nameDesc') },
-  { value: 'price-high', label: t('catalog.sort.priceHigh') },
-  { value: 'price-low', label: t('catalog.sort.priceLow') },
-])
+const SORT_LABELS = {
+  'best-match': 'catalog.sort.bestMatch',
+  number: 'catalog.sort.number',
+  name: 'catalog.sort.name',
+  'name-desc': 'catalog.sort.nameDesc',
+  'price-high': 'catalog.sort.priceHigh',
+  'price-low': 'catalog.sort.priceLow',
+}
+
+const sortOptions = computed(() =>
+  Object.entries(SORT_LABELS)
+    .filter(([value]) => value !== 'best-match' && value !== props.defaultSort)
+    .map(([value, key]) => ({ value, label: t(key) })),
+)
+
+const collectionOptions = [
+  { value: 'owned', label: t('catalog.filters.collectionOwned') },
+  { value: 'missing', label: t('catalog.filters.collectionMissing') },
+]
 
 const categoryOptions = computed(() => toOptions(props.options.categories, categoryLabel))
 const colorOptions = computed(() => toOptions(props.options.colors, colorLabel))
@@ -52,6 +67,7 @@ const category = filter('category')
 const color = filter('color')
 const rarity = filter('rarity')
 const variant = filter('variant')
+const collection = filter('collection')
 </script>
 
 <template>
@@ -60,7 +76,7 @@ const variant = filter('variant')
       <FilterSelect
         v-model="sort"
         :label="t('catalog.sort.label')"
-        :all-label="searching ? t('catalog.sort.bestMatch') : t('catalog.sort.number')"
+        :all-label="t(SORT_LABELS[defaultSort])"
         :options="sortOptions"
       />
       <button class="toggle" type="button" :aria-expanded="open" @click="open = !open">
@@ -72,6 +88,13 @@ const variant = filter('variant')
 
     <div class="panel" :class="{ open }">
       <slot />
+      <FilterSelect
+        v-if="tracking"
+        v-model="collection"
+        :label="t('catalog.filters.collection')"
+        :all-label="t('catalog.filters.all')"
+        :options="collectionOptions"
+      />
       <FilterSelect
         v-if="categoryOptions.length > 1"
         v-model="category"

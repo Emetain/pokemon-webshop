@@ -18,6 +18,7 @@ class CardSyncService(
     private val catalogImportService: CatalogImportService,
     private val syncRunService: SyncRunService,
     private val exchangeRateService: ExchangeRateService,
+    private val pokedexImportService: PokedexImportService,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -47,6 +48,7 @@ class CardSyncService(
         try {
             log.info("Card sync for {} started", game)
             refreshExchangeRates()
+            if (game == Game.POKEMON) refreshPokedex()
             providers.forGame(game).fetchCatalog { set ->
                 syncRunService.addProgress(runId, catalogImportService.importSet(game, set))
             }
@@ -66,6 +68,15 @@ class CardSyncService(
             exchangeRateService.refresh()
         } catch (exception: Exception) {
             log.warn("Keeping the current exchange rates: {}", exception.message)
+        }
+    }
+
+    /** The Pokédex has nothing to do with the cards of tonight, so this never stops the sync either. */
+    private fun refreshPokedex() {
+        try {
+            pokedexImportService.refresh()
+        } catch (exception: Exception) {
+            log.warn("Keeping the current Pokédex: {}", exception.message)
         }
     }
 

@@ -18,7 +18,7 @@ const withQuery = (...names) => (route) => ({
   ...Object.fromEntries(names.map((name) => [name, [route.query[name]].flat()[0] ?? undefined])),
 })
 
-const CARD_FILTERS = ['sort', 'category', 'color', 'rarity', 'variant', 'priced']
+const CARD_FILTERS = ['sort', 'category', 'color', 'rarity', 'variant', 'priced', 'collection']
 
 // Leaves room for the sticky header above the element.
 const HASH_SCROLL_OFFSET = 160
@@ -63,7 +63,14 @@ const router = createRouter({
           path: 'kaarten/:game/:setCode',
           name: 'set',
           component: () => import('./views/catalog/SetView.vue'),
-          props: withQuery(...CARD_FILTERS, 'page'),
+          props: withQuery(...CARD_FILTERS, 'master', 'page'),
+        },
+        {
+          path: 'kaarten/:game/:setCode/gemist',
+          name: 'set-missing',
+          component: () => import('./views/collection/SetMissingView.vue'),
+          props: withQuery('sort', 'category', 'color', 'rarity', 'variant', 'priced', 'master', 'page'),
+          meta: { requiresLogin: true },
         },
         {
           path: 'kaarten/:game/:setCode/:cardId',
@@ -76,6 +83,36 @@ const router = createRouter({
           name: 'search',
           component: () => import('./views/SearchView.vue'),
           props: withQuery('q', 'game', ...CARD_FILTERS, 'page'),
+        },
+
+        {
+          path: 'collectie',
+          name: 'collection',
+          component: () => import('./views/collection/CollectionView.vue'),
+        },
+        {
+          path: 'collectie/pokedex',
+          name: 'pokedex',
+          component: () => import('./views/collection/PokedexView.vue'),
+          props: withQuery('generatie'),
+        },
+        {
+          path: 'collectie/pokedex/:dexNumber',
+          name: 'pokedex-entry',
+          component: () => import('./views/collection/PokedexEntryView.vue'),
+          props: withQuery(...CARD_FILTERS, 'page'),
+        },
+        {
+          path: 'collectie/gedeeld/:slug',
+          name: 'shared-collection',
+          component: () => import('./views/collection/SharedCollectionView.vue'),
+          props: true,
+        },
+        {
+          path: 'verlanglijst',
+          name: 'wishlist',
+          component: () => import('./views/collection/WishlistView.vue'),
+          props: withQuery('sort', 'priced', 'collection', 'page'),
         },
 
         ...placeholderPages(),

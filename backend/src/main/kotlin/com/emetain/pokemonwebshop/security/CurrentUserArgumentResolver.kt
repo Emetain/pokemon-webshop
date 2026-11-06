@@ -20,6 +20,6 @@ class CurrentUserArgumentResolver : HandlerMethodArgumentResolver {
         mavContainer: ModelAndViewContainer?,
         webRequest: NativeWebRequest,
         binderFactory: WebDataBinderFactory?,
-    ): Any = webRequest.getAttribute(CURRENT_USER_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST)
-        ?: throw ApiException.notAuthenticated()
+    ): Any? = webRequest.getAttribute(CURRENT_USER_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST)
+        ?: if (parameter.isOptional) null else throw ApiException.notAuthenticated()
 }

@@ -102,6 +102,10 @@ onBeforeUnmount(() => {
           <dt>{{ t('admin.sync.prices') }}</dt>
           <dd>{{ formatNumber(game.priceCount) }}</dd>
         </div>
+        <div v-if="game.speciesCount !== null">
+          <dt>{{ t('admin.sync.species') }}</dt>
+          <dd>{{ formatNumber(game.speciesCount) }}</dd>
+        </div>
       </dl>
 
       <h3 class="group">{{ t('admin.sync.lastRun') }}</h3>

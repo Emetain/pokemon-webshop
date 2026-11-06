@@ -15,8 +15,6 @@ import com.emetain.pokemonwebshop.service.provider.ProviderPrice
 import com.emetain.pokemonwebshop.service.provider.ProviderSet
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.math.BigDecimal
-import java.math.RoundingMode
 
 data class ImportResult(
     val created: Int = 0,
@@ -49,10 +47,10 @@ class CatalogImportService(
     @Transactional
     fun importSet(game: Game, source: ProviderSet): ImportResult {
         val set = upsertSet(game, source)
-        val perEuro = exchangeRateRepository.findAll().associate { it.currency to it.perEuro }
+        val rates = ExchangeRates(exchangeRateRepository.findAll().associate { it.currency to it.perEuro })
         return source.cards.distinctBy { it.externalId }
             .chunked(LOOKUP_CHUNK_SIZE)
-            .map { importCards(game, set, it, perEuro) }
+            .map { importCards(game, set, it, rates) }
             .fold(ImportResult(failed = source.failedCards), ImportResult::plus)
     }
 
@@ -75,7 +73,7 @@ class CatalogImportService(
         game: Game,
         set: CardSet,
         sources: List<ProviderCard>,
-        perEuro: Map<Currency, BigDecimal>,
+        rates: ExchangeRates,
     ): ImportResult {
         val existing = cardRepository.findAllByGameAndExternalIdIn(game, sources.map { it.externalId.cut(255) })
             .associateBy { it.externalId }
@@ -96,7 +94,7 @@ class CatalogImportService(
                 card
             }
             pricesStored += syncPrices(saved, pricesByCard[saved.id].orEmpty(), source.prices)
-            saved.sortPriceCents = sortPrice(source.prices, perEuro)
+            saved.sortPriceCents = sortPrice(source.prices, rates)
         }
         return ImportResult(created, updated, unchanged, pricesStored)
     }
@@ -185,11 +183,10 @@ class CatalogImportService(
     }
 
     /** The price lists show, in euro cents. Without a rate a dollar price sorts as is, which is close enough. */
-    private fun sortPrice(prices: List<ProviderPrice>, perEuro: Map<Currency, BigDecimal>): Long? {
+    private fun sortPrice(prices: List<ProviderPrice>, rates: ExchangeRates): Long? {
         val price = prices.filter { it.trendCents != null }.minByOrNull { CardVariants.displayRank(it.variant) }
         val cents = price?.trendCents ?: return null
-        val rate = perEuro[price.currency] ?: return cents
-        return cents.toBigDecimal().divide(rate, 0, RoundingMode.HALF_UP).toLong()
+        return rates.convertCents(cents, price.currency, Currency.EUR) ?: cents
     }
 
     private fun String.cut(length: Int): String = take(length)

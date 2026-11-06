@@ -4,6 +4,7 @@ import com.emetain.pokemonwebshop.domain.Card
 import com.emetain.pokemonwebshop.domain.CardPrice
 import com.emetain.pokemonwebshop.domain.CardSet
 import com.emetain.pokemonwebshop.domain.CardVariants
+import com.emetain.pokemonwebshop.domain.CollectionEntry
 import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.ExchangeRate
 import com.emetain.pokemonwebshop.domain.PriceSource
@@ -43,6 +44,10 @@ data class CardListRequest(
     val category: String? = null,
     val color: String? = null,
     val priced: Boolean = false,
+    /** `owned` or `missing`, for a logged-in customer. Anyone else gets all cards. */
+    val collection: String? = null,
+    /** Whether `missing` means a variant is missing, as in master set progress. */
+    val master: Boolean = false,
     val sort: String? = null,
     val page: Int = 0,
     val size: Int = 60,
@@ -68,9 +73,12 @@ data class CardSummaryDto(
     val imageUrl: String?,
     val trendCents: Long?,
     val currency: Currency?,
+    val variants: List<String>,
+    /** What the logged-in customer owns of this card. Null for a visitor who isn't logged in. */
+    val owned: List<OwnedEntryDto>?,
 ) {
     companion object {
-        fun from(card: Card, prices: List<CardPrice>): CardSummaryDto {
+        fun from(card: Card, prices: List<CardPrice>, owned: List<CollectionEntry>? = null): CardSummaryDto {
             val price = CardVariants.displayPrice(prices)
             return CardSummaryDto(
                 id = card.id,
@@ -83,6 +91,8 @@ data class CardSummaryDto(
                 imageUrl = card.imageSmallUrl,
                 trendCents = price?.trendCents,
                 currency = price?.currency,
+                variants = CardVariants.displaySorted(card.variants),
+                owned = owned?.let(OwnedEntryDto::listOf),
             )
         }
     }
@@ -150,8 +160,16 @@ data class CardPageDto(
     val totalPages: Int,
 ) {
     companion object {
-        fun from(cards: Page<Card>, pricesByCard: Map<Long, List<CardPrice>>) = CardPageDto(
-            items = cards.content.map { CardSummaryDto.from(it, pricesByCard[it.id].orEmpty()) },
+        /** [ownedByCard] is null for a visitor who isn't logged in. */
+        fun from(
+            cards: Page<Card>,
+            pricesByCard: Map<Long, List<CardPrice>>,
+            ownedByCard: Map<Long, List<CollectionEntry>>? = null,
+        ) = CardPageDto(
+            items = cards.content.map { card ->
+                val owned = ownedByCard?.let { it[card.id].orEmpty() }
+                CardSummaryDto.from(card, pricesByCard[card.id].orEmpty(), owned)
+            },
             page = cards.number,
             size = cards.size,
             totalItems = cards.totalElements,

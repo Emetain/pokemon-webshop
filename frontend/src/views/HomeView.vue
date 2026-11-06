@@ -15,8 +15,8 @@ const session = useSession()
         <h1 class="hero-title">{{ t('home.title') }}</h1>
         <p class="hero-intro">{{ t('home.intro') }}</p>
         <div class="hero-actions">
-          <router-link v-if="session.isLoggedIn.value" class="btn btn-on-brand" to="/account">
-            {{ t('home.toAccount') }}
+          <router-link v-if="session.isLoggedIn.value" class="btn btn-on-brand" to="/collectie">
+            {{ t('home.toCollection') }}
           </router-link>
           <router-link v-else class="btn btn-on-brand" to="/registreren">
             {{ t('home.createAccount') }}

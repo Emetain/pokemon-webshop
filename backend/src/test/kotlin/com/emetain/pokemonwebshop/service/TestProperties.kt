@@ -14,6 +14,7 @@ fun testProperties(maxAttempts: Int = 3, window: Duration = Duration.ofMinutes(1
     ),
     rateLimit = AppProperties.RateLimit(maxAttempts = maxAttempts, window = window),
     catalog = testCatalogProperties(),
+    collection = AppProperties.Collection(cacheTtl = Duration.ofMinutes(10)),
 )
 
 fun testCatalogProperties(baseUrl: String = "http://localhost") = AppProperties.Catalog(
@@ -25,4 +26,5 @@ fun testCatalogProperties(baseUrl: String = "http://localhost") = AppProperties.
     lorcast = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
     optcg = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
     ecb = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
+    pokeapi = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
 )

@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.dto
 
+import com.emetain.pokemonwebshop.domain.BinderSource
 import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.domain.User
@@ -51,6 +52,9 @@ data class UserDto(
     val role: Role,
     val country: String,
     val currency: Currency,
+    val binderSource: BinderSource,
+    /** The random part of the public link to the collection. Null means the collection is private. */
+    val collectionShareSlug: String?,
     val createdAt: Instant,
 ) {
     companion object {
@@ -61,6 +65,8 @@ data class UserDto(
             role = user.role,
             country = user.country,
             currency = user.currency,
+            binderSource = user.binderSource ?: BinderSource.DEFAULT,
+            collectionShareSlug = user.collectionShareSlug,
             createdAt = user.createdAt,
         )
     }

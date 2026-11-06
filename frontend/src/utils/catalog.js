@@ -22,6 +22,8 @@ export function cardCountLabel(count) {
   return count === 1 ? t('catalog.oneCard') : t('catalog.cardCount', { count: formatNumber(count) })
 }
 
+export const dexLabel = (number) => `#${String(number).padStart(3, '0')}`
+
 /** The URL query for a list of cards. Empty values stay out, and leaving out the page starts at page 1. */
 export function filterQuery(values) {
   return Object.fromEntries(

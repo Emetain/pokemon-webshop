@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.service
 
+import com.emetain.pokemonwebshop.domain.BinderSource
 import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.domain.SUPPORTED_COUNTRIES
@@ -17,6 +18,7 @@ import java.util.UUID
 class UserService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    private val tokenService: TokenService,
     private val clock: Clock,
 ) {
 
@@ -55,7 +57,13 @@ class UserService(
     fun findByEmail(email: String): User? = userRepository.findByEmail(normalizeEmail(email))
 
     @Transactional
-    fun updateProfile(userId: Long, displayName: String?, country: String?, currency: Currency? = null): User {
+    fun updateProfile(
+        userId: Long,
+        displayName: String?,
+        country: String?,
+        currency: Currency? = null,
+        binderSource: BinderSource? = null,
+    ): User {
         val user = userRepository.findById(userId).orElseThrow { ApiException.notAuthenticated() }
         displayName?.let { user.displayName = it.trim() }
         country?.let {
@@ -63,8 +71,28 @@ class UserService(
             user.country = it
         }
         currency?.let { user.currency = it }
+        binderSource?.let { user.binderSource = it }
         return user
     }
+
+    /** Keeps the link of a collection that is already public, because it may have been shared. */
+    @Transactional
+    fun shareCollection(userId: Long): User {
+        val user = userRepository.findById(userId).orElseThrow { ApiException.notAuthenticated() }
+        user.collectionShareSlug = user.collectionShareSlug ?: tokenService.generate()
+        return user
+    }
+
+    /** The old link stops working for good: sharing again gives a new one. */
+    @Transactional
+    fun stopSharingCollection(userId: Long): User {
+        val user = userRepository.findById(userId).orElseThrow { ApiException.notAuthenticated() }
+        user.collectionShareSlug = null
+        return user
+    }
+
+    @Transactional(readOnly = true)
+    fun findBySharedCollection(slug: String): User? = userRepository.findByCollectionShareSlug(slug)
 
     @Transactional
     fun changePassword(userId: Long, password: String) {

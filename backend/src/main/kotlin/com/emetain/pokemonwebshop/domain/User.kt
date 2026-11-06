@@ -8,10 +8,14 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import java.time.Instant
 
 @Entity
-@Table(name = "users")
+@Table(
+    name = "users",
+    uniqueConstraints = [UniqueConstraint(name = "uk_users_collection_share_slug", columnNames = ["collection_share_slug"])],
+)
 class User(
     @Column(nullable = false, unique = true, length = 254)
     var email: String,
@@ -33,6 +37,15 @@ class User(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 3)
     var currency: Currency = Currency.EUR,
+
+    /** What the binder on the home page shows. Null until the customer chooses, see [BinderSource.DEFAULT]. */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    var binderSource: BinderSource? = null,
+
+    /** The random part of the public link to this collection. Null means the collection is private. */
+    @Column(length = 64)
+    var collectionShareSlug: String? = null,
 
     @Column(nullable = false, updatable = false)
     val createdAt: Instant,

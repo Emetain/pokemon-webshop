@@ -1,5 +1,5 @@
 import { computed, reactive } from 'vue'
-import { accountApi, authApi } from '../services/api'
+import { accountApi, authApi, collectionApi } from '../services/api'
 
 const state = reactive({
   user: null,
@@ -45,6 +45,14 @@ async function updateProfile(changes) {
   state.user = await accountApi.update(changes)
 }
 
+async function shareCollection() {
+  state.user = await collectionApi.share()
+}
+
+async function stopSharingCollection() {
+  state.user = await collectionApi.stopSharing()
+}
+
 export function useSession() {
   return {
     state,
@@ -55,5 +63,7 @@ export function useSession() {
     register,
     logout,
     updateProfile,
+    shareCollection,
+    stopSharingCollection,
   }
 }

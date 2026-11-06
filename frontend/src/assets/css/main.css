@@ -90,6 +90,10 @@
   --control-height: 3rem;
   --touch-target: 2.75rem;
   --header-layer: 30;
+
+  /* The frame around an owned card: a line and the white gap between that line and the image. */
+  --frame-width: 2.5px;
+  --frame-gap: 3px;
 }
 
 [data-game='pokemon'] {
