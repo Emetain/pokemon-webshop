@@ -63,6 +63,39 @@ app:
     cardmarket:
       base-url: ${CARDMARKET_PRODUCTS_BASE_URL:https://downloads.s3.cardmarket.com}
       request-delay: 100ms
+    # Sets released before this date are out of print: the shop leaves them out unless a product of theirs is in
+    # stock, and the import skips them. No publisher announces when a set goes out of print, so this is the oldest
+    # set still legal in the game's rotating format, which is when shops report a set running out. Checked on
+    # 2026-11-08. Move a date when a format rotates and restart the backend.
+    in-print-from:
+      # Temporal Forces, the first set with regulation mark H. G (Scarlet & Violet up to Paldean Fates) left
+      # Standard in April 2026, and shops report those sets out of print. Next rotation: spring 2027.
+      POKEMON: 2024-03-22
+      # Wilds of Eldraine, the oldest set in Standard. The rotation of February 2027 moves this to Aetherdrift
+      # (2025-02-14), but keep Foundations (2024-11-15): Wizards keeps it in Standard until 2029.
+      MTG: 2023-09-08
+      # Fabled, set 9. Sets 1 to 8 are out of Core.
+      LORCANA: 2025-08-29
+      # Awakening of the New Era (OP-05), the first set of block 2. Block 1 (OP-01 to OP-04, ST-01 to ST-10) left
+      # Standard in April 2026.
+      ONE_PIECE: 2023-12-08
+    # The most popular sets per game, most popular first, by set code. "Populair" puts these first and then the
+    # newest sets. Until phase 5 has orders this is the best measure there is. Checked on 2026-11-08:
+    # Pokémon on sealed prices against the shop price (rarepulltcg.com, August 2026), the rest on TCGplayer's sales.
+    popular-sets:
+      # 30th Celebration (pre-orders at three times the shop price), Ascended Heroes, Prismatic Evolutions, Black
+      # Bolt, White Flare, Phantasmal Flames, Destined Rivals, Mega Evolution, Journey Together, Surging Sparks,
+      # Chaos Rising, Pitch Black, Perfect Order.
+      POKEMON: [30th, 30th-c, me02.5, sv08.5, sv10.5b, sv10.5w, me02, sv10, me01, sv09, sv08, me04, me05, me03]
+      # TCGplayer, 17 August to 16 September 2026: The Hobbit, Secret Lair, Reality Fracture, The Hobbit Eternal,
+      # Final Fantasy, The Lord of the Rings, Marvel Super Heroes and its Commander decks, Modern Horizons 3,
+      # Final Fantasy Commander.
+      MTG: [hob, sld, fra, hoc, fin, ltr, msh, msc, mh3, fic]
+      # TCGplayer's best sellers of 2026 so far: Wilds Unknown, Winterspell, Attack of the Vine!
+      LORCANA: ["12", "11", "13"]
+      # TCGplayer, second and third quarter of 2026: The World's Strongest Warriors, Adventure on Kami's Island,
+      # The Time of Battle, then The Azure Sea's Seven and Carrying On His Will.
+      ONE_PIECE: [OP-17, OP15-EB04, OP-16, OP14-EB04, OP-13]
   catalog:
     # Fills the Pokédex right after startup instead of at the next Pokémon sync.
     import-pokedex-on-start: true

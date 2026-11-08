@@ -65,6 +65,7 @@ class ProductOrchestrator(
         val term = request.q.filterValue()?.let(CatalogText::nameSearch)?.takeIf { it.length >= MIN_SEARCH_LENGTH }
         val filters = listOfNotNull(
             ProductSpecifications.withStatus(ProductStatus.ACTIVE),
+            ProductSpecifications.listedInShop(),
             ProductSpecifications.ofGame(game),
             ProductSpecifications.ofType(enumFilter<ProductType>(request.type, "Dit soort product kennen we niet.")),
             ProductSpecifications.ofAccessoryType(enumFilter<AccessoryType>(request.accessory, "Dit soort accessoire kennen we niet.")),
@@ -88,13 +89,25 @@ class ProductOrchestrator(
         viewer,
     )
 
-    /** Until there are orders, popular means wanted: on wishlists or waiting for stock. Then the newest. */
+    /**
+     * Until there are orders: the most popular sets first, then what customers here want most. One product per set,
+     * the first in the popular order, so the row shows several sets instead of everything of the most popular one.
+     */
     @Transactional(readOnly = true)
-    fun bestsellers(limit: Int, viewer: User?): List<ProductSummaryDto> = highlights(
-        listOf(ProductSpecifications.sortedBy(ProductSort.POPULAR)),
-        limit,
-        viewer,
-    )
+    fun bestsellers(limit: Int, viewer: User?): List<ProductSummaryDto> {
+        val count = limit.coerceIn(1, MAX_HIGHLIGHTS)
+        val filters = listOf(
+            ProductSpecifications.withStatus(ProductStatus.ACTIVE)!!,
+            ProductSpecifications.listedInShop(),
+            ProductSpecifications.sortedBy(ProductSort.POPULAR),
+        )
+        val candidates = productRepository.findAll(Specification.allOf(filters), PageRequest.of(0, count * BESTSELLER_SCAN)).content
+        val onePerSet = candidates.distinctBy { it.cardSet?.id ?: -it.id }
+        // When a few sets have lots of products, the rest of the row comes from those sets.
+        val products = (onePerSet + (candidates - onePerSet.toSet())).take(count)
+        val wished = viewer?.let { wishlistService.wished(it.id, products.map(Product::id)) }
+        return products.map { ProductSummaryDto.from(it, wished?.contains(it.id)) }
+    }
 
     @Transactional(readOnly = true)
     fun detail(slug: String, viewer: User?): ProductDetailDto {
@@ -140,14 +153,16 @@ class ProductOrchestrator(
         val sort = ProductSpecifications.sortedBy(ProductSort.FEATURED)
         val notThis = Specification<Product> { root, _, builder -> builder.notEqual(root.get<Long>("id"), product.id) }
         val active = ProductSpecifications.withStatus(ProductStatus.ACTIVE)!!
+        val listed = ProductSpecifications.listedInShop()
         val sameSet = product.cardSet?.let { set ->
-            page(listOf(active, notThis, ProductSpecifications.inSets(listOf(set.id))!!, sort), 0, RELATED).content
+            page(listOf(active, listed, notThis, ProductSpecifications.inSets(listOf(set.id))!!, sort), 0, RELATED).content
         }.orEmpty()
         if (sameSet.size >= RELATED) return sameSet
         val alreadyIn = sameSet.map(Product::id).toSet() + product.id
         val sameKind = page(
             listOfNotNull(
                 active,
+                listed,
                 notThis,
                 ProductSpecifications.ofGame(product.game),
                 ProductSpecifications.ofType(product.type),
@@ -160,7 +175,8 @@ class ProductOrchestrator(
     }
 
     private fun highlights(filters: List<Specification<Product>>, limit: Int, viewer: User?): List<ProductSummaryDto> {
-        val products = page(listOf(ProductSpecifications.withStatus(ProductStatus.ACTIVE)!!) + filters, 0, limit.coerceIn(1, MAX_HIGHLIGHTS))
+        val shown = listOf(ProductSpecifications.withStatus(ProductStatus.ACTIVE)!!, ProductSpecifications.listedInShop())
+        val products = page(shown + filters, 0, limit.coerceIn(1, MAX_HIGHLIGHTS))
         return pageDto(products, viewer).items
     }
 
@@ -176,6 +192,9 @@ class ProductOrchestrator(
     private companion object {
         const val MAX_PAGE_SIZE = 96
         const val MAX_HIGHLIGHTS = 24
+
+        /** Products read per place in the bestseller row: enough for a set with a few dozen products. */
+        const val BESTSELLER_SCAN = 30
         const val RELATED = 8
         const val MIN_SEARCH_LENGTH = 2
     }

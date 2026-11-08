@@ -6,6 +6,7 @@ import com.emetain.pokemonwebshop.domain.PriceSource
 import com.fasterxml.jackson.databind.JsonNode
 import org.junit.jupiter.api.Test
 import java.time.Instant
+import java.time.LocalDate
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -224,10 +225,13 @@ class OptcgMapperTest {
     }
 
     @Test
-    fun `sets have no release date, logo or symbol`() {
-        val set = OptcgMapper.sets(lists()).code("OP-01")
+    fun `sets get the English release date from Bandai's list, and have no logo or symbol`() {
+        val sets = OptcgMapper.sets(lists(setCards = listOf(row("OP-99", "OP99-1"))))
+        val set = sets.code("OP-01")
 
-        assertNull(set.releaseDate)
+        assertEquals(LocalDate.of(2022, 12, 2), set.releaseDate)
+        assertEquals(LocalDate.of(2022, 12, 2), sets.code("ST-01").releaseDate)
+        assertNull(sets.code("OP-99").releaseDate)
         assertNull(set.logoUrl)
         assertNull(set.symbolUrl)
     }

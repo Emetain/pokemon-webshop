@@ -25,3 +25,12 @@ app:
     # Tests import cards and look at the result right away.
     cache-ttl: 0s
     snapshot-cron: "-"
+  shop:
+    # Test sets come out in 2024 by default. A test that needs a set out of print gives it an older date.
+    in-print-from:
+      POKEMON: 2000-01-01
+      MTG: 2000-01-01
+      LORCANA: 2000-01-01
+      ONE_PIECE: 2000-01-01
+    popular-sets:
+      POKEMON: [popular-a, popular-b]

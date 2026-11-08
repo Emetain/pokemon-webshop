@@ -16,6 +16,7 @@ import com.emetain.pokemonwebshop.domain.User
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.Expression
 import jakarta.persistence.criteria.Join
+import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
 import org.springframework.data.jpa.domain.Specification
@@ -91,6 +92,15 @@ object ProductSpecifications {
         }
     }
 
+    /**
+     * What customers see in lists. A product of a set that is out of print only shows while it can be bought: the
+     * shop can't get those sets any more, but an old box or a single it does have is for sale.
+     */
+    fun listedInShop() = Specification<Product> { root, _, builder ->
+        val set = cardSet(root)
+        builder.or(builder.isNull(set.get<Long>("id")), builder.isTrue(set.get("inPrint")), buyable(root, builder))
+    }
+
     fun withoutPrice() = Specification<Product> { root, _, builder -> builder.isNull(root.get<Long>("priceCents")) }
 
     fun soldOut() = Specification<Product> { root, _, builder -> builder.lessThanOrEqualTo(available(root, builder), 0) }
@@ -135,22 +145,33 @@ object ProductSpecifications {
                 builder.desc(arrived),
             )
             val newest = builder.desc(root.get<Instant>("createdAt"))
+            val set = cardSet(root)
+            // A product's own date goes first: a pre-order can have one before its set is in the catalog.
+            val release = builder.coalesce(root.get<LocalDate>("releaseDate"), set.get<LocalDate>("releaseDate"))
+            // Newest set first, and the products of one set together, the big boxes first.
+            val newestSetFirst = listOf(
+                builder.asc(builder.selectCase<Int>().`when`(builder.isNull(release), 1).otherwise(0)),
+                builder.desc(release),
+                builder.desc(builder.coalesce(set.get<Int>("sortOrder"), NO_SORT_ORDER)),
+            )
+            val biggestFirst = builder.asc(typeRank(root, builder))
+            val mostPopularSetFirst = builder.asc(builder.coalesce(set.get<Int>("popularRank"), NOT_POPULAR))
             val price = shownPrice(root, builder)
             val order = when (sort) {
-                ProductSort.FEATURED -> listOf(buyableFirst) + newestArrivalFirst + newest
-                ProductSort.NEWEST -> listOf(newest)
+                ProductSort.FEATURED -> listOf(buyableFirst) + newestArrivalFirst + newestSetFirst + biggestFirst + newest
+                ProductSort.NEWEST -> newestSetFirst + biggestFirst + newest
                 ProductSort.ARRIVED -> newestArrivalFirst + newest
                 ProductSort.PRICE_LOWEST -> listOf(withoutPriceLast, builder.asc(price), buyableFirst)
                 ProductSort.PRICE_HIGHEST -> listOf(withoutPriceLast, builder.desc(price), buyableFirst)
                 ProductSort.NAME -> listOf(builder.asc(root.get<String>("nameSearch")))
-                ProductSort.POPULAR -> listOf(builder.desc(demand(root, query, builder)), buyableFirst, newest)
-                ProductSort.RELEASE -> {
-                    val release = root.get<LocalDate>("releaseDate")
-                    listOf(
-                        builder.asc(builder.selectCase<Int>().`when`(builder.isNull(release), 1).otherwise(0)),
-                        builder.asc(release),
-                    )
-                }
+                // The most popular sets in the market first, then within a set what customers here want most.
+                ProductSort.POPULAR -> listOf(mostPopularSetFirst) + newestSetFirst +
+                    listOf(builder.desc(demand(root, query, builder)), buyableFirst, biggestFirst, newest)
+                ProductSort.RELEASE -> listOf(
+                    builder.asc(builder.selectCase<Int>().`when`(builder.isNull(release), 1).otherwise(0)),
+                    builder.asc(release),
+                    biggestFirst,
+                )
             }
             query.orderBy(order + builder.asc(root.get<Long>("id")))
         }
@@ -161,6 +182,19 @@ object ProductSpecifications {
         @Suppress("UNCHECKED_CAST")
         val existing = root.joins.firstOrNull { it.attribute.name == "stock" } as Join<Product, ProductStock>?
         return existing ?: root.join("stock")
+    }
+
+    private fun cardSet(root: Root<Product>): Join<Product, CardSet> {
+        @Suppress("UNCHECKED_CAST")
+        val existing = root.joins.firstOrNull { it.attribute.name == "cardSet" } as Join<Product, CardSet>?
+        return existing ?: root.join("cardSet", JoinType.LEFT)
+    }
+
+    /** The order of [ProductType]: booster boxes first, accessories last. */
+    private fun typeRank(root: Root<Product>, builder: CriteriaBuilder): Expression<Int> {
+        val rank = builder.selectCase<ProductType, Int>(root.get("type"))
+        ProductType.entries.forEach { rank.`when`(it, it.ordinal) }
+        return rank.otherwise(ProductType.entries.size)
     }
 
     private fun available(root: Root<Product>, builder: CriteriaBuilder): Expression<Int> {
@@ -194,18 +228,27 @@ object ProductSpecifications {
         alerts.select(builder.count(alert)).where(builder.equal(alert.get<Product>("product"), root))
         return builder.sum(wishes, alerts)
     }
+
+    private const val NO_SORT_ORDER = -1
+    private const val NOT_POPULAR = Int.MAX_VALUE
 }
 
 /** How a list of products can be sorted. [param] is the value in the URL. */
 enum class ProductSort(val param: String?) {
-    /** In stock first, then what came in most recently. */
+    /** In stock first, then what came in most recently, then the newest sets. */
     FEATURED(null),
+
+    /** By release date: the product's own, or else its set's. */
     NEWEST("new"),
     ARRIVED("arrived"),
     PRICE_LOWEST("price-low"),
     PRICE_HIGHEST("price-high"),
     NAME("name"),
+
+    /** The sets on `app.shop.popular-sets` first, then the newest sets. */
     POPULAR("popular"),
+
+    /** Soonest first, for pre-orders. */
     RELEASE("release"),
     ;
 

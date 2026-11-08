@@ -109,6 +109,14 @@ class ProductImportIntegrationTest : ShopTestSupport() {
     }
 
     @Test
+    fun `products of a set out of print stay out`() {
+        importSet(releaseDate = LocalDate.of(1999, 1, 9))
+        val result = productImport.apply(Game.POKEMON, listOf(listed(1, "$word Sparks Booster Box")))
+        assertEquals(0, result.created)
+        assertEquals(1, result.skippedOutOfPrint)
+    }
+
+    @Test
     fun `products of an expansion without a set in the catalog stay out`() {
         val result = productImport.apply(Game.POKEMON, listOf(listed(1, "$word Unknown Booster Box")))
         assertEquals(0, result.created)

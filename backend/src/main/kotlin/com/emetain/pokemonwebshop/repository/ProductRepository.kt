@@ -25,6 +25,10 @@ data class ProductFacetRow(
 
 data class SetProductCount(val setId: Long, val count: Long)
 
+/** The same rule as [ProductSpecifications.listedInShop], for a product `p` with its set `s`. */
+private const val LISTED =
+    "(s is null or s.inPrint = true or (p.priceCents is not null and p.stock.onHand - p.stock.reserved > 0))"
+
 interface ProductRepository : JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
 
     @EntityGraph(attributePaths = ["stock", "cardSet", "card"])
@@ -61,21 +65,22 @@ interface ProductRepository : JpaRepository<Product, Long>, JpaSpecificationExec
 
     @Query(
         "select distinct new com.emetain.pokemonwebshop.repository.ProductFacetRow(p.type, p.accessoryType, p.language, s.id) " +
-            "from Product p left join p.cardSet s where p.status = :status and p.game = :game",
+            "from Product p left join p.cardSet s where p.status = :status and p.game = :game and $LISTED",
     )
     fun findFacetsOfGame(game: Game, status: ProductStatus = ProductStatus.ACTIVE): List<ProductFacetRow>
 
     @Query(
         "select distinct new com.emetain.pokemonwebshop.repository.ProductFacetRow(p.type, p.accessoryType, p.language, s.id) " +
-            "from Product p left join p.cardSet s where p.status = :status",
+            "from Product p left join p.cardSet s where p.status = :status and $LISTED",
     )
     fun findFacets(status: ProductStatus = ProductStatus.ACTIVE): List<ProductFacetRow>
 
+    /** Only what customers see in lists. */
     @Query(
-        "select new com.emetain.pokemonwebshop.repository.SetProductCount(p.cardSet.id, count(p)) " +
-            "from Product p where p.status = :status and p.game = :game and p.cardSet is not null group by p.cardSet.id",
+        "select new com.emetain.pokemonwebshop.repository.SetProductCount(s.id, count(p)) " +
+            "from Product p join p.cardSet s where p.status = :status and p.game = :game and $LISTED group by s.id",
     )
-    fun countPerSet(game: Game, status: ProductStatus = ProductStatus.ACTIVE): List<SetProductCount>
+    fun countListedPerSet(game: Game, status: ProductStatus = ProductStatus.ACTIVE): List<SetProductCount>
 
     @Query(
         "select p.type from Product p where p.cardSet.id = :setId and p.language = :language " +

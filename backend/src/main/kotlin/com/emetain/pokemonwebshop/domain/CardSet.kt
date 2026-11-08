@@ -10,6 +10,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Index
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import org.hibernate.annotations.ColumnDefault
 import java.time.LocalDate
 
 @Entity
@@ -57,6 +58,18 @@ class CardSet(
     /** Orders sets without a release date. A higher number is newer. */
     @Column(nullable = false)
     var sortOrder: Int = 0,
+
+    /**
+     * Whether the set is still printed, from `app.shop.in-print-from`. The shop hides products of a set that is out
+     * of print, unless they can be bought. Set by [com.emetain.pokemonwebshop.service.ShopSetRules], never by hand.
+     */
+    @Column(nullable = false)
+    @ColumnDefault("true")
+    var inPrint: Boolean = true,
+
+    /** The place on `app.shop.popular-sets`: 0 is the most popular. Empty for a set that isn't on the list. */
+    @Column
+    var popularRank: Int? = null,
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

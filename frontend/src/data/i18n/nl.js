@@ -303,7 +303,6 @@ export default {
     productCount: '{count} producten',
     oneProduct: '1 product',
     inclVat: 'incl. btw',
-    noPrice: 'Prijs volgt',
     was: 'Oude prijs:',
     discount: '−{percent}%',
     addToCart: 'In winkelwagen',
@@ -933,7 +932,8 @@ export default {
       running: 'Bezig met importeren',
       result: 'Klaar: {created} nieuw, {updated} bijgewerkt, {unchanged} ongewijzigd.',
       resultKept: '{count} producten die je zelf wijzigde, bleven ongemoeid.',
-      resultSkipped: 'Overgeslagen: {type} geen productsoort van de shop, {market} niet voor Europa, {noSet} zonder set in de catalogus.',
+      resultSkipped:
+        'Overgeslagen: {type} geen productsoort van de shop, {market} niet voor Europa, {noSet} zonder set in de catalogus, {outOfPrint} uit een set die niet meer gedrukt wordt.',
       setTitle: 'Producten van één set',
       setIntro: 'Maakt de gebruikelijke producten van een set in één keer aan, zonder prijs en zonder voorraad. Wat de set al heeft, slaat hij over.',
       set: 'Set',

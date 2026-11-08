@@ -53,6 +53,9 @@ These decisions came up while building and apply to every later phase. The phase
 - **Card tiles:** logged-in customers get a + next to the price. It turns into `- count +` in the same element.
 - **Admin images:** the owner can replace the picture of a card or set at `/admin/afbeeldingen`, and browse all cards without a picture there, by game and set, sorted by set, name or Pokédex number, 25, 50 or 100 per page from a dropdown. Uploads sit next to the source's images and a sync leaves them alone. `MediaStorage` handles the files.
 - **Every product in the shop:** the owner wants all products that exist to be in the shop, shown as "Uitverkocht" while there's no stock. See phase 4.
+- **Except sets out of print:** the owner can't get those, so their products only show while they are in stock, and their sets stay out of the navigation. A set is in print while it's legal in its game's rotating format, set per game in `app.shop.in-print-from`.
+- **No price while a product can't be bought:** no "Prijs volgt" and no old price, only the "Uitverkocht" badge.
+- **Product lists go by set:** "Nieuwste" and the default order put the newest set first, by release date, with the products of a set together. "Populair" puts the most popular sets of the moment first, from `app.shop.popular-sets`, until orders can decide.
 - **Hero carousel:** the hero on the home page is a carousel, the owner's idea. The hero with the binder stays the first slide, and admins add, edit, reorder, switch off and remove the other slides: promotions, upcoming set releases and other news. Phase 6 adds a slide for upcoming and live drops by itself, and phase 7 lets the admin have a slide written by AI from a prompt.
 - **Value graph:** added at the owner's request, inspired by the portfolio graph in the Collectr app. Card prices have no history, so one value per customer per day is saved. It only starts when a customer starts, and can't be filled in afterwards.
 - **Viewer on public endpoints:** a nullable `@CurrentUser` parameter gives the logged-in user when there is one. Card lists then include what the viewer owns.
@@ -163,13 +166,13 @@ Backend:
 - Accessory sub-types: sleeves, toploaders, binders, deck boxes, playmats, display cases, storage boxes.
 - Stock: quantity on hand, quantity reserved, and a `StockMovement` log (product, change, reason: `PURCHASE`, `SALE`, `RETURN`, `CORRECTION`, `DROP_ALLOCATION`, `RESERVATION`, `RELEASE`, note, admin user, time). Stock only changes through a `StockService` that always writes a movement. Use optimistic locking so two people can't buy the last item.
 - Low-stock threshold per product.
-- Every product can be in the shop without stock. An active product with no stock stays in lists and on its own page, with "Uitverkocht", a disabled cart button and "mail me when back in stock". Products in stock come first in the default order, and the in-stock filter hides the rest.
+- Every product can be in the shop without stock. An active product with no stock stays in lists and on its own page, with "Uitverkocht", no price, a disabled cart button and "mail me when back in stock". Products in stock come first in the default order, and the in-stock filter hides the rest. Products of a set that is out of print only show while they are in stock.
 - Product list import, so the shop shows every sealed product from the start, as "Uitverkocht" until there is stock: name, type, set, language and release date. An import never changes stock or a product the admin edited, and leaves out what isn't sold in Europe, such as Pokémon Center exclusives. Read the terms first. Sources checked on 2026-11-08:
   - Cardmarket's public product list (`downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_6.json` for Pokémon): 5,109 products with a category (Booster, Display, Elite Trainer Boxes, Box Set, Tins, Blisters, Theme Decks and more) and an expansion id, no images.
   - TCGplayer through tcgcsv.com: products per set with images, for example 51 sealed products for Prismatic Evolutions.
   - Neither says anything about commercial use, so this is part of the legal check. Without a usable source, an admin tool creates the usual product types of a set in one go instead.
 - Image upload for products. `MediaStorage` from phase 3 already stores files on disk in a configurable folder, serves them under `/api/v1/media/...`, and sits behind an interface so cloud storage can be added later.
-- Public endpoints: list with filters (game, type, set, language, price range, in stock, pre-order, on sale), sorting (new, price, popularity), search, product detail, "new arrivals", "bestsellers" (based on order lines later; newest active products until then).
+- Public endpoints: list with filters (game, type, set, language, price range, in stock, pre-order, on sale), sorting (new, price, popularity), search, product detail, "new arrivals", "bestsellers" (based on order lines later; the most popular sets of the moment until then).
 - Product wishlist and a "mail me when back in stock" signup. `/verlanglijst` already exists for cards from phase 3: add products there.
 
 Frontend:

@@ -8,9 +8,10 @@ import com.fasterxml.jackson.databind.JsonNode
 import java.time.ZoneOffset
 
 /**
- * Maps the OPTCG API to our model. The API has no release dates, so the order of [OptcgLists.sets] decides which
- * set is the newest. It doesn't say what `market_price` is, but it matches TCGplayer's market price in dollars
- * (checked on 86 cards). `inventory_price` matches nothing we could name, so it isn't used.
+ * Maps the OPTCG API to our model. The API has no release dates, so they come from [OptcgReleaseDates]. A set that
+ * isn't in there yet goes by the order of [OptcgLists.sets]. The API doesn't say what `market_price` is, but it
+ * matches TCGplayer's market price in dollars (checked on 86 cards). `inventory_price` matches nothing we could name,
+ * so it isn't used.
  */
 object OptcgMapper {
 
@@ -68,7 +69,7 @@ object OptcgMapper {
             code = code,
             name = name,
             series = series,
-            releaseDate = null,
+            releaseDate = OptcgReleaseDates.of(code),
             cardCount = cards.size,
             logoUrl = null,
             symbolUrl = null,

@@ -42,6 +42,7 @@ class CatalogImportService(
     private val cardRepository: CardRepository,
     private val cardPriceRepository: CardPriceRepository,
     private val exchangeRateRepository: ExchangeRateRepository,
+    private val shopSetRules: ShopSetRules,
 ) {
 
     @Transactional
@@ -66,6 +67,7 @@ class CatalogImportService(
         set.logoUrl = source.logoUrl?.cut(500)
         set.symbolUrl = source.symbolUrl?.cut(500)
         set.sortOrder = source.sortOrder
+        shopSetRules.apply(set)
         return cardSetRepository.save(set)
     }
 

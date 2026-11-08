@@ -145,6 +145,7 @@ watch(setGame, loadSetOptions, { immediate: true })
             type: formatNumber(importResult.skippedType),
             market: formatNumber(importResult.skippedMarket),
             noSet: formatNumber(importResult.skippedNoSet),
+            outOfPrint: formatNumber(importResult.skippedOutOfPrint),
           })
         }}
       </p>

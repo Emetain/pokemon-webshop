@@ -1,7 +1,9 @@
 package com.emetain.pokemonwebshop.config
 
+import com.emetain.pokemonwebshop.domain.Game
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.time.Duration
+import java.time.LocalDate
 
 @ConfigurationProperties(prefix = "app")
 data class AppProperties(
@@ -59,5 +61,12 @@ data class AppProperties(
     data class Shop(
         /** Cardmarket's public product list, for the product import. */
         val cardmarket: CatalogSource,
+        /**
+         * Per game, the release date of the oldest set that is still in print. The shop hides older sets. A game
+         * without a date keeps every set.
+         */
+        val inPrintFrom: Map<Game, LocalDate> = emptyMap(),
+        /** Per game, the codes of the most popular sets, most popular first. "Populair" sorts on this. */
+        val popularSets: Map<Game, List<String>> = emptyMap(),
     )
 }

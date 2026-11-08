@@ -20,7 +20,8 @@ import java.time.Clock
 import java.time.LocalDate
 
 /**
- * Fills the shop with every sealed product of the sets in our catalog, as "Uitverkocht" until there is stock.
+ * Fills the shop with every sealed product of the sets in our catalog that are still printed, as "Uitverkocht" until
+ * there is stock.
  * An import never touches stock, prices or a product the admin edited, so it can run again safely.
  */
 @Service
@@ -58,8 +59,14 @@ class ProductImportService(
         var updated = 0
         var unchanged = 0
         var keptEdited = 0
+        var skippedOutOfPrint = 0
         for (planned in plan.products) {
             val set = setsById.getValue(planned.setId)
+            // All sets go into the plan, so that a product of an old set can't end up in a newer set with a similar name.
+            if (!set.inPrint) {
+                skippedOutOfPrint++
+                continue
+            }
             val release = set.releaseDate
             val preOrder = release != null && release.isAfter(today)
             val shipsFrom = release.takeIf { preOrder }
@@ -117,6 +124,7 @@ class ProductImportService(
             skippedType = plan.skippedType,
             skippedMarket = plan.skippedMarket,
             skippedNoSet = plan.skippedNoSet,
+            skippedOutOfPrint = skippedOutOfPrint,
         )
     }
 

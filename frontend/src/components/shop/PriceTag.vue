@@ -2,7 +2,10 @@
 import { formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
-/** A shop price: always euros including VAT. A sale shows the old price struck through. */
+/**
+ * A shop price: always euros including VAT. A sale shows the old price struck through. A product that can't be
+ * bought shows no price at all: its badge already says "Uitverkocht".
+ */
 defineProps({
   product: { type: Object, required: true },
   large: { type: Boolean, default: false },
@@ -10,18 +13,15 @@ defineProps({
 </script>
 
 <template>
-  <p class="price-tag" :class="{ large }">
-    <template v-if="product.shownPriceCents !== null">
-      <span class="current" :class="{ sale: product.salePriceCents !== null }">
-        {{ formatMoney(product.shownPriceCents, 'EUR') }}
-      </span>
-      <del v-if="product.salePriceCents !== null" class="old">
-        <span class="visually-hidden">{{ t('shop.was') }}</span>
-        {{ formatMoney(product.priceCents, 'EUR') }}
-      </del>
-      <span class="vat">{{ t('shop.inclVat') }}</span>
-    </template>
-    <span v-else class="none">{{ t('shop.noPrice') }}</span>
+  <p v-if="product.canBuy" class="price-tag" :class="{ large }">
+    <span class="current" :class="{ sale: product.salePriceCents !== null }">
+      {{ formatMoney(product.shownPriceCents, 'EUR') }}
+    </span>
+    <del v-if="product.salePriceCents !== null" class="old">
+      <span class="visually-hidden">{{ t('shop.was') }}</span>
+      {{ formatMoney(product.priceCents, 'EUR') }}
+    </del>
+    <span class="vat">{{ t('shop.inclVat') }}</span>
   </p>
 </template>
 
@@ -51,11 +51,6 @@ defineProps({
   flex-basis: 100%;
   color: var(--color-ink-soft);
   font-size: var(--text-2xs);
-}
-
-.none {
-  color: var(--color-ink-soft);
-  font-size: var(--text-sm);
 }
 
 .large .current {

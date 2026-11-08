@@ -307,4 +307,6 @@ data class ProductImportResultDto(
     val skippedMarket: Int,
     /** No set in our catalog: often an edition from outside Europe, or a set the card sync doesn't have yet. */
     val skippedNoSet: Int,
+    /** From a set that is out of print. Products imported before that stay, but the shop only shows them with stock. */
+    val skippedOutOfPrint: Int,
 )
