@@ -128,7 +128,7 @@ const router = createRouter({
         {
           path: 'afbeeldingen',
           component: () => import('./views/admin/AdminImagesView.vue'),
-          props: withQuery('kind', 'q', 'game', 'set', 'image', 'sort', 'page'),
+          props: withQuery('kind', 'q', 'game', 'set', 'image', 'sort', 'size', 'page'),
         },
       ],
     },

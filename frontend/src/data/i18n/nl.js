@@ -596,6 +596,7 @@ export default {
       sortSet: 'Set, nieuwste eerst',
       sortName: 'Naam A-Z',
       sortPokedex: 'Pokédex-nummer',
+      perPage: 'Per pagina',
       onlyWithoutLogo: 'Alleen sets zonder logo',
       clear: 'Filters wissen',
       missingHint: 'Een kaart waarvan de link van de bron niet werkt, telt hier niet mee. Je herkent die in de lijsten aan "Geen afbeelding".',

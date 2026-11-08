@@ -13,7 +13,8 @@ import { t } from '../../utils/i18n'
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024
 const SEARCH_DELAY_MS = 350
-const SETS_PER_PAGE = 30
+/** The admin picks one of these, so there is no free number to type. The first one is the default. */
+const PAGE_SIZES = [25, 50, 100]
 
 /** Filters, sorting and page live in the URL, like on the card lists, so a list can be bookmarked. */
 const props = defineProps({
@@ -23,11 +24,12 @@ const props = defineProps({
   set: { type: String, default: '' },
   image: { type: String, default: '' },
   sort: { type: String, default: '' },
+  size: { type: String, default: '' },
   page: { type: String, default: '1' },
 })
 
 const router = useRouter()
-const ids = { search: useId(), game: useId(), set: useId(), image: useId(), sort: useId() }
+const ids = { search: useId(), game: useId(), set: useId(), image: useId(), sort: useId(), size: useId() }
 
 const cards = ref(null)
 const sets = ref([])
@@ -39,6 +41,8 @@ const searchText = ref(props.q)
 
 const showingSets = computed(() => props.kind === 'sets')
 const currentPage = computed(() => pageFromQuery(props.page))
+// A number that isn't one of the choices, for example typed into the URL, means the default.
+const pageSize = computed(() => (PAGE_SIZES.includes(Number(props.size)) ? Number(props.size) : PAGE_SIZES[0]))
 const setGame = computed(() => props.game || (showingSets.value ? GAMES[0].slug : ''))
 const hasFilters = computed(() => Boolean(props.q || props.game || props.set || props.image))
 
@@ -52,10 +56,18 @@ const gameLabel = (slug) => t(GAMES.find((item) => item.slug === slug).labelKey)
 
 const countLabel = (count, one, many) => (count === 1 ? t(one) : t(many, { count: formatNumber(count) }))
 
-/** Changes the URL. Leaving out the page starts at page 1, because the list has changed. */
+const countText = computed(() => {
+  if (showingSets.value) return countLabel(matchingSets.value.length, 'admin.images.oneSet', 'admin.images.setCount')
+  return cards.value && !loading.value ? countLabel(cards.value.totalItems, 'admin.images.oneCard', 'admin.images.cardCount') : ''
+})
+
+/** Changes the URL. Leaving out the page starts at page 1, because the list has changed. The default size stays out of the URL. */
 function update(changes) {
-  const values = { kind: props.kind, q: props.q, game: props.game, set: props.set, image: props.image, sort: props.sort }
-  router.replace({ query: filterQuery({ ...values, ...changes, kind: (changes.kind ?? props.kind) === 'sets' ? 'sets' : '' }) })
+  const values = { kind: props.kind, q: props.q, game: props.game, set: props.set, image: props.image, sort: props.sort, size: pageSize.value }
+  const next = { ...values, ...changes }
+  router.replace({
+    query: filterQuery({ ...next, kind: next.kind === 'sets' ? 'sets' : '', size: next.size === PAGE_SIZES[0] ? '' : next.size }),
+  })
 }
 
 function filter(name) {
@@ -73,6 +85,10 @@ const gameFilter = computed({
 const setFilter = filter('set')
 const imageFilter = filter('image')
 const sortFilter = filter('sort')
+const sizeFilter = computed({
+  get: () => pageSize.value,
+  set: (value) => update({ size: value }),
+})
 
 const matchingSets = computed(() => {
   const term = props.q.trim().toLowerCase()
@@ -83,9 +99,9 @@ const matchingSets = computed(() => {
   })
 })
 
-const setPages = computed(() => Math.max(Math.ceil(matchingSets.value.length / SETS_PER_PAGE), 1))
+const setPages = computed(() => Math.max(Math.ceil(matchingSets.value.length / pageSize.value), 1))
 const shownSets = computed(() =>
-  matchingSets.value.slice((currentPage.value - 1) * SETS_PER_PAGE, currentPage.value * SETS_PER_PAGE),
+  matchingSets.value.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value),
 )
 
 let latestCards = 0
@@ -100,6 +116,7 @@ async function loadCards() {
       set: props.set,
       image: props.image,
       sort: props.sort,
+      size: pageSize.value,
       page: currentPage.value - 1,
     })
     if (request === latestCards) cards.value = result
@@ -202,7 +219,7 @@ watch(() => props.q, (value) => {
 })
 
 watch(
-  () => [props.kind, props.q, props.game, props.set, props.image, props.sort, currentPage.value],
+  () => [props.kind, props.q, props.game, props.set, props.image, props.sort, pageSize.value, currentPage.value],
   () => {
     if (!showingSets.value) loadCards()
   },
@@ -287,10 +304,17 @@ watch([() => props.kind, setGame], loadSets, { immediate: true })
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
   <FormMessage v-if="message" class="message" type="success">{{ message }}</FormMessage>
 
+  <div class="list-bar">
+    <p class="count" role="status">{{ countText }}</p>
+    <div class="per-page">
+      <label :for="ids.size">{{ t('admin.images.perPage') }}</label>
+      <select :id="ids.size" v-model.number="sizeFilter" class="input">
+        <option v-for="option in PAGE_SIZES" :key="option" :value="option">{{ option }}</option>
+      </select>
+    </div>
+  </div>
+
   <template v-if="!showingSets">
-    <p v-if="cards && !loading" class="count" role="status">
-      {{ countLabel(cards.totalItems, 'admin.images.oneCard', 'admin.images.cardCount') }}
-    </p>
     <p v-if="loading && !cards" class="hint" role="status">{{ t('admin.images.loading') }}</p>
     <p v-else-if="cards && !cards.items.length" class="hint">{{ t('admin.images.noResults') }}</p>
 
@@ -333,7 +357,6 @@ watch([() => props.kind, setGame], loadSets, { immediate: true })
   </template>
 
   <template v-else>
-    <p class="count" role="status">{{ countLabel(matchingSets.length, 'admin.images.oneSet', 'admin.images.setCount') }}</p>
     <p v-if="!shownSets.length" class="hint">{{ t('admin.images.noResults') }}</p>
 
     <ul v-else class="items">
@@ -476,6 +499,33 @@ watch([() => props.kind, setGame], loadSets, { immediate: true })
   margin-top: var(--space-3);
   color: var(--color-ink-soft);
   font-size: var(--text-sm);
+}
+
+.list-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.list-bar .count {
+  margin-top: 0;
+}
+
+.per-page {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.per-page .input {
+  width: auto;
+  min-width: 5rem;
 }
 
 .items {

@@ -15,7 +15,7 @@ Customers track what they own in all four games, see their progress and what it'
 - Public share link with a random slug, off by default. Stopping closes the link for good.
 - `CollectionValueSnapshot`: one value per customer per day, saved by `CollectionSnapshotJob`. `GET /api/v1/collection/history` returns these with today's live value as the last point.
 - Home binder: `GET /api/v1/binder` with five sources, the choice saved on the user, and a list of chosen cards for "own selection".
-- `GET /api/v1/admin/catalog/images/cards` lists cards for the image page, 48 per page, with filters and sorting.
+- `GET /api/v1/admin/catalog/images/cards` lists cards for the image page with filters and sorting, 25, 50 or 100 per page (`size`). Any other size means 25.
 - `Card.customImageUrl` and `CardSet.customLogoUrl`: pictures the shop uploaded, which go before those of the source. `MediaStorage` keeps the files on disk, and `/api/v1/media/...` serves them. Phase 4 can use it for product images.
 - Card lists now show what the viewer owns, and filter on owned and missing. `CardListOrchestrator` holds what all lists share. `@CurrentUser` can be nullable on public endpoints.
 
@@ -31,7 +31,7 @@ Customers track what they own in all four games, see their progress and what it'
 - Home: the binder in the hero opens like a real binder: page 1 next to the inside of the cover, then pages 2 and 3, then 4 and 5. A phone turns one page at a time. It says what it shows.
 - Card page: what you own per variant with condition, the wishlist and the binder.
 - My account: what the binder shows, the own selection, and the share link.
-- `/admin/afbeeldingen`: browse all cards or sets, filter on name, game, set and "without a picture", sort by set, name or Pokédex number, upload a picture, or go back to the original. Filters and page live in the URL.
+- `/admin/afbeeldingen`: browse all cards or sets, filter on name, game, set and "without a picture", sort by set, name or Pokédex number, upload a picture, or go back to the original. A dropdown sets 25, 50 or 100 per page, 25 by default, for cards and sets alike. Filters, page size and page live in the URL.
 - Logged-out visitors get a short explanation and a register button on `/collectie`, `/collectie/pokedex` and `/verlanglijst`.
 
 ## Main files
@@ -70,7 +70,7 @@ The tests with real data ran on a throwaway copy of the local database, with the
 
 | Check | Result |
 |-------|--------|
-| `./gradlew test` | 433 tests, 0 failed |
+| `./gradlew test` | 438 tests, 0 failed |
 | `npm run build` | Passes |
 | Browser, 360 and 1280px | 455 checks, 0 failed, no console errors or Vue warnings. No horizontal scroll on any page. The binder also at 768 and 1440px |
 | Done when: progress and value update right away | Adding, changing and removing a card updates the bars and value without a reload, and it survives a reload |
@@ -81,6 +81,7 @@ The tests with real data ran on a throwaway copy of the local database, with the
 | Pokédex import | Through a real Pokémon sync: 1,025 species, every generation boundary right, names such as `Farfetch’d`, `Type: Null` and `Nidoran♀` correct |
 | Upgrade of a full database | The `postgres` profile adds everything at startup, no manual SQL, and the Pokédex fills without a sync |
 | Cards without a picture | The filter finds exactly as many cards as a direct database count, per game and per set. Sorting by Pokédex number puts cards without one last |
+| Cards per page on the image page | 25 by default. 50 and 100 show 50 and 100 rows on a copy of the full catalog, for cards and sets. The size stays when turning pages, filtering, clearing filters and switching tabs. A changed size starts at page 1. A size typed into the URL (`33`, `abc`) shows 25, in the dropdown too. No horizontal scroll at 360px |
 | Image upload | A real upload shows for a logged-out visitor, a sync leaves it alone, going back removes the file. A fake image and a file over 5 MB are refused with a Dutch message, also past the browser check |
 | `prod` on an empty Postgres database | Flyway applies V1 to V4, Hibernate validation passes. A full Lorcana sync, the collection flow, the binder, sharing and the scheduled snapshot job all work on that schema |
 | Simultaneous requests on Postgres | 20 additions of a new card at once: all succeed, quantity 20. Double clicks on the wishlist and binder succeed |

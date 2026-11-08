@@ -38,7 +38,8 @@ class AdminCatalogImageOrchestrator(
             },
             CardSpecifications.sortedForAdmin(AdminCardSort.fromParam(request.sort.filterValue())),
         )
-        val pageable = PageRequest.of(request.page.coerceAtLeast(0), PAGE_SIZE)
+        val size = request.size?.takeIf { it in PAGE_SIZES } ?: PAGE_SIZES.first()
+        val pageable = PageRequest.of(request.page.coerceAtLeast(0), size)
         return AdminImageCardPageDto.from(cardRepository.findAll(Specification.allOf(filters), pageable))
     }
 
@@ -61,7 +62,8 @@ class AdminCatalogImageOrchestrator(
     private fun game(slug: String): Game = Game.fromSlug(slug) ?: throw ApiException.notFound()
 
     private companion object {
-        const val PAGE_SIZE = 48
+        /** The choices in the admin's dropdown. The first one is the default. */
+        val PAGE_SIZES = listOf(25, 50, 100)
         const val MISSING = "missing"
         const val CUSTOM = "custom"
     }

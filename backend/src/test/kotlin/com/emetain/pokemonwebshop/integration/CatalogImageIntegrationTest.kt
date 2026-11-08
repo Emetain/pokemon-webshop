@@ -259,6 +259,23 @@ class CatalogImageIntegrationTest : CollectionTestSupport() {
     }
 
     @Test
+    fun `the admin chooses 25, 50 or 100 cards per page, and anything else means 25`() {
+        val many = uniqueCode()
+        importCards((1..60).map { providerCard(number = "$it", name = "Card $it") }, code = many)
+        val query = "set=$many&game=pokemon"
+
+        list(query)
+            .andExpect(jsonPath("$.items.length()").value(25))
+            .andExpect(jsonPath("$.totalItems").value(60))
+            .andExpect(jsonPath("$.totalPages").value(3))
+        list("$query&size=50").andExpect(jsonPath("$.items.length()").value(50)).andExpect(jsonPath("$.totalPages").value(2))
+        list("$query&size=100").andExpect(jsonPath("$.items.length()").value(60)).andExpect(jsonPath("$.totalPages").value(1))
+        for (size in listOf("33", "1000", "0", "-5")) {
+            list("$query&size=$size").andExpect(jsonPath("$.items.length()").value(25))
+        }
+    }
+
+    @Test
     fun `an unknown card, set or game is not found`() {
         upload(admin, "/cards/999999999").andExpect(status().isNotFound)
         upload(admin, "/sets/pokemon/nope").andExpect(status().isNotFound)

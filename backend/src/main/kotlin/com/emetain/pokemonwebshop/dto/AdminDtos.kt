@@ -67,6 +67,8 @@ data class AdminImageCardRequest(
     val image: String? = null,
     val sort: String? = null,
     val page: Int = 0,
+    /** Cards per page: 25, 50 or 100. Any other value means 25. */
+    val size: Int? = null,
 )
 
 data class AdminImageCardDto(
