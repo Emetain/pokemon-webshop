@@ -32,6 +32,13 @@
   --color-success: #0d6b43;
   --color-success-soft: #e2f4ec;
 
+  /* Shop states. Sale prices are red, as customers of Dutch shops expect. "Laatste X" is amber. */
+  --color-sale: #c4162f;
+  --color-sale-soft: #fdebee;
+  --color-warning: #8a4600;
+  --color-warning-soft: #fff1dc;
+  --color-muted-soft: #edf0f5;
+
   /* Game accents. Every game has a colour and the text colour that is readable on it.
      Pokémon is the main game of the shop, so it uses the brand blue. */
   --game-pokemon: #1a56db;
@@ -284,4 +291,162 @@ main:focus {
 .form-stack {
   display: grid;
   gap: var(--space-4);
+}
+
+/* Admin forms and tables, shared by the admin pages. */
+.admin-intro {
+  max-width: 64ch;
+  margin-top: var(--space-1);
+  color: var(--color-ink-soft);
+}
+
+.admin-panel {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.admin-panel > h2 {
+  font-size: var(--text-lg);
+}
+
+.admin-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: var(--space-3) var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.admin-field {
+  min-width: 0;
+}
+
+.admin-field.wide {
+  grid-column: 1 / -1;
+}
+
+.admin-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.admin-input {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: var(--space-2);
+  border: 1.5px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+}
+
+.admin-input:hover:not(:disabled) {
+  border-color: var(--color-ink);
+}
+
+.admin-input:disabled {
+  color: var(--color-ink-soft);
+}
+
+textarea.admin-input {
+  min-height: 9rem;
+  resize: vertical;
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+}
+
+.admin-hint {
+  margin-top: var(--space-1);
+  color: var(--color-ink-soft);
+  font-size: var(--text-xs);
+}
+
+.admin-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 550;
+}
+
+.admin-check input {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  accent-color: var(--color-brand);
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.admin-table-scroll {
+  margin-top: var(--space-3);
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.admin-table th,
+.admin-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-table thead th {
+  background: var(--color-tint);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.admin-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.btn-small {
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.link-button {
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-link);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: left;
+}
+
+.link-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.link-button:disabled {
+  color: var(--color-ink-soft);
+  cursor: not-allowed;
+}
+
+.link-button.danger {
+  color: var(--color-danger);
 }

@@ -1,7 +1,16 @@
 <script setup>
-import { ArrowLeft, DatabaseZap, Image, LayoutDashboard } from 'lucide-vue-next'
+import { ArrowLeft, Boxes, DatabaseZap, FileUp, GalleryHorizontal, Image, LayoutDashboard, Package } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import AppLogo from './AppLogo.vue'
 import { t } from '../../utils/i18n'
+
+const route = useRoute()
+
+// The import has its own menu item, so the products item leaves it out.
+const onProducts = computed(
+  () => route.path.startsWith('/admin/producten') && !route.path.startsWith('/admin/producten/import'),
+)
 </script>
 
 <template>
@@ -12,6 +21,27 @@ import { t } from '../../utils/i18n'
         <router-link class="sidebar-link" to="/admin" exact-active-class="is-active">
           <LayoutDashboard :size="18" aria-hidden="true" />
           {{ t('admin.overview') }}
+        </router-link>
+        <router-link
+          class="sidebar-link"
+          :class="{ 'is-active': onProducts }"
+          to="/admin/producten"
+          active-class=""
+        >
+          <Package :size="18" aria-hidden="true" />
+          {{ t('admin.products.nav') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/producten/import" active-class="is-active">
+          <FileUp :size="18" aria-hidden="true" />
+          {{ t('admin.import.nav') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/voorraad" active-class="is-active">
+          <Boxes :size="18" aria-hidden="true" />
+          {{ t('admin.stock.nav') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/hero" active-class="is-active">
+          <GalleryHorizontal :size="18" aria-hidden="true" />
+          {{ t('admin.slides.nav') }}
         </router-link>
         <router-link class="sidebar-link" to="/admin/sync" active-class="is-active">
           <DatabaseZap :size="18" aria-hidden="true" />

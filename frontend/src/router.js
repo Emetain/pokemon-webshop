@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { GAMES } from './data/games'
 import { footerInfoLinks, footerShopLinks, navDestinations } from './data/navigation'
 import { useSession } from './stores/session'
 
@@ -19,6 +20,26 @@ const withQuery = (...names) => (route) => ({
 })
 
 const CARD_FILTERS = ['sort', 'category', 'color', 'rarity', 'variant', 'priced', 'collection']
+
+const ShopListView = () => import('./views/shop/ShopListView.vue')
+const SHOP_FILTERS = ['q', 'sort', 'language', 'min', 'max', 'stock', 'sale', 'preorder', 'page']
+
+/** A list of products. `fixed` says which part of the shop it is, the URL adds the rest. */
+const shopRoute = (path, fixed) => ({
+  path,
+  component: ShopListView,
+  props: (route) => ({ ...fixed, ...withQuery(...SHOP_FILTERS)(route) }),
+})
+
+/** Per game: all products, a series, a set within it, and a kind of product such as /pokemon/booster-boxen. */
+function gameShopRoutes() {
+  return GAMES.flatMap(({ slug }) => [
+    shopRoute(slug, { mode: 'game', game: slug }),
+    shopRoute(`${slug}/serie/:series`, { mode: 'game', game: slug }),
+    shopRoute(`${slug}/serie/:series/:setCode`, { mode: 'game', game: slug }),
+    shopRoute(`${slug}/:typeSlug`, { mode: 'game', game: slug }),
+  ])
+}
 
 // Leaves room for the sticky header above the element.
 const HASH_SCROLL_OFFSET = 160
@@ -115,6 +136,18 @@ const router = createRouter({
           props: withQuery('sort', 'priced', 'collection', 'page'),
         },
 
+        ...gameShopRoutes(),
+        shopRoute('accessoires', { mode: 'accessories' }),
+        shopRoute('accessoires/:accessorySlug', { mode: 'accessories' }),
+        shopRoute('pre-order', { mode: 'pre-order' }),
+        shopRoute('producten', { mode: 'all' }),
+        {
+          path: 'product/:slug',
+          name: 'product',
+          component: () => import('./views/shop/ProductView.vue'),
+          props: true,
+        },
+
         ...placeholderPages(),
       ],
     },
@@ -124,6 +157,21 @@ const router = createRouter({
       meta: { requiresAdmin: true },
       children: [
         { path: '', component: () => import('./views/admin/AdminDashboardView.vue') },
+        {
+          path: 'producten',
+          component: () => import('./views/admin/AdminProductsView.vue'),
+          props: withQuery('q', 'game', 'type', 'status', 'stock', 'source', 'price', 'sort', 'size', 'page'),
+        },
+        { path: 'producten/nieuw', component: () => import('./views/admin/AdminProductEditView.vue') },
+        { path: 'producten/losse-kaart', component: () => import('./views/admin/AdminSingleView.vue') },
+        { path: 'producten/import', component: () => import('./views/admin/AdminImportView.vue') },
+        {
+          path: 'producten/:id(\\d+)',
+          component: () => import('./views/admin/AdminProductEditView.vue'),
+          props: true,
+        },
+        { path: 'voorraad', component: () => import('./views/admin/AdminStockView.vue') },
+        { path: 'hero', component: () => import('./views/admin/AdminSlidesView.vue') },
         { path: 'sync', component: () => import('./views/admin/AdminSyncView.vue') },
         {
           path: 'afbeeldingen',

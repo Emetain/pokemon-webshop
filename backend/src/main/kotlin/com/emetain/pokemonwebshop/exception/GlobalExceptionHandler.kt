@@ -3,6 +3,7 @@ package com.emetain.pokemonwebshop.exception
 import com.emetain.pokemonwebshop.dto.ErrorResponse
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
@@ -32,6 +33,13 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         log.warn("Data integrity violation: {}", exception.mostSpecificCause.message)
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(ErrorResponse("conflict", "Dit kon niet worden opgeslagen omdat het conflicteert met bestaande gegevens."))
+    }
+
+    /** Two changes started from the same version of a row, such as two purchases of the last item. */
+    @ExceptionHandler(OptimisticLockingFailureException::class)
+    fun handleOptimisticLock(exception: OptimisticLockingFailureException): ResponseEntity<ErrorResponse> {
+        val error = ApiException.stockChanged()
+        return ResponseEntity.status(error.status).body(ErrorResponse(error.code, error.message))
     }
 
     @ExceptionHandler(Exception::class)

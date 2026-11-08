@@ -57,6 +57,7 @@ services:
       OPTCG_BASE_URL: ${OPTCG_BASE_URL:-https://optcgapi.com/api}
       ECB_BASE_URL: ${ECB_BASE_URL:-https://www.ecb.europa.eu}
       POKEAPI_BASE_URL: ${POKEAPI_BASE_URL:-https://pokeapi.co/api/v2}
+      CARDMARKET_PRODUCTS_BASE_URL: ${CARDMARKET_PRODUCTS_BASE_URL:-https://downloads.s3.cardmarket.com}
       CATALOG_SYNC_CRON: ${CATALOG_SYNC_CRON:-0 0 3 * * *}
       COLLECTION_SNAPSHOT_CRON: ${COLLECTION_SNAPSHOT_CRON:-0 0 7 * * *}
       MEDIA_DIRECTORY: /app/media

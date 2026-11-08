@@ -2,9 +2,15 @@
 import { ref, shallowRef, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChevronLeft, ChevronRight, Heart, ShoppingBag, User, X } from 'lucide-vue-next'
-import { mainNav } from '../../data/navigation'
+import { mainNav, menuColumns } from '../../data/navigation'
+import { useShopNavigation } from '../../stores/shopNavigation'
 import { useSession } from '../../stores/session'
 import { t } from '../../utils/i18n'
+
+const { seriesByGame, loadSeries } = useShopNavigation()
+loadSeries('pokemon')
+
+const columnsOf = (item) => menuColumns(item, seriesByGame.value)
 
 const route = useRoute()
 const session = useSession()
@@ -89,11 +95,11 @@ defineExpose({ open })
             <h2 class="sub-title">{{ t(activeItem.labelKey) }}</h2>
             <router-link class="sub-all" :to="activeItem.to">{{ t('nav.viewAll') }}</router-link>
           </div>
-          <section v-for="column in activeItem.columns" :key="column.titleKey" class="sub-group">
+          <section v-for="column in columnsOf(activeItem)" :key="column.titleKey" class="sub-group">
             <h3 class="sub-group-title">{{ t(column.titleKey) }}</h3>
             <ul class="sub-links">
               <li v-for="link in column.links" :key="link.to">
-                <router-link class="sub-link" :to="link.to">{{ t(link.labelKey) }}</router-link>
+                <router-link class="sub-link" :to="link.to">{{ link.label ?? t(link.labelKey) }}</router-link>
               </li>
             </ul>
           </section>

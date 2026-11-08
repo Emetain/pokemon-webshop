@@ -12,6 +12,7 @@ data class AppProperties(
     val catalog: Catalog,
     val collection: Collection,
     val media: Media,
+    val shop: Shop,
 ) {
     data class Mail(
         val from: String,
@@ -53,5 +54,10 @@ data class AppProperties(
 
     data class Media(
         val directory: String,
+    )
+
+    data class Shop(
+        /** Cardmarket's public product list, for the product import. */
+        val cardmarket: CatalogSource,
     )
 }

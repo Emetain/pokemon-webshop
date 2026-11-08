@@ -8,6 +8,7 @@ import com.emetain.pokemonwebshop.repository.CardPriceRepository
 import com.emetain.pokemonwebshop.repository.CardRepository
 import com.emetain.pokemonwebshop.repository.CardSpecifications
 import com.emetain.pokemonwebshop.repository.CollectionEntryRepository
+import com.emetain.pokemonwebshop.service.CardOfferService
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.jpa.domain.Specification
@@ -27,12 +28,13 @@ internal fun <T> retryingOnConflict(action: () -> T): T =
         action()
     }
 
-/** What every list of cards shares: the filters from the URL, and a page with what the viewer owns. */
+/** What every list of cards shares: the filters from the URL, and a page with what the viewer owns and the shop sells. */
 @Component
 class CardListOrchestrator(
     private val cardRepository: CardRepository,
     private val cardPriceRepository: CardPriceRepository,
     private val collectionEntryRepository: CollectionEntryRepository,
+    private val cardOfferService: CardOfferService,
 ) {
 
     fun filters(request: CardListRequest, viewer: User?): List<Specification<Card>> = listOfNotNull(
@@ -64,7 +66,7 @@ class CardListOrchestrator(
         val owned = viewer?.let { user ->
             collectionEntryRepository.findAllByUserAndCards(user.id, cardIds).groupBy { it.card.id }
         }
-        return CardPageDto.from(cards, prices.groupBy { it.card.id }, owned)
+        return CardPageDto.from(cards, prices.groupBy { it.card.id }, owned, cardOfferService.cheapestPerCard(cardIds))
     }
 
     private companion object {

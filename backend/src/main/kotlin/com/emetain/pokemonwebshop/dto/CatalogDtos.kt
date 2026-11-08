@@ -79,9 +79,16 @@ data class CardSummaryDto(
     val variants: List<String>,
     /** What the logged-in customer owns of this card. Null for a visitor who isn't logged in. */
     val owned: List<OwnedEntryDto>?,
+    /** The cheapest single of this card that the shop has in stock, if any. */
+    val forSale: CardOfferDto? = null,
 ) {
     companion object {
-        fun from(card: Card, prices: List<CardPrice>, owned: List<CollectionEntry>? = null): CardSummaryDto {
+        fun from(
+            card: Card,
+            prices: List<CardPrice>,
+            owned: List<CollectionEntry>? = null,
+            forSale: CardOfferDto? = null,
+        ): CardSummaryDto {
             val price = CardVariants.displayPrice(prices)
             return CardSummaryDto(
                 id = card.id,
@@ -97,6 +104,7 @@ data class CardSummaryDto(
                 currency = price?.currency,
                 variants = CardVariants.displaySorted(card.variants),
                 owned = owned?.let(OwnedEntryDto::listOf),
+                forSale = forSale,
             )
         }
     }
@@ -136,9 +144,11 @@ data class CardDetailDto(
     val colors: List<String>,
     val dexNumbers: List<Int>,
     val prices: List<CardPriceDto>,
+    /** The singles of this card that the shop has in stock, cheapest first. */
+    val offers: List<ProductSummaryDto> = emptyList(),
 ) {
     companion object {
-        fun from(card: Card, prices: List<CardPrice>) = CardDetailDto(
+        fun from(card: Card, prices: List<CardPrice>, offers: List<ProductSummaryDto> = emptyList()) = CardDetailDto(
             id = card.id,
             game = card.game.slug,
             set = CardSetDto.from(card.set),
@@ -152,6 +162,7 @@ data class CardDetailDto(
             colors = card.colors.sorted(),
             dexNumbers = card.dexNumbers.sorted(),
             prices = prices.sortedBy { CardVariants.displayRank(it.variant) }.map(CardPriceDto::from),
+            offers = offers,
         )
     }
 }
@@ -169,10 +180,11 @@ data class CardPageDto(
             cards: Page<Card>,
             pricesByCard: Map<Long, List<CardPrice>>,
             ownedByCard: Map<Long, List<CollectionEntry>>? = null,
+            offersByCard: Map<Long, CardOfferDto> = emptyMap(),
         ) = CardPageDto(
             items = cards.content.map { card ->
                 val owned = ownedByCard?.let { it[card.id].orEmpty() }
-                CardSummaryDto.from(card, pricesByCard[card.id].orEmpty(), owned)
+                CardSummaryDto.from(card, pricesByCard[card.id].orEmpty(), owned, offersByCard[card.id])
             },
             page = cards.number,
             size = cards.size,

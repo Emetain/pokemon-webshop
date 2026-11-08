@@ -16,6 +16,7 @@ fun testProperties(maxAttempts: Int = 3, window: Duration = Duration.ofMinutes(1
     catalog = testCatalogProperties(),
     collection = AppProperties.Collection(cacheTtl = Duration.ofMinutes(10)),
     media = AppProperties.Media(directory = "build/test-media"),
+    shop = AppProperties.Shop(cardmarket = AppProperties.CatalogSource("http://localhost", Duration.ZERO)),
 )
 
 fun testCatalogProperties(baseUrl: String = "http://localhost") = AppProperties.Catalog(

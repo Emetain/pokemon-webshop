@@ -23,6 +23,18 @@ class ApiException(
         fun validation(message: String) =
             ApiException(HttpStatus.BAD_REQUEST, "validation_failed", message)
 
+        fun outOfStock(available: Int) = ApiException(
+            HttpStatus.CONFLICT,
+            "out_of_stock",
+            if (available <= 0) "Dit product is uitverkocht." else "Er zijn er nog maar $available van dit product.",
+        )
+
+        fun stockChanged() = ApiException(
+            HttpStatus.CONFLICT,
+            "stock_changed",
+            "De voorraad is net door iemand anders gewijzigd. Probeer het opnieuw.",
+        )
+
         fun syncRunning() =
             ApiException(HttpStatus.CONFLICT, "sync_running", "Er loopt al een synchronisatie voor dit spel.")
 

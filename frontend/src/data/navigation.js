@@ -58,16 +58,8 @@ export const mainNav = [
           STARTER_DECK,
         ]),
       },
-      {
-        titleKey: 'nav.groups.series',
-        links: [
-          link('/pokemon/serie/mega-evolution', 'nav.series.megaEvolution'),
-          link('/pokemon/serie/scarlet-violet', 'nav.series.scarletViolet'),
-          link('/pokemon/serie/sword-shield', 'nav.series.swordShield'),
-          link('/pokemon/serie/sun-moon', 'nav.series.sunMoon'),
-          link('/pokemon/serie/xy', 'nav.series.xy'),
-        ],
-      },
+      // Filled with the real series from the card catalog, see menuColumns().
+      { titleKey: 'nav.groups.series', seriesOf: 'pokemon', links: [] },
       {
         titleKey: 'nav.groups.singles',
         links: [catalogLink('pokemon'), ...productLinks('/pokemon', [SINGLE, GRADED_SLAB, BULK, MYSTERY_BOX])],
@@ -168,7 +160,37 @@ export const mainNav = [
   },
 ]
 
-const hasRealPage = (to) => ['/kaarten/', '/collectie', '/verlanglijst'].some((path) => to.startsWith(path))
+const REAL_PAGES = ['/kaarten/', '/collectie', '/verlanglijst', '/accessoires', '/pre-order']
+const GAME_PAGES = ['/pokemon', '/lorcana', '/magic', '/one-piece']
+
+const hasRealPage = (to) =>
+  REAL_PAGES.some((path) => to.startsWith(path)) ||
+  GAME_PAGES.some((path) => to === path || to.startsWith(`${path}/`))
+
+const MENU_SERIES = 6
+const SERIES_WITHOUT_PRODUCTS = 5
+const MIN_SETS_IN_SERIES = 3
+
+/**
+ * The columns of a menu item, with series from the catalog where a column asks for them: the newest series that have
+ * products. A shop without products yet gets the newest series with a few sets, so the menu is never empty.
+ */
+export function menuColumns(item, seriesByGame) {
+  return (item.columns ?? [])
+    .map((column) => {
+      if (!column.seriesOf) return column
+      const series = seriesByGame[column.seriesOf] ?? []
+      const withProducts = series.filter((entry) => entry.productCount > 0).slice(0, MENU_SERIES)
+      const shown = withProducts.length
+        ? withProducts
+        : series.filter((entry) => entry.setCount >= MIN_SETS_IN_SERIES).slice(0, SERIES_WITHOUT_PRODUCTS)
+      return {
+        ...column,
+        links: shown.map((entry) => ({ to: `/${column.seriesOf}/serie/${entry.slug}`, label: entry.name })),
+      }
+    })
+    .filter((column) => column.links.length > 0)
+}
 
 /** Every destination in the menu that has no real page yet, once. The router shows a placeholder for these. */
 export function navDestinations() {

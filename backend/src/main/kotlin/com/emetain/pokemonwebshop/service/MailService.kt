@@ -42,6 +42,30 @@ class MailService(
         send(to, "Stel je nieuwe wachtwoord in", text, html)
     }
 
+    /** Runs in the background, so a stock change never waits for the mail server. */
+    @Async
+    fun sendBackInStock(to: String, productName: String, slug: String) {
+        val link = "${properties.baseUrl}/product/$slug"
+        val text = """
+            Hoi,
+
+            Goed nieuws: $productName is weer op voorraad bij Uithoorn TCG.
+
+            $link
+
+            Op is op, dus wacht niet te lang. Je krijgt deze mail één keer. Wil je een volgende keer weer een bericht, meld je dan opnieuw aan op de productpagina.
+        """.trimIndent()
+        val name = HtmlUtils.htmlEscape(productName)
+        val html = """
+            <p>Hoi,</p>
+            <p>Goed nieuws: <strong>$name</strong> is weer op voorraad bij Uithoorn TCG.</p>
+            <p><a href="$link">Bekijk $name</a></p>
+            <p>Op is op, dus wacht niet te lang. Je krijgt deze mail één keer. Wil je een volgende keer weer een bericht, meld je dan opnieuw aan op de productpagina.</p>
+        """.trimIndent()
+
+        send(to, "$productName is weer op voorraad", text, html)
+    }
+
     private fun send(to: String, subject: String, text: String, html: String) {
         val message = mailSender.createMimeMessage()
         MimeMessageHelper(message, true, Charsets.UTF_8.name()).apply {

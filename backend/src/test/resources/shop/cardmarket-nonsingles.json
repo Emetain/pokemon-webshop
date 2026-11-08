@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "createdAt": "2026-11-08T13:01:09+0100",
+  "products": [
+    {"idProduct": 101, "name": "Surging Sparks Booster", "idCategory": 52, "categoryName": "Pokémon Booster", "idExpansion": 5879, "idMetacard": 0, "dateAdded": "2024-10-01 00:00:00"},
+    {"idProduct": 102, "name": "Surging Sparks Sleeved Booster", "idCategory": 52, "categoryName": "Pokémon Booster", "idExpansion": 5879, "idMetacard": 0, "dateAdded": "2024-10-01 00:00:00"},
+    {"idProduct": 103, "name": "Surging Sparks Booster Box", "idCategory": 53, "categoryName": "Pokémon Display", "idExpansion": 5879, "idMetacard": 0, "dateAdded": "2024-10-01 00:00:00"},
+    {"idProduct": 104, "name": "Surging Sparks Booster Bundle", "idCategory": 53, "categoryName": "Pokémon Display", "idExpansion": 5879, "idMetacard": 0, "dateAdded": "2024-10-01 00:00:00"},
+    {"idProduct": 105, "name": "Surging Sparks 6 Booster Box Case", "idCategory": 53, "categoryName": "Pokémon Display", "idExpansion": 5879, "idMetacard": 0, "dateAdded": "2024-10-01 00:00:00"},
+    {"idProduct": 106, "name": "Surging Sparks Booster Bundle Pokémon Center Version", "idCategory": 53, "categoryName": "Pokémon Display", "idExpansion": 5879, "idMetacard": 0, "dateAdded": "2024-10-01 00:00:00"},
+    {"idProduct": 107, "name": "Surging Sparks: Pikachu Coin", "idCategory": 60, "categoryName": "Pokémon Coins", "idExpansion": 5879, "idMetacard": 0, "dateAdded": "2024-10-01 00:00:00"},
+    {"idProduct": 108, "name": "Surging Sparks: Zapdos 3-Pack Blister", "idCategory": 55, "categoryName": "Pokémon Blisters", "idExpansion": 5879, "idMetacard": 0, "dateAdded": "2024-10-01 00:00:00"},
+    {"idProduct": 109, "name": "Surging Sparks Elite Trainer Box", "idCategory": 70, "categoryName": "Pokémon Elite Trainer Boxes", "idExpansion": 5879, "idMetacard": 0, "dateAdded": "2024-10-01 00:00:00"},
+    {"idProduct": 110, "name": "Surging Sparks Build & Battle Box Display", "idCategory": 56, "categoryName": "Pokémon Box Set", "idExpansion": 5879, "idMetacard": 0, "dateAdded": "2024-10-01 00:00:00"},
+    {"idProduct": 201, "name": "Pokémon Card 151 Booster", "idCategory": 52, "categoryName": "Pokémon Booster", "idExpansion": 5328, "idMetacard": 0, "dateAdded": "2023-06-01 00:00:00"},
+    {"idProduct": 202, "name": "Pokémon Card 151 Booster Box", "idCategory": 53, "categoryName": "Pokémon Display", "idExpansion": 5328, "idMetacard": 0, "dateAdded": "2023-06-01 00:00:00"},
+    {"idProduct": 301, "name": "151 Elite Trainer Box", "idCategory": 70, "categoryName": "Pokémon Elite Trainer Boxes", "idExpansion": 5402, "idMetacard": 0, "dateAdded": "2023-09-01 00:00:00"},
+    {"idProduct": 302, "name": "151 Booster Bundle", "idCategory": 53, "categoryName": "Pokémon Display", "idExpansion": 5402, "idMetacard": 0, "dateAdded": "2023-09-01 00:00:00"},
+    {"idProduct": 401, "name": "Base Set Booster", "idCategory": 52, "categoryName": "Pokémon Booster", "idExpansion": 1523, "idMetacard": 0, "dateAdded": "2007-01-01 00:00:00"},
+    {"idProduct": 402, "name": "Base Set 2 Booster", "idCategory": 52, "categoryName": "Pokémon Booster", "idExpansion": 1527, "idMetacard": 0, "dateAdded": "2007-01-01 00:00:00"},
+    {"idProduct": 501, "name": "Hoopa V Box", "idCategory": 56, "categoryName": "Pokémon Box Set", "idExpansion": 1645, "idMetacard": 0, "dateAdded": "2021-08-27 00:00:00"},
+    {"idProduct": 502, "name": "Umbreon GX Premium Collection", "idCategory": 56, "categoryName": "Pokémon Box Set", "idExpansion": 1645, "idMetacard": 0, "dateAdded": "2017-06-29 00:00:00"},
+    {"idProduct": 503, "name": "Surging Sparks Figure Collection", "idCategory": 56, "categoryName": "Pokémon Box Set", "idExpansion": 1645, "idMetacard": 0, "dateAdded": "2024-12-01 00:00:00"},
+    {"idProduct": 601, "name": "Star Trek \"\"Beam Me Up\"\" Fat Pack Bundle", "idCategory": 9, "categoryName": "Magic Fatpack", "idExpansion": 9001, "idMetacard": 0, "dateAdded": "2026-10-01 00:00:00"},
+    {"idProduct": 0, "name": "Broken", "idCategory": 1, "categoryName": "Pokémon Booster", "idExpansion": 1, "idMetacard": 0, "dateAdded": "2026-10-01 00:00:00"}
+  ]
+}

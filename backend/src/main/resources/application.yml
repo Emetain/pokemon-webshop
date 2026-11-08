@@ -58,6 +58,11 @@ app:
   media:
     # Where uploaded images are stored.
     directory: ${MEDIA_DIRECTORY:data/media}
+  shop:
+    # Cardmarket's public product list, read by the product import in admin. Only when an admin starts it.
+    cardmarket:
+      base-url: ${CARDMARKET_PRODUCTS_BASE_URL:https://downloads.s3.cardmarket.com}
+      request-delay: 100ms
   catalog:
     # Fills the Pokédex right after startup instead of at the next Pokémon sync.
     import-pokedex-on-start: true

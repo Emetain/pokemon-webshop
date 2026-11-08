@@ -92,6 +92,19 @@ Run one backend per database during a sync: a second instance that starts up mar
 
 Card prices have no history, so the graph on `/collectie` is drawn from one saved value per customer per day. A job saves these at the time in `COLLECTION_SNAPSHOT_CRON` (07:00 Dutch time by default, `-` switches it off). Keep it after the card sync, so it uses the prices of that night. Saved days can't be filled in afterwards.
 
+## Shop
+
+Products and stock are managed at `/admin/producten`. Every product can be in the shop without stock: it then shows "Uitverkocht", and customers can ask for a mail when it is back. A product without a price is in the shop but can't be bought.
+
+Ways to fill the shop:
+
+- **Product list import** at `/admin/producten/import`: every sealed product of the sets in the card catalog, from [Cardmarket's public product list](https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_6.json) (`CARDMARKET_PRODUCTS_BASE_URL`). It only runs when an admin starts it, takes about a second per game, and never changes stock, prices or products the admin edited. Run a card sync first: products of sets that aren't in the catalog stay out.
+- **Products of one set**: the usual products of a set in one go, such as booster, booster box and Elite Trainer Box.
+- **Losse kaart toevoegen**: a single from the card catalog, with its market price in euros as a suggestion.
+- **CSV**: download all products with stock, change them in Excel and read the file back in. Excel's Dutch semicolons and decimal commas work.
+
+Stock only changes through `StockService`, which writes every change to the stock log. The hero on the home page is a carousel: the first slide is the hero with the binder, the others are managed at `/admin/hero`.
+
 ## Profiles
 
 | Profile  | Database                                    | ddl-auto    | show-sql | Flyway |

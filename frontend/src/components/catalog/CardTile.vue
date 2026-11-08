@@ -1,9 +1,10 @@
 <script setup>
 import { computed } from 'vue'
-import { Check } from 'lucide-vue-next'
+import { Check, ShoppingBag } from 'lucide-vue-next'
 import CardImage from './CardImage.vue'
 import CollectionControls from '../collection/CollectionControls.vue'
 import { useCurrency } from '../../stores/currency'
+import { formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
 /** `card.owned` is null for a visitor who isn't logged in: the tile then has nothing about a collection. */
@@ -40,6 +41,17 @@ const owned = computed(() => tracking.value && props.card.owned.length > 0)
         <span>#{{ card.number }}</span>
         <span v-if="card.rarity">{{ card.rarity }}</span>
       </span>
+    </router-link>
+
+    <!-- The shop has this card as a single in stock. Below the image, never on it, and above the price so prices line up. -->
+    <router-link
+      v-if="card.forSale"
+      class="for-sale"
+      :to="{ name: 'product', params: { slug: card.forSale.slug } }"
+      :aria-label="t('shop.forSaleLabel', { name: card.name, price: formatMoney(card.forSale.shownPriceCents, 'EUR') })"
+    >
+      <ShoppingBag :size="14" aria-hidden="true" />
+      {{ t('shop.forSale', { price: formatMoney(card.forSale.shownPriceCents, 'EUR') }) }}
     </router-link>
 
     <!-- Outside the link, because a button can't sit inside one. -->
@@ -154,5 +166,21 @@ const owned = computed(() => tracking.value && props.card.owned.length > 0)
 
 .owned-status {
   color: var(--color-brand);
+}
+
+.for-sale {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-1);
+  min-height: var(--touch-target);
+  color: var(--color-success);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.for-sale:hover {
+  text-decoration: underline;
 }
 </style>

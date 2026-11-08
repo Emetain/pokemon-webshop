@@ -10,6 +10,7 @@ import { findGame } from '../../data/games'
 import { catalogApi } from '../../services/api'
 import { useCurrency } from '../../stores/currency'
 import { cardCountLabel, filterQuery, pageFromQuery } from '../../utils/catalog'
+import { formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
 const PAGE_SIZE = 100
@@ -167,6 +168,7 @@ watch(() => [props.game, props.setCode, filters.value, masterMode.value, current
                   <th scope="col">{{ t('collection.missingList.name') }}</th>
                   <th class="rarity" scope="col">{{ t('collection.missingList.rarity') }}</th>
                   <th class="amount" scope="col">{{ t('collection.missingList.price') }}</th>
+                  <th class="shop" scope="col">{{ t('collection.missingList.shop') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -180,6 +182,16 @@ watch(() => [props.game, props.setCode, filters.value, masterMode.value, current
                   <td class="rarity">{{ card.rarity }}</td>
                   <td class="amount" :class="{ empty: card.trendCents === null }">
                     {{ card.trendCents === null ? t('catalog.noPrice') : formatPrice(card.trendCents, card.currency) }}
+                  </td>
+                  <td class="shop">
+                    <router-link
+                      v-if="card.forSale"
+                      :to="{ name: 'product', params: { slug: card.forSale.slug } }"
+                      :aria-label="t('shop.forSaleLabel', { name: card.name, price: formatMoney(card.forSale.shownPriceCents, 'EUR') })"
+                    >
+                      {{ t('shop.forSale', { price: formatMoney(card.forSale.shownPriceCents, 'EUR') }) }}
+                    </router-link>
+                    <span v-else class="not-in-shop">{{ t('shop.notInShop') }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -261,6 +273,20 @@ watch(() => [props.game, props.setCode, filters.value, masterMode.value, current
 .list td.empty {
   color: var(--color-ink-soft);
   font-weight: 400;
+}
+
+.list .shop {
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.list .shop a {
+  color: var(--color-success);
+  font-weight: 700;
+}
+
+.not-in-shop {
+  color: var(--color-ink-soft);
 }
 
 /* The rarity is the first thing to go on a phone: a card name needs the room. */

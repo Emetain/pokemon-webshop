@@ -8,7 +8,8 @@ import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
 import PageLinks from '../../components/catalog/PageLinks.vue'
 import GuestInvite from '../../components/collection/GuestInvite.vue'
-import { wishlistApi } from '../../services/api'
+import ProductGrid from '../../components/shop/ProductGrid.vue'
+import { productWishlistApi, wishlistApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { cardCountLabel, filterQuery, pageFromQuery } from '../../utils/catalog'
 import { t } from '../../utils/i18n'
@@ -24,6 +25,8 @@ const router = useRouter()
 const session = useSession()
 
 const cards = ref(null)
+const products = ref(null)
+const productError = ref('')
 const loading = ref(true)
 const error = ref('')
 
@@ -78,6 +81,24 @@ function onCollectionChange(card, change) {
   card.owned = change.entries
 }
 
+const PRODUCTS_SHOWN = 48
+
+/** Products are a short list, so they come in one go above the cards and don't follow the card filters. */
+async function loadProducts() {
+  if (!loggedIn.value) return
+  productError.value = ''
+  try {
+    products.value = await productWishlistApi.products({ size: PRODUCTS_SHOWN })
+  } catch (exception) {
+    productError.value = exception.message
+  }
+}
+
+function onProductWished(product, wished) {
+  if (!wished) products.value.items = products.value.items.filter((item) => item.id !== product.id)
+}
+
+loadProducts()
 watch(() => [filters.value, currentPage.value], load, { immediate: true })
 </script>
 
@@ -96,6 +117,22 @@ watch(() => [filters.value, currentPage.value], load, { immediate: true })
     </CatalogNotice>
 
     <template v-else>
+      <section class="products" aria-labelledby="wishlist-products">
+        <h2 id="wishlist-products">{{ t('wishlist.products') }}</h2>
+        <CatalogNotice v-if="productError" :title="productError" />
+        <p v-else-if="products && !products.items.length" class="products-empty">
+          {{ t('wishlist.productsEmpty') }}
+          <router-link to="/producten">{{ t('wishlist.productsAction') }}</router-link>
+        </p>
+        <ProductGrid
+          v-else-if="products"
+          :products="products.items"
+          @wished="onProductWished"
+          @error="productError = $event"
+        />
+      </section>
+
+      <h2 class="cards-title">{{ t('wishlist.cards') }}</h2>
       <CardFilters
         :values="filters"
         default-sort="price-high"
@@ -145,6 +182,20 @@ watch(() => [filters.value, currentPage.value], load, { immediate: true })
 </template>
 
 <style scoped>
+.products {
+  display: grid;
+  gap: var(--space-4);
+  margin-bottom: var(--space-7);
+}
+
+.products-empty {
+  color: var(--color-ink-soft);
+}
+
+.cards-title {
+  margin-bottom: var(--space-4);
+}
+
 .title {
   margin-top: var(--space-3);
 }

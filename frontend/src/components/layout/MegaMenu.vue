@@ -3,8 +3,14 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChevronDown, X } from 'lucide-vue-next'
 import BallMark from '../BallMark.vue'
-import { mainNav } from '../../data/navigation'
+import { mainNav, menuColumns } from '../../data/navigation'
+import { useShopNavigation } from '../../stores/shopNavigation'
 import { t } from '../../utils/i18n'
+
+const { seriesByGame, loadSeries } = useShopNavigation()
+loadSeries('pokemon')
+
+const columnsOf = (item) => menuColumns(item, seriesByGame.value)
 
 // Short pauses, so passing over the menu on the way to something else doesn't open it,
 // and a small slip of the mouse doesn't close it.
@@ -155,11 +161,11 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div class="mega-grid">
-                  <section v-for="column in item.columns" :key="column.titleKey">
+                  <section v-for="column in columnsOf(item)" :key="column.titleKey">
                     <h3 class="mega-group">{{ t(column.titleKey) }}</h3>
                     <ul class="mega-links">
                       <li v-for="link in column.links" :key="link.to">
-                        <router-link class="mega-link" :to="link.to">{{ t(link.labelKey) }}</router-link>
+                        <router-link class="mega-link" :to="link.to">{{ link.label ?? t(link.labelKey) }}</router-link>
                       </li>
                     </ul>
                   </section>

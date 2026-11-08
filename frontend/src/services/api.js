@@ -117,3 +117,52 @@ export const adminApi = {
   uploadSetLogo: (game, code, file) => upload(`/admin/catalog/images/sets/${game}/${encodeURIComponent(code)}`, file),
   resetSetLogo: (game, code) => request('DELETE', `/admin/catalog/images/sets/${game}/${encodeURIComponent(code)}`),
 }
+
+export const shopApi = {
+  products: (params) => request('GET', `/products${queryString(params)}`),
+  product: (slug) => request('GET', `/products/${encodeURIComponent(slug)}`),
+  newArrivals: (limit) => request('GET', `/products/new-arrivals${queryString({ limit })}`),
+  bestsellers: (limit) => request('GET', `/products/bestsellers${queryString({ limit })}`),
+  stockAlert: (slug, email) => request('POST', `/products/${encodeURIComponent(slug)}/stock-alerts`, { email }),
+  series: (game) => request('GET', `/shop/${game}/series`),
+  seriesDetail: (game, slug) => request('GET', `/shop/${game}/series/${encodeURIComponent(slug)}`),
+  heroSlides: () => request('GET', '/shop/hero-slides'),
+}
+
+export const productWishlistApi = {
+  products: (params) => request('GET', `/wishlist/products${queryString(params)}`),
+  add: (productId) => request('PUT', `/wishlist/products/${productId}`),
+  remove: (productId) => request('DELETE', `/wishlist/products/${productId}`),
+}
+
+export const adminShopApi = {
+  products: (params) => request('GET', `/admin/products${queryString(params)}`),
+  product: (id) => request('GET', `/admin/products/${id}`),
+  create: (data) => request('POST', '/admin/products', data),
+  update: (id, data) => request('PUT', `/admin/products/${id}`, data),
+  duplicate: (id) => request('POST', `/admin/products/${id}/duplicate`),
+  archive: (id) => request('POST', `/admin/products/${id}/archive`),
+  addImage: (id, file) => upload(`/admin/products/${id}/images`, file),
+  removeImage: (id, index) => request('DELETE', `/admin/products/${id}/images/${index}`),
+  reorderImages: (id, urls) => request('PUT', `/admin/products/${id}/images`, { urls }),
+  movements: (id, page) => request('GET', `/admin/products/${id}/stock/movements${queryString({ page })}`),
+  adjustStock: (id, data) => request('POST', `/admin/products/${id}/stock/adjustments`, data),
+  countStock: (id, data) => request('POST', `/admin/products/${id}/stock/count`, data),
+  createSingle: (data) => request('POST', '/admin/products/singles', data),
+  market: (cardId) => request('GET', `/admin/products/singles/market/${cardId}`),
+  lowStock: () => request('GET', '/admin/stock/low'),
+  latestMovements: (page) => request('GET', `/admin/stock/movements${queryString({ page })}`),
+  importCardmarket: (game) => request('POST', `/admin/product-import/cardmarket/${game}`),
+  setTemplates: (game) => request('GET', `/admin/product-import/set-templates/${game}`),
+  createForSet: (data) => request('POST', '/admin/product-import/set-products', data),
+  importCsv: (file) => upload('/admin/product-import/csv', file),
+  /** A plain link: the browser downloads the file with the session cookie. */
+  csvUrl: `${BASE_URL}/admin/product-import/csv`,
+  slides: () => request('GET', '/admin/hero-slides'),
+  createSlide: (data) => request('POST', '/admin/hero-slides', data),
+  updateSlide: (id, data) => request('PUT', `/admin/hero-slides/${id}`, data),
+  deleteSlide: (id) => request('DELETE', `/admin/hero-slides/${id}`),
+  moveSlide: (id, direction) => request('POST', `/admin/hero-slides/${id}/move${queryString({ direction })}`),
+  uploadSlideImage: (id, file) => upload(`/admin/hero-slides/${id}/image`, file),
+  removeSlideImage: (id) => request('DELETE', `/admin/hero-slides/${id}/image`),
+}

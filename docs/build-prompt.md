@@ -53,6 +53,7 @@ These decisions came up while building and apply to every later phase. The phase
 - **Card tiles:** logged-in customers get a + next to the price. It turns into `- count +` in the same element.
 - **Admin images:** the owner can replace the picture of a card or set at `/admin/afbeeldingen`, and browse all cards without a picture there, by game and set, sorted by set, name or Pokédex number, 25, 50 or 100 per page from a dropdown. Uploads sit next to the source's images and a sync leaves them alone. `MediaStorage` handles the files.
 - **Every product in the shop:** the owner wants all products that exist to be in the shop, shown as "Uitverkocht" while there's no stock. See phase 4.
+- **Hero carousel:** the hero on the home page is a carousel, the owner's idea. The hero with the binder stays the first slide, and admins add, edit, reorder, switch off and remove the other slides: promotions, upcoming set releases and other news. Phase 6 adds a slide for upcoming and live drops by itself, and phase 7 lets the admin have a slide written by AI from a prompt.
 - **Value graph:** added at the owner's request, inspired by the portfolio graph in the Collectr app. Card prices have no history, so one value per customer per day is saved. It only starts when a customer starts, and can't be filled in afterwards.
 - **Viewer on public endpoints:** a nullable `@CurrentUser` parameter gives the logged-in user when there is one. Card lists then include what the viewer owns.
 - **Before going live:** the owner does a legal check and has asked to be reminded. See phase 8.
@@ -172,7 +173,7 @@ Backend:
 - Product wishlist and a "mail me when back in stock" signup. `/verlanglijst` already exists for cards from phase 3: add products there.
 
 Frontend:
-- Home page: hero banner area (managed in admin), upcoming/live drop block, new arrivals, bestsellers, browse per game, latest pre-orders.
+- Home page: a hero carousel, upcoming/live drop block, new arrivals, bestsellers, browse per game, latest pre-orders. The hero with the binder is the first slide. The other slides are managed in admin: title, text, button with link, image, game colour, start and end date, on or off, and their order. Use them for promotions, upcoming set releases and other news. The carousel turns by itself, stops on hover, focus and for visitors who prefer reduced motion, and has buttons to go back, forward and pause.
 - Category pages per game, with navigation by series → set (like the big Dutch shops) and by product type. The Pokémon series in `data/navigation.js` are a fixed list that real sets from the catalog can replace now.
 - Product cards: image, name, price, sale price with strike-through, badges ("Pre-order", "Uitverkocht", "Aanbieding", "Laatste X"), add-to-cart button (cart arrives in phase 5, so show the button but disable it for now).
 - Product page: image gallery, price, stock status, pre-order ship date, description, for singles a link to the card in the catalog and its market price with source as a reference, related products from the same set.
@@ -237,7 +238,8 @@ Backend:
 Frontend:
 - `/drops`: upcoming, live and past drops.
 - Drop page: banner, products with drop prices and limits, countdown to the start, "herinner mij" button, then the waiting room with position, then the shop part with live stock counters ("nog 12 over"). Show a clear "uitverkocht" state.
-- A drop banner on the home page and a "LIVE" badge in the navigation while a drop is live.
+- A slide in the home hero carousel for every upcoming and live drop, added by itself from the drop's banner, name and start time, with the countdown. It goes away when the drop ends. Admins can switch it off per drop.
+- A "LIVE" badge in the navigation while a drop is live.
 
 Admin:
 - Create and edit drops: choose products, allocate stock, set limits, prices and times, preview the drop page.
@@ -257,7 +259,8 @@ Goal: the features that make the big Dutch TCG shops feel complete.
 - **Bundles:** "stel je eigen bundel samen", for example a sealed product plus a matching acrylic display case with a discount on the case. Admin defines which products can be combined and the discount.
 - **Case deals and quantity discounts:** a tiered price per product (for example 6+ boosters cheaper per piece).
 - **Pre-order page:** all pre-orders with release dates on a timeline.
-- **Release calendar:** upcoming sets per game, managed in admin, with links to the pre-orders.
+- **Release calendar:** upcoming sets per game, managed in admin, with links to the pre-orders. An upcoming release can get its own slide in the home hero carousel with one click.
+- **Hero slides written by AI:** on the admin page for hero slides, the admin writes a prompt (for example "pre-order Destined Rivals, release 30 mei") and the backend asks OpenAI for a title, text and button label, and optionally an image. The owner has an OpenAI API key: read it from `OPENAI_API_KEY` on the backend only, never in a `VITE_` variable. Read OpenAI's current API docs, terms and pricing first, pick a current model, and set a monthly cost limit with a clear message when it's reached. The result is a draft that the admin edits and approves: nothing goes live without that. Store generated images through `MediaStorage`. Without a key the button is hidden and everything else works. Generated images must not show Pokémon or other characters, logos or card art, because those belong to the games' owners: add that to the prompt and to the legal check.
 - **News:** simple articles (title, image, text, date, game tag) managed in admin, shown on `/nieuws` and on the home page.
 - **Newsletter signup** stored in the database with double opt-in by email, and an admin export.
 - **Kaarten verkopen (buylist request):** a form where customers list cards they want to sell (they can pick cards from the catalog or from their own collection), with condition and photos. The admin sees requests, gives an offer, and changes the status. No automatic payouts.
@@ -280,7 +283,7 @@ Goal: ready to show, ready to deploy.
 - Start the app with the `prod` profile against the Docker Postgres and check that all Flyway migrations run and Hibernate validation passes.
 - Update the root `README.md`: what the app does, how to run it, environment variables, how to sync card data, how to test payments with the Stripe CLI, and the phase overview with links to `docs/phases/`.
 - Production basics left open by earlier phases: a way to create the first admin (only `dev` seeds accounts), SMTP username and password settings, Swagger closed in `prod`, `FORWARD_HEADERS_STRATEGY=native` behind a proxy, a heap of at least 2 GB for the Magic sync, and the `npm audit` issue in dev tooling.
-- **Go-live reminder:** before anything goes live, remind the owner to do the legal check. They asked for this reminder. It covers the Wizards Fan Content Policy, Ravensburger's Community Code and Lorcast's "prohibited from charging" notice for a commercial shop, reusing TCGplayer prices from Lorcast and the OPTCG API, Cardmarket and ECB data, the PokéAPI data, pictures uploaded at `/admin/afbeeldingen`, a product list from Cardmarket or TCGplayer, the ball emblem in the logo, the public collection pages and saved value history in the privacy policy, and the draft legal pages. Also bring up the One Piece images: they load from one person's server and carry a "SAMPLE" watermark. Full notes are in `docs/phases/phase-02.md` and `docs/phases/phase-03.md`.
+- **Go-live reminder:** before anything goes live, remind the owner to do the legal check. They asked for this reminder. It covers the Wizards Fan Content Policy, Ravensburger's Community Code and Lorcast's "prohibited from charging" notice for a commercial shop, reusing TCGplayer prices from Lorcast and the OPTCG API, Cardmarket and ECB data, the PokéAPI data, pictures uploaded at `/admin/afbeeldingen`, a product list from Cardmarket or TCGplayer, the ball emblem in the logo, the public collection pages and saved value history in the privacy policy, images and text generated by OpenAI for hero slides and what OpenAI's terms say about using them, and the draft legal pages. Also bring up the One Piece images: they load from one person's server and carry a "SAMPLE" watermark. Full notes are in `docs/phases/phase-02.md` and `docs/phases/phase-03.md`.
 
 Done when:
 - All tests pass, the production build works, and the `prod` profile starts cleanly on an empty database.

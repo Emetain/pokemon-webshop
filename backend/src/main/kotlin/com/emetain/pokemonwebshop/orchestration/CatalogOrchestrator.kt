@@ -18,6 +18,8 @@ import com.emetain.pokemonwebshop.repository.CardSetRepository
 import com.emetain.pokemonwebshop.repository.CardSort
 import com.emetain.pokemonwebshop.repository.CardSpecifications
 import com.emetain.pokemonwebshop.repository.ExchangeRateRepository
+import com.emetain.pokemonwebshop.dto.ProductSummaryDto
+import com.emetain.pokemonwebshop.service.CardOfferService
 import com.emetain.pokemonwebshop.service.CatalogText
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -29,6 +31,7 @@ class CatalogOrchestrator(
     private val cardPriceRepository: CardPriceRepository,
     private val exchangeRateRepository: ExchangeRateRepository,
     private val cardList: CardListOrchestrator,
+    private val cardOfferService: CardOfferService,
 ) {
 
     fun sets(gameSlug: String): List<CardSetDto> =
@@ -57,7 +60,8 @@ class CatalogOrchestrator(
     @Transactional(readOnly = true)
     fun card(id: Long): CardDetailDto {
         val card = cardRepository.findWithSetById(id) ?: throw ApiException.notFound()
-        return CardDetailDto.from(card, cardPriceRepository.findAllByCardIds(listOf(id)))
+        val offers = cardOfferService.buyable(listOf(id)).map { ProductSummaryDto.from(it) }
+        return CardDetailDto.from(card, cardPriceRepository.findAllByCardIds(listOf(id)), offers)
     }
 
     @Transactional(readOnly = true)

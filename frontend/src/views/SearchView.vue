@@ -7,13 +7,16 @@ import CatalogBand from '../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../components/catalog/CatalogNotice.vue'
 import FilterSelect from '../components/catalog/FilterSelect.vue'
 import PageLinks from '../components/catalog/PageLinks.vue'
+import ProductGrid from '../components/shop/ProductGrid.vue'
 import { GAMES } from '../data/games'
-import { catalogApi } from '../services/api'
+import { catalogApi, shopApi } from '../services/api'
+import { formatNumber } from '../utils/format'
 import { useSession } from '../stores/session'
 import { cardCountLabel, filterQuery, pageFromQuery } from '../utils/catalog'
 import { t } from '../utils/i18n'
 
 const MIN_QUERY_LENGTH = 2
+const PRODUCT_PREVIEW = 6
 
 const props = defineProps({
   q: { type: String, default: '' },
@@ -32,6 +35,7 @@ const router = useRouter()
 const session = useSession()
 
 const result = ref(null)
+const products = ref(null)
 const loading = ref(false)
 const error = ref('')
 
@@ -100,6 +104,27 @@ function onCollectionChange(card, change) {
 }
 
 watch(() => [query.value, filters.value, currentPage.value], search, { immediate: true })
+
+let latestProductsRequest = 0
+
+/** Products that match go above the cards, on the first page only. A failure leaves just the cards. */
+async function searchProducts() {
+  const request = ++latestProductsRequest
+  if (!canSearch.value || currentPage.value > 1) {
+    products.value = null
+    return
+  }
+  try {
+    const value = await shopApi.products({ q: query.value, game: props.game || undefined, size: PRODUCT_PREVIEW })
+    if (request === latestProductsRequest) products.value = value.results
+  } catch {
+    if (request === latestProductsRequest) products.value = null
+  }
+}
+
+const allProductsLink = computed(() => ({ path: props.game ? `/${props.game}` : '/producten', query: { q: query.value } }))
+
+watch(() => [query.value, props.game, currentPage.value], searchProducts, { immediate: true })
 </script>
 
 <template>
@@ -114,6 +139,17 @@ watch(() => [query.value, filters.value, currentPage.value], search, { immediate
     </CatalogNotice>
 
     <template v-else>
+      <section v-if="products?.items.length" class="products" aria-labelledby="search-products">
+        <div class="section-head">
+          <h2 id="search-products">{{ t('search.products') }}</h2>
+          <router-link v-if="products.totalItems > products.items.length" class="all" :to="allProductsLink">
+            {{ t('search.allProducts', { count: formatNumber(products.totalItems) }) }}
+          </router-link>
+        </div>
+        <ProductGrid :products="products.items" @wished="(product, wished) => (product.wished = wished)" />
+      </section>
+
+      <h2 v-if="products?.items.length" class="cards-title">{{ t('search.cards') }}</h2>
       <CardFilters
         :game="game"
         :values="filters"
@@ -153,6 +189,28 @@ watch(() => [query.value, filters.value, currentPage.value], search, { immediate
 </template>
 
 <style scoped>
+.products {
+  margin-bottom: var(--space-7);
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.all {
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.cards-title {
+  margin-bottom: var(--space-4);
+}
+
 .prompt {
   margin-top: var(--space-1);
 }

@@ -8,7 +8,8 @@ import { findGame } from '../../data/games'
 import { catalogApi } from '../../services/api'
 import { useCurrency } from '../../stores/currency'
 import { categoryLabel, colorFilterLabel, colorLabel, dexLabel, variantLabel } from '../../utils/catalog'
-import { formatDate, formatRate } from '../../utils/format'
+import { productFacts } from '../../data/shop'
+import { formatDate, formatMoney, formatRate } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
 const props = defineProps({
@@ -152,6 +153,18 @@ watch(() => props.cardId, load, { immediate: true })
           </div>
         </dl>
 
+        <section v-if="card.offers.length" class="offers">
+          <h2>{{ t('shop.offersTitle') }}</h2>
+          <ul class="offer-list">
+            <li v-for="offer in card.offers" :key="offer.id" class="offer">
+              <router-link class="offer-link" :to="{ name: 'product', params: { slug: offer.slug } }">
+                <span class="offer-name">{{ productFacts(offer).filter((fact) => fact !== offer.setName).join(', ') }}</span>
+                <span class="offer-price">{{ formatMoney(offer.shownPriceCents, 'EUR') }}</span>
+              </router-link>
+            </li>
+          </ul>
+        </section>
+
         <CardCollectionPanel :card="card" />
 
         <section class="prices">
@@ -190,6 +203,50 @@ watch(() => props.cardId, load, { immediate: true })
 </template>
 
 <style scoped>
+.offers {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+.offers h2 {
+  font-size: var(--text-lg);
+}
+
+.offer-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offer-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--color-line);
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.offer:last-child .offer-link {
+  border-bottom: 1px solid var(--color-line);
+}
+
+.offer-link:hover .offer-name {
+  color: var(--color-brand);
+  text-decoration: underline;
+}
+
+.offer-price {
+  flex: none;
+  color: var(--color-success);
+  font-weight: 750;
+}
+
 .page {
   padding-block: var(--space-4) 0;
 }
