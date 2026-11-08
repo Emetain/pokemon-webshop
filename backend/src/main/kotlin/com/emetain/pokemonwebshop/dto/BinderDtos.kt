@@ -30,4 +30,6 @@ data class BinderPageDto(
     val page: Int,
     val totalPages: Int,
     val slots: List<BinderSlotDto>,
+    /** Set when the binder only shows cards of one game, such as the most expensive Pokémon cards for visitors. */
+    val game: String? = null,
 )

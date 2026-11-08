@@ -1,9 +1,13 @@
 package com.emetain.pokemonwebshop.controller
 
+import com.emetain.pokemonwebshop.dto.AdminImageCardPageDto
+import com.emetain.pokemonwebshop.dto.AdminImageCardRequest
 import com.emetain.pokemonwebshop.dto.CatalogImageDto
 import com.emetain.pokemonwebshop.orchestration.AdminCatalogImageOrchestrator
 import com.emetain.pokemonwebshop.security.AdminOnly
+import org.springdoc.core.annotations.ParameterObject
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -17,6 +21,10 @@ import org.springframework.web.multipart.MultipartFile
 class AdminCatalogImageController(
     private val imageOrchestrator: AdminCatalogImageOrchestrator,
 ) {
+
+    @GetMapping("/cards")
+    fun cards(@ParameterObject request: AdminImageCardRequest): AdminImageCardPageDto =
+        imageOrchestrator.cards(request)
 
     @PostMapping("/cards/{id}")
     fun replaceCardImage(@PathVariable id: Long, @RequestParam file: MultipartFile): CatalogImageDto =

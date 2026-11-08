@@ -84,6 +84,13 @@ const session = useSession()
   max-width: 24rem;
 }
 
+/* Wide enough to open the binder: two pages side by side. */
+@media (min-width: 640px) {
+  .hero-binder {
+    max-width: 46rem;
+  }
+}
+
 @media (min-width: 960px) {
   .hero {
     padding-block: var(--space-7);
@@ -96,11 +103,18 @@ const session = useSession()
     height: 50rem;
     transform: translateY(-50%) rotate(-18deg);
   }
+}
 
+/* Room for the text and an open binder next to each other. */
+@media (min-width: 1200px) {
   .hero-grid {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr);
     align-items: center;
-    gap: var(--space-8);
+    gap: var(--space-7);
+  }
+
+  .hero-title {
+    font-size: clamp(2.75rem, 4.6vw, 4.25rem);
   }
 
   .hero-binder {

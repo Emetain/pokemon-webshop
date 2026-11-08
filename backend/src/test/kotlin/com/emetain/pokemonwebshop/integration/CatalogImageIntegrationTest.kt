@@ -10,10 +10,13 @@ import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDate
+import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
@@ -167,10 +170,92 @@ class CatalogImageIntegrationTest : CollectionTestSupport() {
         importCards(listOf(providerCard(noImage, prices = expensive).copy(imageSmallUrl = null)), game = Game.MTG)
 
         val url = uploadedUrl("/cards/${card(noImage, Game.MTG).id}")
+        mockMvc.perform(patch("/v1/account").cookie(admin).json(mapOf("binderSource" to "MOST_EXPENSIVE")))
+            .andExpect(status().isOk)
 
-        val body = mockMvc.perform(get("/v1/binder")).andReturn().response.contentAsString
+        val body = mockMvc.perform(get("/v1/binder").cookie(admin)).andReturn().response.contentAsString
         val shown = objectMapper.readTree(body)["slots"].map { it["card"]["imageUrl"].asText() }
         assertTrue(url in shown, shown.toString())
+    }
+
+    private fun list(query: String) =
+        mockMvc.perform(get("/v1/admin/catalog/images/cards?$query").cookie(admin)).andExpect(status().isOk)
+
+    private fun names(query: String): List<String> =
+        objectMapper.readTree(list(query).andReturn().response.contentAsString)["items"].map { it["name"].asText() }
+
+    @Test
+    fun `the list of cards is for admins only`() {
+        mockMvc.perform(get("/v1/admin/catalog/images/cards")).andExpect(status().isUnauthorized)
+        mockMvc.perform(get("/v1/admin/catalog/images/cards").cookie(loggedInUser())).andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `the admin can list the cards without a picture, and an upload takes a card off that list`() {
+        val listed = uniqueCode()
+        val without = uniqueCode()
+        val custom = uniqueCode()
+        importCards(
+            listOf(
+                providerCard(listed, number = "1", name = "With image"),
+                providerCard(without, number = "2", name = "Without image").copy(imageSmallUrl = null, imageLargeUrl = null),
+                providerCard(custom, number = "3", name = "Uploaded").copy(imageSmallUrl = null, imageLargeUrl = null),
+            ),
+            code = listed,
+        )
+        uploadedUrl("/cards/${card(custom).id}")
+
+        assertEquals(listOf("Without image"), names("set=$listed&game=pokemon&image=missing"))
+        assertEquals(listOf("Uploaded"), names("set=$listed&game=pokemon&image=custom"))
+        assertEquals(3, names("set=$listed&game=pokemon").size)
+
+        list("set=$listed&game=pokemon&image=custom")
+            .andExpect(jsonPath("$.totalItems").value(1))
+            .andExpect(jsonPath("$.items[0].customImage").value(true))
+            .andExpect(jsonPath("$.items[0].setCode").value(listed))
+    }
+
+    @Test
+    fun `the list sorts by set, by name and by Pokédex number`() {
+        val word = uniqueWord()
+        val older = uniqueCode()
+        val newer = uniqueCode()
+        importService.importSet(
+            Game.POKEMON,
+            providerSet(
+                older,
+                listOf(
+                    providerCard(number = "1", name = "$word Charizard", dexNumbers = setOf(6)),
+                    providerCard(number = "2", name = "$word Professor", category = "Trainer"),
+                ),
+                releaseDate = LocalDate.of(1999, 1, 9),
+            ),
+        )
+        importService.importSet(
+            Game.POKEMON,
+            providerSet(
+                newer,
+                listOf(
+                    providerCard(number = "1", name = "$word Pikachu", dexNumbers = setOf(25)),
+                    providerCard(number = "2", name = "$word Bulbasaur", dexNumbers = setOf(1)),
+                ),
+                releaseDate = LocalDate.of(2025, 1, 1),
+            ),
+        )
+
+        assertEquals(
+            listOf("$word Pikachu", "$word Bulbasaur", "$word Charizard", "$word Professor"),
+            names("q=$word&sort=set"),
+        )
+        assertEquals(
+            listOf("$word Bulbasaur", "$word Charizard", "$word Pikachu", "$word Professor"),
+            names("q=$word&sort=name"),
+        )
+        assertEquals(
+            listOf("$word Bulbasaur", "$word Charizard", "$word Pikachu", "$word Professor"),
+            names("q=$word&sort=pokedex"),
+        )
+        list("q=$word&sort=pokedex").andExpect(jsonPath("$.items[0].dexNumbers[0]").value(1))
     }
 
     @Test

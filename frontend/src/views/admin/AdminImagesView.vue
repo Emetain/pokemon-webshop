@@ -1,74 +1,129 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { RotateCcw, Upload } from 'lucide-vue-next'
 import CardImage from '../../components/catalog/CardImage.vue'
+import PageLinks from '../../components/catalog/PageLinks.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import { GAMES } from '../../data/games'
 import { adminApi, catalogApi } from '../../services/api'
+import { dexLabel, filterQuery, pageFromQuery } from '../../utils/catalog'
+import { formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024
-const MIN_SEARCH_LENGTH = 2
-const SEARCH_DELAY_MS = 300
-const CARD_RESULTS = 24
-const SET_RESULTS = 30
+const SEARCH_DELAY_MS = 350
+const SETS_PER_PAGE = 30
 
-const kind = ref('cards')
-const game = ref('')
-const setGame = ref(GAMES[0].slug)
-const query = ref('')
+/** Filters, sorting and page live in the URL, like on the card lists, so a list can be bookmarked. */
+const props = defineProps({
+  kind: { type: String, default: 'cards' },
+  q: { type: String, default: '' },
+  game: { type: String, default: '' },
+  set: { type: String, default: '' },
+  image: { type: String, default: '' },
+  sort: { type: String, default: '' },
+  page: { type: String, default: '1' },
+})
 
-const cards = ref([])
+const router = useRouter()
+const ids = { search: useId(), game: useId(), set: useId(), image: useId(), sort: useId() }
+
+const cards = ref(null)
 const sets = ref([])
 const loading = ref(false)
 const busyItem = ref(null)
 const error = ref('')
 const message = ref('')
+const searchText = ref(props.q)
+
+const showingSets = computed(() => props.kind === 'sets')
+const currentPage = computed(() => pageFromQuery(props.page))
+const setGame = computed(() => props.game || (showingSets.value ? GAMES[0].slug : ''))
+const hasFilters = computed(() => Boolean(props.q || props.game || props.set || props.image))
+
+function cardDetails(card) {
+  const parts = [gameLabel(card.game), card.setName, `#${card.number}`]
+  if (card.dexNumbers.length) parts.push(`${t('catalog.card.pokedex')} ${card.dexNumbers.map(dexLabel).join(' ')}`)
+  return parts.join(', ')
+}
 
 const gameLabel = (slug) => t(GAMES.find((item) => item.slug === slug).labelKey)
 
+const countLabel = (count, one, many) => (count === 1 ? t(one) : t(many, { count: formatNumber(count) }))
+
+/** Changes the URL. Leaving out the page starts at page 1, because the list has changed. */
+function update(changes) {
+  const values = { kind: props.kind, q: props.q, game: props.game, set: props.set, image: props.image, sort: props.sort }
+  router.replace({ query: filterQuery({ ...values, ...changes, kind: (changes.kind ?? props.kind) === 'sets' ? 'sets' : '' }) })
+}
+
+function filter(name) {
+  return computed({
+    get: () => props[name],
+    set: (value) => update({ [name]: value }),
+  })
+}
+
+// The sets of one game are another list, so choosing a game clears the set.
+const gameFilter = computed({
+  get: () => (showingSets.value ? setGame.value : props.game),
+  set: (value) => update({ game: value, set: '' }),
+})
+const setFilter = filter('set')
+const imageFilter = filter('image')
+const sortFilter = filter('sort')
+
 const matchingSets = computed(() => {
-  const term = query.value.trim().toLowerCase()
-  if (!term) return sets.value
-  return sets.value.filter((set) => set.name.toLowerCase().includes(term) || set.code.toLowerCase().includes(term))
+  const term = props.q.trim().toLowerCase()
+  return sets.value.filter((set) => {
+    if (props.image === 'missing' && set.logoUrl) return false
+    if (!term) return true
+    return set.name.toLowerCase().includes(term) || set.code.toLowerCase().includes(term)
+  })
 })
 
-const shownSets = computed(() => matchingSets.value.slice(0, SET_RESULTS))
-const hiddenSets = computed(() => matchingSets.value.length - shownSets.value.length)
+const setPages = computed(() => Math.max(Math.ceil(matchingSets.value.length / SETS_PER_PAGE), 1))
+const shownSets = computed(() =>
+  matchingSets.value.slice((currentPage.value - 1) * SETS_PER_PAGE, currentPage.value * SETS_PER_PAGE),
+)
 
-const canSearchCards = computed(() => query.value.trim().length >= MIN_SEARCH_LENGTH)
+let latestCards = 0
 
-let latestRequest = 0
-let searchTimer = null
-
-async function searchCards() {
-  const request = ++latestRequest
-  if (!canSearchCards.value) {
-    cards.value = []
-    loading.value = false
-    return
-  }
+async function loadCards() {
+  const request = ++latestCards
   loading.value = true
   try {
-    const result = await catalogApi.search({ q: query.value.trim(), game: game.value, size: CARD_RESULTS })
-    if (request === latestRequest) cards.value = result.results.items
+    const result = await adminApi.imageCards({
+      q: props.q,
+      game: props.game,
+      set: props.set,
+      image: props.image,
+      sort: props.sort,
+      page: currentPage.value - 1,
+    })
+    if (request === latestCards) cards.value = result
   } catch (exception) {
-    if (request === latestRequest) error.value = exception.message
+    if (request === latestCards) error.value = exception.message
   } finally {
-    if (request === latestRequest) loading.value = false
+    if (request === latestCards) loading.value = false
   }
 }
 
+let latestSets = 0
+
 async function loadSets() {
-  const request = ++latestRequest
-  loading.value = true
+  const game = setGame.value
+  if (!game) {
+    sets.value = []
+    return
+  }
+  const request = ++latestSets
   try {
-    const result = await catalogApi.sets(setGame.value)
-    if (request === latestRequest) sets.value = result
+    const result = await catalogApi.sets(game)
+    if (request === latestSets) sets.value = result
   } catch (exception) {
-    if (request === latestRequest) error.value = exception.message
-  } finally {
-    if (request === latestRequest) loading.value = false
+    if (request === latestSets) error.value = exception.message
   }
 }
 
@@ -103,71 +158,58 @@ function chosenFile(event) {
   return file
 }
 
+/** Keeps the row where it is, also when it no longer matches the filter, so the list doesn't jump while working. */
 function uploadCard(card, event) {
   const file = chosenFile(event)
   if (!file) return
-  change(
-    `card-${card.id}`,
-    async () => {
-      const image = await adminApi.uploadCardImage(card.id, file)
-      card.imageUrl = image.imageUrl
-      card.customImage = image.custom
-    },
-    t('admin.images.saved'),
-  )
+  change(`card-${card.id}`, async () => Object.assign(card, toCard(await adminApi.uploadCardImage(card.id, file))), t('admin.images.saved'))
 }
 
 function resetCard(card) {
-  change(
-    `card-${card.id}`,
-    async () => {
-      const image = await adminApi.resetCardImage(card.id)
-      card.imageUrl = image.imageUrl
-      card.customImage = image.custom
-    },
-    t('admin.images.resetDone'),
-  )
+  change(`card-${card.id}`, async () => Object.assign(card, toCard(await adminApi.resetCardImage(card.id))), t('admin.images.resetDone'))
 }
 
 function uploadSet(set, event) {
   const file = chosenFile(event)
   if (!file) return
-  change(
-    `set-${set.code}`,
-    async () => {
-      const image = await adminApi.uploadSetLogo(set.game, set.code, file)
-      set.logoUrl = image.imageUrl
-      set.customLogo = image.custom
-    },
-    t('admin.images.saved'),
-  )
+  change(`set-${set.code}`, async () => Object.assign(set, toSet(await adminApi.uploadSetLogo(set.game, set.code, file))), t('admin.images.saved'))
 }
 
 function resetSet(set) {
-  change(
-    `set-${set.code}`,
-    async () => {
-      const image = await adminApi.resetSetLogo(set.game, set.code)
-      set.logoUrl = image.imageUrl
-      set.customLogo = image.custom
-    },
-    t('admin.images.resetDone'),
-  )
+  change(`set-${set.code}`, async () => Object.assign(set, toSet(await adminApi.resetSetLogo(set.game, set.code))), t('admin.images.resetDone'))
 }
 
-watch(kind, (value) => {
-  query.value = ''
-  clearMessages()
-  if (value === 'sets') loadSets()
-})
+const toCard = (image) => ({ imageUrl: image.imageUrl, customImage: image.custom })
+const toSet = (image) => ({ logoUrl: image.imageUrl, customLogo: image.custom })
 
-watch(setGame, loadSets)
+let searchTimer = null
 
-watch([query, game], () => {
-  if (kind.value !== 'cards') return
+/** A search for a card means nothing in the list of sets, so the other tab starts fresh. */
+function switchTo(kind) {
   clearTimeout(searchTimer)
-  searchTimer = setTimeout(searchCards, SEARCH_DELAY_MS)
+  searchText.value = ''
+  clearMessages()
+  update({ kind, q: '', set: '', image: '', sort: '' })
+}
+
+watch(searchText, (value) => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => update({ q: value.trim() }), SEARCH_DELAY_MS)
 })
+
+watch(() => props.q, (value) => {
+  if (value !== searchText.value.trim()) searchText.value = value
+})
+
+watch(
+  () => [props.kind, props.q, props.game, props.set, props.image, props.sort, currentPage.value],
+  () => {
+    if (!showingSets.value) loadCards()
+  },
+  { immediate: true },
+)
+
+watch([() => props.kind, setGame], loadSets, { immediate: true })
 </script>
 
 <template>
@@ -176,45 +218,88 @@ watch([query, game], () => {
   <p class="intro">{{ t('admin.images.rights') }}</p>
 
   <div class="kinds" role="group" :aria-label="t('admin.images.kind')">
-    <button class="kind" type="button" :aria-pressed="kind === 'cards'" @click="kind = 'cards'">
+    <button class="kind" type="button" :aria-pressed="!showingSets" @click="switchTo('cards')">
       {{ t('admin.images.cards') }}
     </button>
-    <button class="kind" type="button" :aria-pressed="kind === 'sets'" @click="kind = 'sets'">
+    <button class="kind" type="button" :aria-pressed="showingSets" @click="switchTo('sets')">
       {{ t('admin.images.sets') }}
     </button>
   </div>
 
-  <div class="search">
-    <label class="field grow">
-      <span class="label">{{ kind === 'cards' ? t('admin.images.searchCards') : t('admin.images.searchSets') }}</span>
-      <input v-model="query" class="input" type="search" autocomplete="off" />
-    </label>
-    <label class="field">
-      <span class="label">{{ t('admin.images.game') }}</span>
-      <select v-if="kind === 'cards'" v-model="game" class="input">
-        <option value="">{{ t('admin.images.allGames') }}</option>
+  <div class="filters">
+    <div class="field grow">
+      <label class="label" :for="ids.search">{{ t('admin.images.search') }}</label>
+      <input :id="ids.search" v-model="searchText" class="input" type="search" autocomplete="off" />
+    </div>
+
+    <div class="field">
+      <label class="label" :for="ids.game">{{ t('admin.images.game') }}</label>
+      <select :id="ids.game" v-model="gameFilter" class="input">
+        <option v-if="!showingSets" value="">{{ t('admin.images.allGames') }}</option>
         <option v-for="item in GAMES" :key="item.slug" :value="item.slug">{{ t(item.labelKey) }}</option>
       </select>
-      <select v-else v-model="setGame" class="input">
-        <option v-for="item in GAMES" :key="item.slug" :value="item.slug">{{ t(item.labelKey) }}</option>
-      </select>
+    </div>
+
+    <template v-if="!showingSets">
+      <div class="field">
+        <label class="label" :for="ids.set">{{ t('admin.images.set') }}</label>
+        <select :id="ids.set" v-model="setFilter" class="input" :disabled="!game">
+          <option value="">{{ game ? t('admin.images.allSets') : t('admin.images.chooseGameFirst') }}</option>
+          <option v-for="item in sets" :key="item.code" :value="item.code">{{ item.name }} ({{ item.code }})</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" :for="ids.image">{{ t('admin.images.image') }}</label>
+        <select :id="ids.image" v-model="imageFilter" class="input">
+          <option value="">{{ t('admin.images.allCards') }}</option>
+          <option value="missing">{{ t('admin.images.missing') }}</option>
+          <option value="custom">{{ t('admin.images.withCustom') }}</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" :for="ids.sort">{{ t('admin.images.sort') }}</label>
+        <select :id="ids.sort" v-model="sortFilter" class="input">
+          <option value="">{{ t('admin.images.sortSet') }}</option>
+          <option value="name">{{ t('admin.images.sortName') }}</option>
+          <option value="pokedex">{{ t('admin.images.sortPokedex') }}</option>
+        </select>
+      </div>
+    </template>
+
+    <label v-else class="check">
+      <input
+        type="checkbox"
+        :checked="image === 'missing'"
+        @change="update({ image: $event.target.checked ? 'missing' : '' })"
+      />
+      {{ t('admin.images.onlyWithoutLogo') }}
     </label>
+
+    <button v-if="hasFilters" class="text-button clear" type="button" @click="update({ q: '', game: '', set: '', image: '' })">
+      {{ t('admin.images.clear') }}
+    </button>
   </div>
+
+  <p v-if="!showingSets && image === 'missing'" class="hint">{{ t('admin.images.missingHint') }}</p>
 
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
   <FormMessage v-if="message" class="message" type="success">{{ message }}</FormMessage>
 
-  <template v-if="kind === 'cards'">
-    <p v-if="!canSearchCards" class="hint">{{ t('admin.images.searchHint') }}</p>
-    <p v-else-if="loading" class="hint" role="status">{{ t('admin.images.loading') }}</p>
-    <p v-else-if="!cards.length" class="hint">{{ t('admin.images.noResults') }}</p>
+  <template v-if="!showingSets">
+    <p v-if="cards && !loading" class="count" role="status">
+      {{ countLabel(cards.totalItems, 'admin.images.oneCard', 'admin.images.cardCount') }}
+    </p>
+    <p v-if="loading && !cards" class="hint" role="status">{{ t('admin.images.loading') }}</p>
+    <p v-else-if="cards && !cards.items.length" class="hint">{{ t('admin.images.noResults') }}</p>
 
-    <ul v-else class="items">
-      <li v-for="card in cards" :key="card.id" class="item">
+    <ul v-else-if="cards" class="items" :aria-busy="loading">
+      <li v-for="card in cards.items" :key="card.id" class="item">
         <CardImage class="thumb" :src="card.imageUrl" :alt="card.name" />
         <div class="text">
           <p class="name">{{ card.name }}</p>
-          <p class="details">{{ gameLabel(card.game) }}, {{ card.setName }}, #{{ card.number }}</p>
+          <p class="details">{{ cardDetails(card) }}</p>
           <p v-if="card.customImage" class="custom">{{ t('admin.images.custom') }}</p>
         </div>
         <div class="actions">
@@ -244,43 +329,44 @@ watch([query, game], () => {
         </div>
       </li>
     </ul>
+    <PageLinks v-if="cards" :page="currentPage" :total-pages="cards.totalPages" />
   </template>
 
   <template v-else>
-    <p v-if="loading" class="hint" role="status">{{ t('admin.images.loading') }}</p>
-    <p v-else-if="!shownSets.length" class="hint">{{ t('admin.images.noResults') }}</p>
+    <p class="count" role="status">{{ countLabel(matchingSets.length, 'admin.images.oneSet', 'admin.images.setCount') }}</p>
+    <p v-if="!shownSets.length" class="hint">{{ t('admin.images.noResults') }}</p>
 
     <ul v-else class="items">
-      <li v-for="set in shownSets" :key="set.code" class="item">
+      <li v-for="item in shownSets" :key="item.code" class="item">
         <span class="logo-box">
-          <img v-if="set.logoUrl" class="logo" :src="set.logoUrl" alt="" loading="lazy" decoding="async" />
-          <span v-else class="code">{{ set.code }}</span>
+          <img v-if="item.logoUrl" class="logo" :src="item.logoUrl" alt="" loading="lazy" decoding="async" />
+          <span v-else class="code">{{ item.code }}</span>
         </span>
         <div class="text">
-          <p class="name">{{ set.name }}</p>
-          <p class="details">{{ set.code }}</p>
-          <p v-if="set.customLogo" class="custom">{{ t('admin.images.custom') }}</p>
+          <p class="name">{{ item.name }}</p>
+          <p class="details">{{ item.code }}</p>
+          <p v-if="item.customLogo" class="custom">{{ t('admin.images.custom') }}</p>
         </div>
         <div class="actions">
-          <label class="btn btn-secondary action" :class="{ busy: busyItem === `set-${set.code}` }">
+          <label class="btn btn-secondary action" :class="{ busy: busyItem === `set-${item.code}` }">
             <Upload :size="16" aria-hidden="true" />
             {{ t('admin.images.choose') }}
             <input
               class="visually-hidden"
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              :aria-label="t('admin.images.chooseLabel', { name: set.name })"
-              :disabled="busyItem === `set-${set.code}`"
-              @change="uploadSet(set, $event)"
+              :aria-label="t('admin.images.chooseLabel', { name: item.name })"
+              :disabled="busyItem === `set-${item.code}`"
+              @change="uploadSet(item, $event)"
             />
           </label>
           <button
-            v-if="set.customLogo"
+            v-if="item.customLogo"
             class="text-button"
             type="button"
-            :aria-label="t('admin.images.resetLabel', { name: set.name })"
-            :disabled="busyItem === `set-${set.code}`"
-            @click="resetSet(set)"
+            :aria-label="t('admin.images.resetLabel', { name: item.name })"
+            :disabled="busyItem === `set-${item.code}`"
+            @click="resetSet(item)"
           >
             <RotateCcw :size="16" aria-hidden="true" />
             {{ t('admin.images.reset') }}
@@ -288,7 +374,7 @@ watch([query, game], () => {
         </div>
       </li>
     </ul>
-    <p v-if="hiddenSets > 0" class="hint">{{ t('admin.images.moreSets', { count: hiddenSets }) }}</p>
+    <PageLinks :page="currentPage" :total-pages="setPages" />
   </template>
 </template>
 
@@ -323,9 +409,10 @@ watch([query, game], () => {
   color: var(--color-on-brand);
 }
 
-.search {
+.filters {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-4);
 }
@@ -338,8 +425,8 @@ watch([query, game], () => {
 }
 
 .field.grow {
-  flex: 3 1 16rem;
-  max-width: 30rem;
+  flex: 2 1 14rem;
+  max-width: 22rem;
 }
 
 .label {
@@ -359,18 +446,40 @@ watch([query, game], () => {
   font-size: var(--text-sm);
 }
 
+.input:disabled {
+  color: var(--color-ink-soft);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 550;
+}
+
+.check input {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  accent-color: var(--color-brand);
+}
+
 .message {
   margin-top: var(--space-3);
 }
 
-.hint {
-  margin-top: var(--space-4);
+.hint,
+.count {
+  margin-top: var(--space-3);
   color: var(--color-ink-soft);
   font-size: var(--text-sm);
 }
 
 .items {
-  margin: var(--space-4) 0 0;
+  margin: var(--space-3) 0 0;
   padding: 0;
   list-style: none;
 }

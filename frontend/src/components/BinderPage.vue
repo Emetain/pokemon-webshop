@@ -1,6 +1,7 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import BallMark from './BallMark.vue'
 import CardImage from './catalog/CardImage.vue'
 import { binderApi } from '../services/api'
 import { useSession } from '../stores/session'
@@ -9,34 +10,66 @@ import { t } from '../utils/i18n'
 
 const POCKETS = 9
 
+// From this width two pages fit side by side. Narrower, the pockets would get too small to see a card,
+// so a phone turns one page at a time.
+const SPREAD_MIN_WIDTH = 560
+
 const session = useSession()
 
-const binder = ref(null)
-const page = ref(0)
-const loading = ref(true)
+const root = ref(null)
+const wide = ref(false)
+// The first page on show, counted from 0. With two pages open this is the left one, or the first page itself.
+const firstPage = ref(0)
+// Per page: its slots, kept while turning back and forth.
+const pages = ref({})
+const meta = ref(null)
+const pending = ref(0)
 // Sources sometimes link to an image that doesn't exist. Such a card shows as an empty pocket with its name.
 const failedCards = ref(new Set())
 
-/** Always nine pockets, so a last page that isn't full still looks like a sheet of a binder. */
-const pockets = computed(() => {
-  const slots = binder.value?.slots ?? []
-  return Array.from({ length: POCKETS }, (_, index) => slots[index] ?? {})
+const loggedIn = computed(() => session.isLoggedIn.value)
+const totalPages = computed(() => meta.value?.totalPages ?? 0)
+
+/**
+ * The pages on show, like in a real binder: page 1 alone on the right with the inside of the cover on its left,
+ * then 2 and 3, then 4 and 5. Null is the inside of the cover.
+ */
+const shown = computed(() => {
+  if (!wide.value) return [firstPage.value]
+  if (firstPage.value === 0) return [null, 0]
+  const left = firstPage.value % 2 === 1 ? firstPage.value : firstPage.value - 1
+  return [left, left + 1]
 })
 
-const totalPages = computed(() => binder.value?.totalPages ?? 0)
+const shownPages = computed(() => shown.value.filter((index) => index !== null))
 
-const loggedIn = computed(() => session.isLoggedIn.value)
+const canGoBack = computed(() => shownPages.value[0] > 0)
+const canGoForward = computed(() => shownPages.value.at(-1) < totalPages.value - 1)
+
+const pageLabel = computed(() => {
+  const numbers = shownPages.value.filter((index) => index < totalPages.value).map((index) => index + 1)
+  if (numbers.length === 2) return t('binder.pagesOf', { first: numbers[0], second: numbers[1], total: totalPages.value })
+  return t('binder.pageOf', { page: numbers[0] ?? 1, total: totalPages.value })
+})
 
 /** What the binder shows. The fallback has a text of its own, because it isn't what the customer's setting says. */
 const caption = computed(() => {
-  if (!binder.value) return ''
-  return binder.value.fallback ? t('binder.fallback') : t(`binder.sources.${binder.value.source}`)
+  if (!meta.value) return ''
+  if (meta.value.fallback) return t('binder.fallback')
+  if (meta.value.game === 'pokemon') return t('binder.sources.MOST_EXPENSIVE_POKEMON')
+  return t(`binder.sources.${meta.value.source}`)
 })
 
 const hint = computed(() => {
-  if (!binder.value || !loggedIn.value || binder.value.fallback || binder.value.slots.length) return ''
-  return t(`binder.empty.${binder.value.source}`)
+  if (!meta.value || !loggedIn.value || meta.value.fallback || totalPages.value > 0) return ''
+  return t(`binder.empty.${meta.value.source}`)
 })
+
+/** Always nine pockets, so a page that isn't full still looks like a sheet of a binder. */
+function pocketsOf(index) {
+  const slots = pages.value[index] ?? []
+  return Array.from({ length: POCKETS }, (_, pocket) => slots[pocket] ?? {})
+}
 
 const cardLink = (card) => ({
   name: 'card',
@@ -45,54 +78,91 @@ const cardLink = (card) => ({
 
 const pokedexLink = (dexNumber) => ({ name: 'pokedex-entry', params: { dexNumber } })
 
-let latestRequest = 0
-
-async function load() {
-  const request = ++latestRequest
-  loading.value = true
+async function loadPage(index) {
+  pending.value++
   try {
-    const result = await binderApi.page(page.value)
-    if (request === latestRequest) binder.value = result
+    const result = await binderApi.page(index)
+    pages.value[index] = result.slots
+    meta.value = result
   } catch {
-    // The hero stays usable: the pockets just stay empty.
-    if (request === latestRequest) binder.value = null
+    // The hero stays usable: the pockets of this page just stay empty.
   } finally {
-    if (request === latestRequest) loading.value = false
+    pending.value--
   }
 }
 
-watch(page, load, { immediate: true })
+function load() {
+  const known = meta.value !== null
+  shownPages.value
+    .filter((index) => !(index in pages.value) && (!known || index < totalPages.value))
+    .forEach(loadPage)
+}
+
+function forward() {
+  firstPage.value = shownPages.value.at(-1) + 1
+}
+
+function back() {
+  const first = shownPages.value[0]
+  firstPage.value = wide.value ? Math.max(first - 2, 0) : first - 1
+}
+
+let observer = null
+
+onMounted(() => {
+  observer = new ResizeObserver(([entry]) => {
+    wide.value = entry.contentRect.width >= SPREAD_MIN_WIDTH
+  })
+  observer.observe(root.value)
+})
+
+onBeforeUnmount(() => observer?.disconnect())
+
+watch(shown, load, { immediate: true })
 </script>
 
 <template>
-  <figure class="binder" :aria-label="t('binder.label')">
-    <div class="sheet" :aria-busy="loading">
-      <span v-for="hole in 3" :key="hole" class="hole" aria-hidden="true"></span>
-      <ul :key="page" class="pockets">
-        <li v-for="(pocket, index) in pockets" :key="index" class="slot" :style="{ '--order': index }">
-          <router-link
-            v-if="pocket.card && !failedCards.has(pocket.card.id)"
-            class="pocket filled"
-            :to="cardLink(pocket.card)"
-            :aria-label="pocket.card.name"
-          >
-            <CardImage
-              :src="pocket.card.imageUrl"
-              :alt="pocket.card.name"
-              eager
-              @failed="failedCards.add(pocket.card.id)"
-            />
-          </router-link>
-          <router-link v-else-if="pocket.card" class="pocket" :to="cardLink(pocket.card)">
-            <span class="pocket-name">{{ pocket.card.name }}</span>
-          </router-link>
-          <router-link v-else-if="pocket.dexNumber" class="pocket" :to="pokedexLink(pocket.dexNumber)">
-            <span>{{ dexLabel(pocket.dexNumber) }}</span>
-            <span class="pocket-name">{{ pocket.name }}</span>
-          </router-link>
-          <span v-else class="pocket"></span>
-        </li>
-      </ul>
+  <figure ref="root" class="binder" :class="{ wide }" :aria-label="t('binder.label')">
+    <div class="sheets" :aria-busy="pending > 0">
+      <template v-for="(index, side) in shown" :key="index ?? 'cover'">
+        <div v-if="index === null" class="sheet cover" aria-hidden="true">
+          <BallMark class="cover-ball" outline />
+        </div>
+
+        <div v-else class="sheet" :class="wide && side === 0 ? 'left' : 'right'">
+          <span v-for="hole in 3" :key="hole" class="hole" aria-hidden="true"></span>
+          <ul :key="index" class="pockets">
+            <li v-for="(pocket, number) in pocketsOf(index)" :key="number" class="slot" :style="{ '--order': number }">
+              <router-link
+                v-if="pocket.card && !failedCards.has(pocket.card.id)"
+                class="pocket filled"
+                :to="cardLink(pocket.card)"
+                :aria-label="pocket.card.name"
+              >
+                <CardImage
+                  :src="pocket.card.imageUrl"
+                  :alt="pocket.card.name"
+                  eager
+                  @failed="failedCards.add(pocket.card.id)"
+                />
+              </router-link>
+              <router-link v-else-if="pocket.card" class="pocket" :to="cardLink(pocket.card)">
+                <span class="pocket-name">{{ pocket.card.name }}</span>
+              </router-link>
+              <router-link v-else-if="pocket.dexNumber" class="pocket" :to="pokedexLink(pocket.dexNumber)">
+                <span>{{ dexLabel(pocket.dexNumber) }}</span>
+                <span class="pocket-name">{{ pocket.name }}</span>
+              </router-link>
+              <span v-else class="pocket"></span>
+            </li>
+          </ul>
+        </div>
+      </template>
+
+      <!-- The rings of the binder, through the holes of both pages. -->
+      <template v-if="wide">
+        <span v-for="ring in 3" :key="ring" class="ring" aria-hidden="true"></span>
+      </template>
     </div>
 
     <figcaption class="foot">
@@ -106,21 +176,19 @@ watch(page, load, { immediate: true })
         <button
           class="turn"
           type="button"
-          :disabled="page === 0 || loading"
+          :disabled="!canGoBack"
           :aria-label="t('binder.previous')"
-          @click="page--"
+          @click="back"
         >
           <ChevronLeft :size="20" aria-hidden="true" />
         </button>
-        <span class="page-number" aria-live="polite">
-          {{ t('binder.pageOf', { page: page + 1, total: totalPages }) }}
-        </span>
+        <span class="page-number" aria-live="polite">{{ pageLabel }}</span>
         <button
           class="turn"
           type="button"
-          :disabled="page >= totalPages - 1 || loading"
+          :disabled="!canGoForward"
           :aria-label="t('binder.next')"
-          @click="page++"
+          @click="forward"
         >
           <ChevronRight :size="20" aria-hidden="true" />
         </button>
@@ -135,11 +203,45 @@ watch(page, load, { immediate: true })
   margin: 0;
 }
 
+.sheets {
+  position: relative;
+  display: grid;
+}
+
+.wide .sheets {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--space-3);
+}
+
 .sheet {
   position: relative;
   padding: var(--space-4) var(--space-4) var(--space-4) var(--space-6);
   border-radius: var(--radius-md);
   background: var(--color-brand-deep);
+}
+
+/* In an open binder the holes of both pages sit along the spine in the middle. */
+.wide .sheet.left {
+  padding: var(--space-4) var(--space-6) var(--space-4) var(--space-4);
+}
+
+.wide .sheet.left .hole {
+  right: var(--space-2);
+  left: auto;
+}
+
+.cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* The inside of the front cover, with the ball of the shop pressed into it. */
+.cover-ball {
+  width: 62%;
+  color: var(--color-on-brand);
+  opacity: 0.16;
 }
 
 .hole {
@@ -161,6 +263,28 @@ watch(page, load, { immediate: true })
 
 .hole:nth-of-type(3) {
   bottom: 16%;
+}
+
+.ring {
+  position: absolute;
+  left: 50%;
+  width: 3.25rem;
+  height: 0.5rem;
+  border-radius: var(--radius-round);
+  background: var(--color-on-brand-soft);
+  transform: translateX(-50%);
+}
+
+.ring:nth-of-type(1) {
+  top: calc(16% + 0.125rem);
+}
+
+.ring:nth-of-type(2) {
+  top: calc(50% - 0.25rem);
+}
+
+.ring:nth-of-type(3) {
+  bottom: calc(16% + 0.125rem);
 }
 
 .pockets {

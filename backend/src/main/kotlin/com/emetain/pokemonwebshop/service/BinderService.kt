@@ -18,9 +18,10 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 
 /**
- * The 9-pocket binder in the home hero. Visitors see the most expensive cards in general, and customers their
- * own most expensive cards until they choose something else. "Popular" means the cards in the most collections.
- * A new shop has no collections yet, so the most expensive Pokémon cards fill up that list.
+ * The 9-pocket binder in the home hero. Visitors see the most expensive Pokémon cards, because this is mainly a
+ * Pokémon shop. Customers see their own most expensive cards until they choose something else. "Popular" means the
+ * cards in the most collections. A new shop has no collections yet, so the most expensive Pokémon cards fill up
+ * that list too.
  */
 @Service
 class BinderService(
@@ -35,11 +36,12 @@ class BinderService(
     // Every visitor of the home page asks for these, and they're the same for everyone.
     private val popular = TimedCache(properties.collection.cacheTtl, clock, ::loadPopular)
     private val mostExpensive = TimedCache(properties.collection.cacheTtl, clock, ::loadMostExpensive)
+    private val mostExpensivePokemon = TimedCache(properties.collection.cacheTtl, clock, ::loadMostExpensivePokemon)
 
     @Transactional(readOnly = true)
     fun page(user: User?, page: Int): BinderPageDto {
         val index = page.coerceAtLeast(0)
-        if (user == null) return mostExpensive(index)
+        if (user == null) return mostExpensivePokemon(index)
 
         val result = when (user.binderSource ?: BinderSource.DEFAULT) {
             BinderSource.POPULAR -> slice(BinderSource.POPULAR, popular.get(), index)
@@ -50,10 +52,13 @@ class BinderService(
         }
         // Someone who chose a source always sees that source, even while it's empty.
         val nothingChosenAndNothingOwned = user.binderSource == null && result.totalPages == 0
-        return if (nothingChosenAndNothingOwned) mostExpensive(index).copy(fallback = true) else result
+        return if (nothingChosenAndNothingOwned) mostExpensivePokemon(index).copy(fallback = true) else result
     }
 
     private fun mostExpensive(page: Int) = slice(BinderSource.MOST_EXPENSIVE, mostExpensive.get(), page)
+
+    private fun mostExpensivePokemon(page: Int) =
+        slice(BinderSource.MOST_EXPENSIVE, mostExpensivePokemon.get(), page).copy(game = Game.POKEMON.slug)
 
     @Transactional(readOnly = true)
     fun selection(userId: Long): List<BinderCardDto> =
@@ -116,14 +121,17 @@ class BinderService(
     private fun loadPopular(): List<BinderCardDto> {
         val ids = entryRepository.findMostCollectedCardIds(TOP_CARDS)
         val cards = cardRepository.findAllWithSetByIdIn(ids).associateBy { it.id }
-        val collected = ids.mapNotNull(cards::get)
+        val collected = ids.mapNotNull(cards::get).map(BinderCardDto::from)
 
-        val fill = cardRepository.findMostExpensiveOfGame(Game.POKEMON, TOP_CARDS).filter { it.id !in cards }
-        return (collected + fill).take(TOP_CARD_COUNT).map(BinderCardDto::from)
+        val fill = mostExpensivePokemon.get().filter { it.id !in cards }
+        return (collected + fill).take(TOP_CARD_COUNT)
     }
 
     private fun loadMostExpensive(): List<BinderCardDto> =
         cardRepository.findMostExpensive(TOP_CARDS).map(BinderCardDto::from)
+
+    private fun loadMostExpensivePokemon(): List<BinderCardDto> =
+        cardRepository.findMostExpensiveOfGame(Game.POKEMON, TOP_CARDS).map(BinderCardDto::from)
 
     private companion object {
         const val SLOTS_PER_PAGE = 9

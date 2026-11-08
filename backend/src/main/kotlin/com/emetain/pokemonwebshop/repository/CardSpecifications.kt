@@ -7,6 +7,7 @@ import com.emetain.pokemonwebshop.domain.CollectionEntry
 import com.emetain.pokemonwebshop.domain.Game
 import com.emetain.pokemonwebshop.domain.User
 import org.springframework.data.jpa.domain.Specification
+import java.time.LocalDate
 
 /** The filters on card lists. A filter without a value is left out. */
 object CardSpecifications {
@@ -97,6 +98,42 @@ object CardSpecifications {
         builder.exists(entries)
     }
 
+    /** No picture at all: the source has none and the shop didn't upload one. */
+    fun withoutImage() = Specification<Card> { root, _, builder ->
+        builder.and(builder.isNull(root.get<String>("imageSmallUrl")), builder.isNull(root.get<String>("customImageUrl")))
+    }
+
+    fun withCustomImage() = Specification<Card> { root, _, builder ->
+        builder.isNotNull(root.get<String>("customImageUrl"))
+    }
+
+    /** For the admin lists: newest set first, by name, or by Pokédex number with cards without one last. */
+    fun sortedForAdmin(sort: AdminCardSort) = Specification<Card> { root, query, builder ->
+        // The count query for the total runs through here too, and can't have an order.
+        if (query != null && query.resultType != Long::class.javaObjectType) {
+            val set = root.get<CardSet>("set")
+            val releaseDate = set.get<LocalDate>("releaseDate")
+            val newestSetFirst = listOf(
+                builder.asc(builder.selectCase<Int>().`when`(builder.isNull(releaseDate), 1).otherwise(0)),
+                builder.desc(releaseDate),
+                builder.desc(set.get<Int>("sortOrder")),
+                builder.asc(root.get<String>("sortKey")),
+            )
+            val first = when (sort) {
+                AdminCardSort.SET -> emptyList()
+                AdminCardSort.NAME -> listOf(builder.asc(root.get<String>("nameSearch")))
+                AdminCardSort.POKEDEX -> {
+                    val lowestNumber = query.subquery(Int::class.javaObjectType)
+                    val card = lowestNumber.correlate(root)
+                    lowestNumber.select(builder.min(card.join<Card, Int>("dexNumbers")))
+                    listOf(builder.asc(builder.coalesce(lowestNumber, Int.MAX_VALUE)))
+                }
+            }
+            query.orderBy(first + newestSetFirst + builder.asc(root.get<Long>("id")))
+        }
+        null
+    }
+
     /** [term] is already in `nameSearch` form. */
     fun nameContains(term: String) = Specification<Card> { root, _, builder ->
         builder.like(root.get("nameSearch"), "%$term%")
@@ -140,5 +177,17 @@ enum class CardSort(val param: String?) {
 
     companion object {
         fun fromParam(param: String?): CardSort? = param?.let { value -> entries.firstOrNull { it.param == value } }
+    }
+}
+
+/** How the admin can sort a list of cards. [param] is the value in the URL. */
+enum class AdminCardSort(val param: String) {
+    SET("set"),
+    NAME("name"),
+    POKEDEX("pokedex"),
+    ;
+
+    companion object {
+        fun fromParam(param: String?): AdminCardSort = entries.firstOrNull { it.param == param } ?: SET
     }
 }

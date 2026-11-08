@@ -69,22 +69,38 @@ class BinderIntegrationTest : CollectionTestSupport() {
     private fun ResultActions.names(): List<String> =
         objectMapper.readTree(andReturn().response.contentAsString)["slots"].map { it["card"]["name"].asText() }
 
-    @Test
-    fun `a visitor sees the most expensive cards in general, of any game`() {
-        val magic = uniqueCode()
+    private fun importBlackLotus() {
         importCards(
-            listOf(providerCard(magic, name = "Black Lotus", prices = listOf(providerPrice(trend = top * 2)))),
+            listOf(providerCard(uniqueCode(), name = "Black Lotus", prices = listOf(providerPrice(trend = top * 2)))),
             game = Game.MTG,
         )
+    }
+
+    @Test
+    fun `a visitor sees the most expensive Pokémon cards, because this is mainly a Pokémon shop`() {
+        importBlackLotus()
 
         val result = binder()
             .andExpect(jsonPath("$.source").value("MOST_EXPENSIVE"))
+            .andExpect(jsonPath("$.game").value("pokemon"))
             .andExpect(jsonPath("$.fallback").value(false))
             .andExpect(jsonPath("$.page").value(0))
             .andExpect(jsonPath("$.slots.length()").value(9))
 
+        assertEquals("Card 1", result.names().first())
+        assertEquals(false, "Black Lotus" in result.names())
+    }
+
+    @Test
+    fun `a customer who chose the most expensive cards sees every game`() {
+        importBlackLotus()
+        choose("MOST_EXPENSIVE")
+
+        val result = binder(session)
+            .andExpect(jsonPath("$.source").value("MOST_EXPENSIVE"))
+            .andExpect(jsonPath("$.game").doesNotExist())
+
         assertEquals("Black Lotus", result.names().first())
-        assertEquals(true, "Card 1" in result.names())
     }
 
     @Test
@@ -113,11 +129,7 @@ class BinderIntegrationTest : CollectionTestSupport() {
 
     @Test
     fun `a new shop fills the popular list with the most expensive Pokémon cards`() {
-        val magic = uniqueCode()
-        importCards(
-            listOf(providerCard(magic, name = "Black Lotus", prices = listOf(providerPrice(trend = top * 2)))),
-            game = Game.MTG,
-        )
+        importBlackLotus()
         choose("POPULAR")
 
         assertEquals("Card 1", binder(session).names().first())
@@ -157,11 +169,16 @@ class BinderIntegrationTest : CollectionTestSupport() {
     }
 
     @Test
-    fun `a customer without cards who chose nothing gets the most expensive cards instead of an empty binder`() {
-        binder(session)
+    fun `a customer without cards who chose nothing gets the most expensive Pokémon cards instead of an empty binder`() {
+        importBlackLotus()
+
+        val result = binder(session)
             .andExpect(jsonPath("$.source").value("MOST_EXPENSIVE"))
+            .andExpect(jsonPath("$.game").value("pokemon"))
             .andExpect(jsonPath("$.fallback").value(true))
             .andExpect(jsonPath("$.slots.length()").value(9))
+
+        assertEquals(false, "Black Lotus" in result.names())
     }
 
     @Test

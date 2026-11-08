@@ -111,6 +111,7 @@ export const adminApi = {
   status: () => request('GET', '/admin/status'),
   syncStatus: () => request('GET', '/admin/catalog/sync'),
   startSync: (game) => request('POST', `/admin/catalog/sync/${game}`),
+  imageCards: (params) => request('GET', `/admin/catalog/images/cards${queryString(params)}`),
   uploadCardImage: (id, file) => upload(`/admin/catalog/images/cards/${id}`, file),
   resetCardImage: (id) => request('DELETE', `/admin/catalog/images/cards/${id}`),
   uploadSetLogo: (game, code, file) => upload(`/admin/catalog/images/sets/${game}/${encodeURIComponent(code)}`, file),

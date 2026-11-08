@@ -49,9 +49,10 @@ These decisions came up while building and apply to every later phase. The phase
 - **Card lists:** use the sorting, filters and URL pattern of `CardFilters.vue` for new lists of cards. Filters and sorting live in the URL, so every view can be shared.
 - **Owned and missing cards:** a blue frame around the image of owned cards, with "In bezit" or "Gemist" below it. Never change the image itself. Use `CollectionControls.vue` for adding and removing.
 - **Share page:** shows the first name, progress, cards and value. Never the full name, because that is also the name on orders.
-- **Home binder:** logged-out visitors see the most expensive cards in general, logged-in customers their own most expensive cards. A choice always stays, and is made in My account only, not on the home page.
+- **Home binder:** logged-out visitors see the most expensive Pokémon cards, logged-in customers their own most expensive cards. A choice always stays, and is made in My account only, not on the home page. The binder opens like a real one: page 1 next to the inside of the cover, then 2 and 3, then 4 and 5. A phone turns one page at a time.
 - **Card tiles:** logged-in customers get a + next to the price. It turns into `- count +` in the same element.
-- **Admin images:** the owner can replace the picture of a card or set at `/admin/afbeeldingen`. Uploads sit next to the source's images and a sync leaves them alone. `MediaStorage` handles the files.
+- **Admin images:** the owner can replace the picture of a card or set at `/admin/afbeeldingen`, and browse all cards without a picture there, by game and set, sorted by set, name or Pokédex number. Uploads sit next to the source's images and a sync leaves them alone. `MediaStorage` handles the files.
+- **Every product in the shop:** the owner wants all products that exist to be in the shop, shown as "Uitverkocht" while there's no stock. See phase 4.
 - **Value graph:** added at the owner's request, inspired by the portfolio graph in the Collectr app. Card prices have no history, so one value per customer per day is saved. It only starts when a customer starts, and can't be filled in afterwards.
 - **Viewer on public endpoints:** a nullable `@CurrentUser` parameter gives the logged-in user when there is one. Card lists then include what the viewer owns.
 - **Before going live:** the owner does a legal check and has asked to be reminded. See phase 8.
@@ -133,7 +134,7 @@ Backend:
 - Custom images: the admin can upload a picture for a card or set, which goes before the image of the source. A sync never touches it, and the admin can go back to the original.
 
 Frontend:
-- Home binder: the binder in the hero shows real cards and has page buttons. Logged-in customers see their most expensive cards by default, logged-out visitors see the most expensive cards in general. Customers change what it shows in their settings. Nothing goes on top of the card images.
+- Home binder: the binder in the hero shows real cards and opens like a real binder, with two pages side by side where there's room. Logged-in customers see their most expensive cards by default, logged-out visitors see the most expensive Pokémon cards. Customers change what it shows in their settings. Nothing goes on top of the card images.
 - `/collectie`: overview per game with progress bars, total value, most valuable cards.
 - Value graph on `/collectie`, like a stock chart: the change over the chosen period, a line with a tooltip, and the periods 7D, 1M, 3M, 6M, 1J and Alles.
 - On set pages, logged-in users can see which cards they own and which are missing. A + button next to the price adds a card with one click, and then shows the count with a - in the same element. Greying out images isn't allowed for Magic under Scryfall's terms, so owned cards get a blue frame around the image and missing cards a "Gemist" label below it.
@@ -143,11 +144,11 @@ Frontend:
 - Logged-out visitors see a short explanation and a register button.
 
 Admin:
-- `/admin/afbeeldingen`: search a card or set, upload a picture, or go back to the original.
+- `/admin/afbeeldingen`: list all cards or sets, filter on name, game, set and "without a picture", sort by set, name or Pokédex number, upload a picture, or go back to the original.
 
 Done when:
 - Adding and removing cards updates progress and value right away.
-- The home binder shows the chosen source, pages work, and a logged-out visitor sees the most expensive cards.
+- The home binder shows the chosen source, pages work, and a logged-out visitor sees the most expensive Pokémon cards.
 - Pokédex progress matches the owned cards (test with a few known cards).
 - The value graph shows saved days, and adding a card moves today's point right away.
 - Unit tests cover the progress and value calculations.
@@ -161,6 +162,11 @@ Backend:
 - Accessory sub-types: sleeves, toploaders, binders, deck boxes, playmats, display cases, storage boxes.
 - Stock: quantity on hand, quantity reserved, and a `StockMovement` log (product, change, reason: `PURCHASE`, `SALE`, `RETURN`, `CORRECTION`, `DROP_ALLOCATION`, `RESERVATION`, `RELEASE`, note, admin user, time). Stock only changes through a `StockService` that always writes a movement. Use optimistic locking so two people can't buy the last item.
 - Low-stock threshold per product.
+- Every product can be in the shop without stock. An active product with no stock stays in lists and on its own page, with "Uitverkocht", a disabled cart button and "mail me when back in stock". Products in stock come first in the default order, and the in-stock filter hides the rest.
+- Product list import, so the shop shows every sealed product from the start, as "Uitverkocht" until there is stock: name, type, set, language and release date. An import never changes stock or a product the admin edited, and leaves out what isn't sold in Europe, such as Pokémon Center exclusives. Read the terms first. Sources checked on 2026-11-08:
+  - Cardmarket's public product list (`downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_6.json` for Pokémon): 5,109 products with a category (Booster, Display, Elite Trainer Boxes, Box Set, Tins, Blisters, Theme Decks and more) and an expansion id, no images.
+  - TCGplayer through tcgcsv.com: products per set with images, for example 51 sealed products for Prismatic Evolutions.
+  - Neither says anything about commercial use, so this is part of the legal check. Without a usable source, an admin tool creates the usual product types of a set in one go instead.
 - Image upload for products. `MediaStorage` from phase 3 already stores files on disk in a configurable folder, serves them under `/api/v1/media/...`, and sits behind an interface so cloud storage can be added later.
 - Public endpoints: list with filters (game, type, set, language, price range, in stock, pre-order, on sale), sorting (new, price, popularity), search, product detail, "new arrivals", "bestsellers" (based on order lines later; newest active products until then).
 - Product wishlist and a "mail me when back in stock" signup. `/verlanglijst` already exists for cards from phase 3: add products there.
@@ -181,6 +187,7 @@ Admin:
 
 Done when:
 - An admin can create every product type, upload images and change stock, and every change shows in the movement log.
+- A product without stock shows "Uitverkocht" in lists and on its page, and can't go in the cart.
 - Filters and sorting on the shop pages work and give correct results.
 - A stock test shows that two parallel purchases of the last item can't both succeed.
 
@@ -273,7 +280,7 @@ Goal: ready to show, ready to deploy.
 - Start the app with the `prod` profile against the Docker Postgres and check that all Flyway migrations run and Hibernate validation passes.
 - Update the root `README.md`: what the app does, how to run it, environment variables, how to sync card data, how to test payments with the Stripe CLI, and the phase overview with links to `docs/phases/`.
 - Production basics left open by earlier phases: a way to create the first admin (only `dev` seeds accounts), SMTP username and password settings, Swagger closed in `prod`, `FORWARD_HEADERS_STRATEGY=native` behind a proxy, a heap of at least 2 GB for the Magic sync, and the `npm audit` issue in dev tooling.
-- **Go-live reminder:** before anything goes live, remind the owner to do the legal check. They asked for this reminder. It covers the Wizards Fan Content Policy, Ravensburger's Community Code and Lorcast's "prohibited from charging" notice for a commercial shop, reusing TCGplayer prices from Lorcast and the OPTCG API, Cardmarket and ECB data, the PokéAPI data, pictures uploaded at `/admin/afbeeldingen`, the ball emblem in the logo, the public collection pages and saved value history in the privacy policy, and the draft legal pages. Also bring up the One Piece images: they load from one person's server and carry a "SAMPLE" watermark. Full notes are in `docs/phases/phase-02.md` and `docs/phases/phase-03.md`.
+- **Go-live reminder:** before anything goes live, remind the owner to do the legal check. They asked for this reminder. It covers the Wizards Fan Content Policy, Ravensburger's Community Code and Lorcast's "prohibited from charging" notice for a commercial shop, reusing TCGplayer prices from Lorcast and the OPTCG API, Cardmarket and ECB data, the PokéAPI data, pictures uploaded at `/admin/afbeeldingen`, a product list from Cardmarket or TCGplayer, the ball emblem in the logo, the public collection pages and saved value history in the privacy policy, and the draft legal pages. Also bring up the One Piece images: they load from one person's server and carry a "SAMPLE" watermark. Full notes are in `docs/phases/phase-02.md` and `docs/phases/phase-03.md`.
 
 Done when:
 - All tests pass, the production build works, and the `prod` profile starts cleanly on an empty database.
