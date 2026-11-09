@@ -83,10 +83,12 @@ app:
     # newest sets. Until phase 5 has orders this is the best measure there is. Checked on 2026-11-08:
     # Pokémon on sealed prices against the shop price (rarepulltcg.com, August 2026), the rest on TCGplayer's sales.
     popular-sets:
-      # 30th Celebration (pre-orders at three times the shop price), Ascended Heroes, Prismatic Evolutions, Black
-      # Bolt, White Flare, Phantasmal Flames, Destined Rivals, Mega Evolution, Journey Together, Surging Sparks,
-      # Chaos Rising, Pitch Black, Perfect Order.
-      POKEMON: [30th, 30th-c, me02.5, sv08.5, sv10.5b, sv10.5w, me02, sv10, me01, sv09, sv08, me04, me05, me03]
+      # 30th Celebration (pre-orders at three times the shop price), Delta Reign, Ascended Heroes, Prismatic
+      # Evolutions, Black Bolt, White Flare, Phantasmal Flames, Destined Rivals, Mega Evolution, Journey Together,
+      # Surging Sparks, Chaos Rising, Pitch Black, Perfect Order.
+      # Delta Reign came out on 2026-11-06 and was added on 2026-11-09, in its launch week, when the newest set is
+      # what customers ask for. It has no sealed prices to compare yet: move it once it has.
+      POKEMON: [30th, 30th-c, me06, me02.5, sv08.5, sv10.5b, sv10.5w, me02, sv10, me01, sv09, sv08, me04, me05, me03]
       # TCGplayer, 17 August to 16 September 2026: The Hobbit, Secret Lair, Reality Fracture, The Hobbit Eternal,
       # Final Fantasy, The Lord of the Rings, Marvel Super Heroes and its Commander decks, Modern Horizons 3,
       # Final Fantasy Commander.
