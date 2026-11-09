@@ -172,7 +172,7 @@ Checks and screenshots found these bugs, all fixed:
 - **Products of old sets imported before are still in the database,** 2,569 of the 3,109, as sold out without a price. The shop doesn't show them, but the admin table does. They can be removed in one go, or stay so they show up once the owner stocks one. There is no bulk archive yet.
 - **The print status and the popular sets are a judgement of 2026-11-08** and need updating: Magic rotates in February 2027, Pokémon and One Piece in spring 2027, Lorcana in the summer. New hot sets need adding to `app.shop.popular-sets`, and new One Piece sets to `OptcgReleaseDates`.
 - **The most popular Magic sets have no products,** such as Final Fantasy, Marvel's Spider-Man, Avatar and Teenage Mutant Ninja Turtles. The import doesn't link their Cardmarket expansions to our sets. Worth a look before the shop sells Magic.
-- **Some imported names carry Cardmarket's own details,** such as "Booster Box (18 Boosters)" or "Fun Pack (3 Cards)". Delta Reign has two booster boxes, "Booster Box" and "Booster Box (18 Boosters)": check whether both are sold here before stocking them.
+- **Some imported names carry Cardmarket's own details,** such as "Booster Box (18 Boosters)" or "Fun Pack (3 Cards)". "Booster Box (18 Boosters)" is a half booster box: a normal booster box has 36 boosters, and both are real products. 65 imported Pokémon products have this name, 12 of them in sets in print, from Temporal Forces to Delta Reign. A clearer name such as "Half Booster Box" needs a rename in admin or a change in the import.
 
 ## Notes for later phases
 
