@@ -47,12 +47,13 @@ const showPhoto = computed(() => props.src && !props.isCard && !failed.value)
 
 <style scoped>
 .product-image {
+  container-type: inline-size;
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 1;
   overflow: hidden;
-  padding: var(--space-3);
+  padding: min(var(--space-3), 8%);
   border-radius: var(--radius-md);
   background: var(--color-tint);
 }
@@ -94,5 +95,17 @@ const showPhoto = computed(() => props.src && !props.isCard && !failed.value)
   color: var(--color-ink-soft);
   font-size: var(--text-xs);
   font-weight: 600;
+}
+
+/* A thumbnail, as in the cart and order lists: the kind of product doesn't fit, the icon or logo says enough. */
+@container (max-width: 7rem) {
+  .type {
+    display: none;
+  }
+
+  .icon {
+    width: 55%;
+    height: auto;
+  }
 }
 </style>

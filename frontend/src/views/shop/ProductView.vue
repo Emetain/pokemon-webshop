@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { CalendarClock, CircleCheck, CircleX, ShoppingBag } from 'lucide-vue-next'
+import { CalendarClock, CircleCheck, CircleX, Minus, Plus, ShoppingBag } from 'lucide-vue-next'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CardImage from '../../components/catalog/CardImage.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
@@ -21,6 +21,7 @@ import {
   typePluralLabel,
 } from '../../data/shop'
 import { shopApi } from '../../services/api'
+import { useCart } from '../../stores/cart'
 import { useCurrency } from '../../stores/currency'
 import { variantLabel } from '../../utils/catalog'
 import { formatDate } from '../../utils/format'
@@ -31,6 +32,7 @@ const props = defineProps({
 })
 
 const { formatPrice } = useCurrency()
+const cart = useCart()
 
 const detail = ref(null)
 const loading = ref(true)
@@ -103,6 +105,25 @@ const marketPrice = computed(() => {
   return withTrend.find((price) => price.variant === detail.value.cardVariant) ?? withTrend[0] ?? null
 })
 
+const quantity = ref(1)
+const adding = ref(false)
+
+/** What can still go in the cart, after what is in it already. */
+const room = computed(() => Math.max(0, (detail.value?.maxQuantity ?? 0) - cart.quantityOf(product.value?.id)))
+
+async function addToCart() {
+  message.value = ''
+  adding.value = true
+  try {
+    await cart.add(product.value, quantity.value)
+    quantity.value = 1
+  } catch (exception) {
+    message.value = exception.message
+  } finally {
+    adding.value = false
+  }
+}
+
 let latestRequest = 0
 
 async function load() {
@@ -111,6 +132,7 @@ async function load() {
   notFound.value = false
   error.value = ''
   shown.value = 0
+  quantity.value = 1
   try {
     const result = await shopApi.product(props.slug)
     if (request === latestRequest) detail.value = result
@@ -194,13 +216,38 @@ watch(() => props.slug, load, { immediate: true })
         </p>
 
         <div class="actions">
-          <button class="btn btn-primary add" type="button" disabled>
+          <div v-if="product.canBuy" class="quantity" role="group" :aria-label="t('cart.quantity')">
+            <button
+              class="step"
+              type="button"
+              :disabled="quantity <= 1"
+              :aria-label="t('cart.decrease', { name: product.name })"
+              @click="quantity--"
+            >
+              <Minus :size="18" aria-hidden="true" />
+            </button>
+            <output class="count" :aria-label="t('cart.quantity')">{{ quantity }}</output>
+            <button
+              class="step"
+              type="button"
+              :disabled="quantity >= room"
+              :aria-label="t('cart.increase', { name: product.name })"
+              @click="quantity++"
+            >
+              <Plus :size="18" aria-hidden="true" />
+            </button>
+          </div>
+          <button
+            class="btn btn-primary add"
+            type="button"
+            :disabled="!product.canBuy || adding || room < 1"
+            @click="addToCart"
+          >
             <ShoppingBag :size="20" aria-hidden="true" />
-            {{ t('shop.addToCart') }}
+            {{ adding ? t('shop.adding') : t('shop.addToCart') }}
           </button>
           <WishlistToggle :product="product" with-text @change="product.wished = $event" @error="message = $event" />
         </div>
-        <p v-if="product.canBuy" class="soon">{{ t('shop.cartSoon') }}</p>
         <FormMessage v-if="message">{{ message }}</FormMessage>
 
         <StockAlertForm v-if="!product.canBuy" :slug="product.slug" />
@@ -258,6 +305,7 @@ watch(() => props.slug, load, { immediate: true })
       :title="t('shop.product.otherOffers')"
       :products="detail.otherOffers"
       @wished="onWished"
+      @error="message = $event"
     />
     <ProductRow
       v-if="detail.related.length"
@@ -265,6 +313,7 @@ watch(() => props.slug, load, { immediate: true })
       :title="detail.set ? t('shop.product.related') : t('shop.product.relatedOther')"
       :products="detail.related"
       @wished="onWished"
+      @error="message = $event"
     />
   </div>
 </template>
@@ -384,9 +433,39 @@ watch(() => props.slug, load, { immediate: true })
   flex: 1 1 14rem;
 }
 
-.soon {
-  color: var(--color-ink-soft);
-  font-size: var(--text-xs);
+.quantity {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  border: 1.5px solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.step:hover:not(:disabled) {
+  color: var(--color-brand);
+}
+
+.step:disabled {
+  color: var(--color-line-strong);
+  cursor: not-allowed;
+}
+
+.count {
+  min-width: 2rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .facts {

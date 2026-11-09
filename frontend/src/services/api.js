@@ -166,3 +166,37 @@ export const adminShopApi = {
   uploadSlideImage: (id, file) => upload(`/admin/hero-slides/${id}/image`, file),
   removeSlideImage: (id) => request('DELETE', `/admin/hero-slides/${id}/image`),
 }
+
+export const cartApi = {
+  get: (country) => request('GET', `/cart${queryString({ country })}`),
+  add: (productId, quantity, country) => request('POST', `/cart/items${queryString({ country })}`, { productId, quantity }),
+  setQuantity: (productId, quantity, country) =>
+    request('PUT', `/cart/items/${productId}${queryString({ country })}`, { quantity }),
+  remove: (productId, country) => request('DELETE', `/cart/items/${productId}${queryString({ country })}`),
+}
+
+export const checkoutApi = {
+  options: () => request('GET', '/checkout/options'),
+  start: (data) => request('POST', '/checkout', data),
+}
+
+export const orderApi = {
+  get: (number, token) => request('GET', `/orders/${encodeURIComponent(number)}${queryString({ token })}`),
+  cancel: (number, token) => request('POST', `/orders/${encodeURIComponent(number)}/cancel`, { token: token ?? '' }),
+  createAccount: (number, token, password) =>
+    request('POST', `/orders/${encodeURIComponent(number)}/account`, { token, password }),
+  mine: (page) => request('GET', `/account/orders${queryString({ page })}`),
+  myOrder: (number) => request('GET', `/account/orders/${encodeURIComponent(number)}`),
+}
+
+export const adminOrderApi = {
+  list: (params) => request('GET', `/admin/orders${queryString(params)}`),
+  get: (number) => request('GET', `/admin/orders/${encodeURIComponent(number)}`),
+  setStatus: (number, data) => request('POST', `/admin/orders/${encodeURIComponent(number)}/status`, data),
+  ship: (number, data) => request('POST', `/admin/orders/${encodeURIComponent(number)}/shipment`, data),
+  cancel: (number, data) => request('POST', `/admin/orders/${encodeURIComponent(number)}/cancel`, data),
+  refund: (number, data) => request('POST', `/admin/orders/${encodeURIComponent(number)}/refund`, data),
+  shippingRates: () => request('GET', '/admin/shipping-rates'),
+  updateShippingRate: (country, data) => request('PUT', `/admin/shipping-rates/${country}`, data),
+  dashboard: () => request('GET', '/admin/dashboard'),
+}

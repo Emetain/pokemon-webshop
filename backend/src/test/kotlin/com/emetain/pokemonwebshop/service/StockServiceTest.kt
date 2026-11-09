@@ -122,4 +122,29 @@ class StockServiceTest {
         assertEquals("out_of_stock", assertThrows<ApiException> { service.sell(7, 1) }.code)
         assertThrows<ApiException> { service.sell(7, 0) }
     }
+
+    @Test
+    fun `a paid reservation becomes one sale that lowers both numbers`() {
+        service.adjust(7, 5, StockReason.PURCHASE, null, null)
+        service.reserve(7, 2)
+
+        val movement = service.sellReserved(7, 2, "Bestelling UT-ABC234")
+
+        assertEquals(3, product.stock.onHand)
+        assertEquals(0, product.stock.reserved)
+        assertEquals(StockReason.SALE, movement.reason)
+        assertEquals(-2, movement.change)
+        assertEquals(3, movement.onHandAfter)
+        assertEquals(0, movement.reservedAfter)
+    }
+
+    @Test
+    fun `selling more than was reserved is a bug, not a sale`() {
+        service.adjust(7, 5, StockReason.PURCHASE, null, null)
+        service.reserve(7, 1)
+
+        assertThrows<IllegalStateException> { service.sellReserved(7, 2) }
+        assertEquals(5, product.stock.onHand)
+        assertEquals(1, product.stock.reserved)
+    }
 }

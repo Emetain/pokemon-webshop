@@ -1,5 +1,16 @@
 <script setup>
-import { ArrowLeft, Boxes, DatabaseZap, FileUp, GalleryHorizontal, Image, LayoutDashboard, Package } from 'lucide-vue-next'
+import {
+  ArrowLeft,
+  Boxes,
+  DatabaseZap,
+  FileUp,
+  GalleryHorizontal,
+  Image,
+  LayoutDashboard,
+  Package,
+  ReceiptText,
+  Truck,
+} from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLogo from './AppLogo.vue'
@@ -22,6 +33,10 @@ const onProducts = computed(
           <LayoutDashboard :size="18" aria-hidden="true" />
           {{ t('admin.overview') }}
         </router-link>
+        <router-link class="sidebar-link" to="/admin/bestellingen" active-class="is-active">
+          <ReceiptText :size="18" aria-hidden="true" />
+          {{ t('admin.orders.nav') }}
+        </router-link>
         <router-link
           class="sidebar-link"
           :class="{ 'is-active': onProducts }"
@@ -38,6 +53,10 @@ const onProducts = computed(
         <router-link class="sidebar-link" to="/admin/voorraad" active-class="is-active">
           <Boxes :size="18" aria-hidden="true" />
           {{ t('admin.stock.nav') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/verzending" active-class="is-active">
+          <Truck :size="18" aria-hidden="true" />
+          {{ t('admin.shipping.nav') }}
         </router-link>
         <router-link class="sidebar-link" to="/admin/hero" active-class="is-active">
           <GalleryHorizontal :size="18" aria-hidden="true" />

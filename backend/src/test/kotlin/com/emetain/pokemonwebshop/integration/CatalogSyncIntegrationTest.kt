@@ -17,6 +17,7 @@ import com.emetain.pokemonwebshop.service.provider.CardDataProvider
 import com.emetain.pokemonwebshop.service.provider.CardDataProviders
 import com.emetain.pokemonwebshop.service.provider.ProviderSet
 import org.junit.jupiter.api.BeforeEach
+import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
@@ -31,6 +32,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -198,10 +200,9 @@ class CatalogSyncIntegrationTest : IntegrationTest() {
         val run = cardSyncService.start(Game.POKEMON)
 
         verify(pokedexImportService, timeout(5000)).refresh()
-        repeat(500) {
-            if (syncRunRepository.findById(run.id).orElseThrow().status != SyncStatus.RUNNING) return@repeat
-            Thread.sleep(10)
-        }
+        // The run finishes in the background, which takes longer while the whole suite runs.
+        await().atMost(Duration.ofSeconds(15))
+            .until { syncRunRepository.findById(run.id).orElseThrow().status != SyncStatus.RUNNING }
         assertEquals(SyncStatus.COMPLETED, syncRunRepository.findById(run.id).orElseThrow().status)
         assertEquals(1, cards.size)
     }

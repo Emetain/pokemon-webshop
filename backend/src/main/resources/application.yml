@@ -79,8 +79,10 @@ app:
       # Awakening of the New Era (OP-05), the first set of block 2. Block 1 (OP-01 to OP-04, ST-01 to ST-10) left
       # Standard in April 2026.
       ONE_PIECE: 2023-12-08
-    # The most popular sets per game, most popular first, by set code. "Populair" puts these first and then the
-    # newest sets. Until phase 5 has orders this is the best measure there is. Checked on 2026-11-08:
+    # "Populair" and the bestsellers put the products sold most in this period first, then the popular sets below.
+    bestseller-period: 90d
+    # The most popular sets per game, most popular first, by set code. "Populair" puts these first after the products
+    # customers bought here, and then the newest sets. Checked on 2026-11-08:
     # Pokémon on sealed prices against the shop price (rarepulltcg.com, August 2026), the rest on TCGplayer's sales.
     popular-sets:
       # 30th Celebration (pre-orders at three times the shop price), Delta Reign, Ascended Heroes, Prismatic
@@ -98,6 +100,35 @@ app:
       # TCGplayer, second and third quarter of 2026: The World's Strongest Warriors, Adventure on Kami's Island,
       # The Time of Battle, then The Azure Sea's Seven and Carrying On His Will.
       ONE_PIECE: [OP-17, OP15-EB04, OP-16, OP14-EB04, OP-13]
+  checkout:
+    # How long a checkout holds the stock while the customer pays. Stripe keeps its payment page open for at least
+    # 30 minutes, so when this runs out the shop closes the Stripe page first and only then releases the stock.
+    reservation-ttl: 15m
+    # How often unpaid checkouts are checked, in Dutch time. "-" switches it off.
+    release-cron: "0 * * * * *"
+    guest-cart-ttl: 60d
+    cart-cleanup-cron: "0 45 3 * * *"
+    cart-cookie-name: cart
+    # The link in the "shipped" mail. PostNL's is the format most Dutch shop plugins use (checked 2026-11-09). Other
+    # carriers have no deep link we could confirm: the admin pastes the link from the shipping tool instead.
+    tracking-urls:
+      POSTNL: "https://jouw.postnl.nl/track-and-trace/{code}-{country}-{postcode}"
+    # Created at startup for a country without a rate. Change them at /admin/verzending, not here.
+    default-rates:
+      NL:
+        price-cents: 495
+        free-from-cents: 7500
+        delivery-time: 1 tot 2 werkdagen
+      BE:
+        price-cents: 895
+        free-from-cents: 12500
+        delivery-time: 2 tot 3 werkdagen
+  payments:
+    stripe:
+      # Test mode locally: sk_test_... from the Stripe dashboard. Empty switches online payment off.
+      secret-key: ${STRIPE_SECRET_KEY:}
+      # whsec_... from "stripe listen" locally, or from the webhook endpoint in the Stripe dashboard.
+      webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   catalog:
     # Fills the Pokédex right after startup instead of at the next Pokémon sync.
     import-pokedex-on-start: true

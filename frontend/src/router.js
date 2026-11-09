@@ -50,7 +50,6 @@ function placeholderPages() {
     ...navDestinations(),
     ...footerInfoLinks,
     ...footerShopLinks,
-    { to: '/winkelwagen', labelKey: 'layout.cart' },
   ]
   return pages.map(({ to, labelKey, game }) => placeholder(to.slice(1), labelKey, { game }))
 }
@@ -73,6 +72,41 @@ const router = createRouter({
         { path: 'wachtwoord-vergeten', component: () => import('./views/ForgotPasswordView.vue') },
         { path: 'wachtwoord-herstellen', component: () => import('./views/ResetPasswordView.vue') },
         { path: 'account', component: () => import('./views/AccountView.vue'), meta: { requiresLogin: true } },
+        {
+          path: 'account/bestellingen',
+          name: 'account-orders',
+          component: () => import('./views/account/OrdersView.vue'),
+          props: withQuery('page'),
+          meta: { requiresLogin: true },
+        },
+        {
+          path: 'account/bestellingen/:number',
+          name: 'account-order',
+          component: () => import('./views/account/OrderView.vue'),
+          props: true,
+          meta: { requiresLogin: true },
+        },
+
+        { path: 'winkelwagen', name: 'cart', component: () => import('./views/checkout/CartView.vue') },
+        { path: 'afrekenen', name: 'checkout', component: () => import('./views/checkout/CheckoutView.vue') },
+        {
+          path: 'bestelling/bedankt',
+          name: 'order-placed',
+          component: () => import('./views/checkout/OrderPlacedView.vue'),
+          props: withQuery('order', 'token'),
+        },
+        {
+          path: 'bestelling/geannuleerd',
+          name: 'order-cancelled',
+          component: () => import('./views/checkout/OrderCancelledView.vue'),
+          props: withQuery('order', 'token'),
+        },
+        {
+          path: 'bestelling/:number',
+          name: 'guest-order',
+          component: () => import('./views/checkout/GuestOrderView.vue'),
+          props: withQuery('token'),
+        },
 
         {
           path: 'kaarten/:game',
@@ -171,6 +205,13 @@ const router = createRouter({
           props: true,
         },
         { path: 'voorraad', component: () => import('./views/admin/AdminStockView.vue') },
+        {
+          path: 'bestellingen',
+          component: () => import('./views/admin/AdminOrdersView.vue'),
+          props: withQuery('q', 'status', 'page'),
+        },
+        { path: 'bestellingen/:number', component: () => import('./views/admin/AdminOrderView.vue'), props: true },
+        { path: 'verzending', component: () => import('./views/admin/AdminShippingView.vue') },
         { path: 'hero', component: () => import('./views/admin/AdminSlidesView.vue') },
         { path: 'sync', component: () => import('./views/admin/AdminSyncView.vue') },
         {
@@ -179,6 +220,13 @@ const router = createRouter({
           props: withQuery('kind', 'q', 'game', 'set', 'image', 'sort', 'size', 'page'),
         },
       ],
+    },
+    {
+      // Outside the admin layout, so only the packing slip itself prints.
+      path: '/admin/bestellingen/:number/pakbon',
+      component: () => import('./views/admin/AdminPackingSlipView.vue'),
+      props: true,
+      meta: { requiresAdmin: true },
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

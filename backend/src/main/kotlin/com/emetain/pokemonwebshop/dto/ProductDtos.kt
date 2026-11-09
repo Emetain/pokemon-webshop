@@ -9,6 +9,7 @@ import com.emetain.pokemonwebshop.domain.Product
 import com.emetain.pokemonwebshop.domain.ProductLanguage
 import com.emetain.pokemonwebshop.domain.ProductStatus
 import com.emetain.pokemonwebshop.domain.ProductType
+import com.emetain.pokemonwebshop.service.CartRules
 import com.emetain.pokemonwebshop.service.ProductRules
 import org.springframework.data.domain.Page
 import java.time.LocalDate
@@ -159,6 +160,8 @@ data class ProductDetailDto(
     /** Other singles of the same card, such as other conditions. */
     val otherOffers: List<ProductSummaryDto>,
     val related: List<ProductSummaryDto>,
+    /** The most one customer can put in the cart now: what is left, up to 99. 0 when it can't be bought. */
+    val maxQuantity: Int,
 ) {
     companion object {
         fun from(
@@ -189,6 +192,7 @@ data class ProductDetailDto(
             cardVariant = product.cardVariant,
             otherOffers = otherOffers,
             related = related,
+            maxQuantity = if (ProductRules.canBuy(product)) CartRules.maxQuantity(product.stock.available) else 0,
         )
     }
 }

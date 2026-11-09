@@ -29,13 +29,13 @@ class AuthController(
 
     @PostMapping("/register")
     @RateLimited("register")
-    fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<UserDto> =
-        authOrchestrator.register(request)
+    fun register(@Valid @RequestBody request: RegisterRequest, httpRequest: HttpServletRequest): ResponseEntity<UserDto> =
+        authOrchestrator.register(request, httpRequest)
 
     @PostMapping("/login")
     @RateLimited("login")
-    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<UserDto> =
-        authOrchestrator.login(request)
+    fun login(@Valid @RequestBody request: LoginRequest, httpRequest: HttpServletRequest): ResponseEntity<UserDto> =
+        authOrchestrator.login(request, httpRequest)
 
     @PostMapping("/logout")
     fun logout(request: HttpServletRequest): ResponseEntity<Void> =

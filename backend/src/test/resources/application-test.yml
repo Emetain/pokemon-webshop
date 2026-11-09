@@ -34,3 +34,12 @@ app:
       ONE_PIECE: 2000-01-01
     popular-sets:
       POKEMON: [popular-a, popular-b]
+  checkout:
+    # Tests call the job themselves.
+    release-cron: "-"
+    cart-cleanup-cron: "-"
+  payments:
+    stripe:
+      # The fake gateway in the tests never calls Stripe. The webhook secret signs test events.
+      secret-key: sk_test_fake
+      webhook-secret: whsec_test_secret

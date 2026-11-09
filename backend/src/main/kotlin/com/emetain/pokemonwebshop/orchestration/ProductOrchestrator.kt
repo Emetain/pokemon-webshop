@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.orchestration
 
+import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.domain.AccessoryType
 import com.emetain.pokemonwebshop.domain.Game
 import com.emetain.pokemonwebshop.domain.Product
@@ -30,6 +31,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
 
 internal inline fun <reified E : Enum<E>> enumFilter(value: String?, message: String): E? =
     value.filterValue()?.let { raw ->
@@ -45,6 +47,8 @@ class ProductOrchestrator(
     private val wishlistService: ProductWishlistService,
     private val cardOfferService: CardOfferService,
     private val stockAlertService: StockAlertService,
+    private val properties: AppProperties,
+    private val clock: Clock,
 ) {
 
     @Transactional(readOnly = true)
@@ -76,7 +80,7 @@ class ProductOrchestrator(
             ProductSpecifications.preOrder(request.preOrder),
             ProductSpecifications.onSale(request.sale),
             ProductSpecifications.nameContains(term),
-            ProductSpecifications.sortedBy(ProductSort.fromParam(request.sort.filterValue())),
+            ProductSpecifications.sortedBy(ProductSort.fromParam(request.sort.filterValue()), soldSince()),
         )
         val products = page(filters, request.page, request.size)
         return ProductListDto(results = pageDto(products, viewer), facets = facets(game))
@@ -90,7 +94,7 @@ class ProductOrchestrator(
     )
 
     /**
-     * Until there are orders: the most popular sets first, then what customers here want most. One product per set,
+     * What sold most here lately, then the most popular sets, then what customers here want most. One product per set,
      * the first in the popular order, so the row shows several sets instead of everything of the most popular one.
      */
     @Transactional(readOnly = true)
@@ -99,7 +103,7 @@ class ProductOrchestrator(
         val filters = listOf(
             ProductSpecifications.withStatus(ProductStatus.ACTIVE)!!,
             ProductSpecifications.listedInShop(),
-            ProductSpecifications.sortedBy(ProductSort.POPULAR),
+            ProductSpecifications.sortedBy(ProductSort.POPULAR, soldSince()),
         )
         val candidates = productRepository.findAll(Specification.allOf(filters), PageRequest.of(0, count * BESTSELLER_SCAN)).content
         val onePerSet = candidates.distinctBy { it.cardSet?.id ?: -it.id }
@@ -133,6 +137,8 @@ class ProductOrchestrator(
             ?: throw ApiException.notFound("We konden dit product niet vinden.")
         retryingOnConflict { stockAlertService.signUp(product.id, email) }
     }
+
+    private fun soldSince() = clock.instant().minus(properties.shop.bestsellerPeriod)
 
     /** Call this inside a transaction. */
     fun pageDto(products: Page<Product>, viewer: User?): ProductPageDto =

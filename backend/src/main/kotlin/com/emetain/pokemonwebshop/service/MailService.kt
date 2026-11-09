@@ -66,6 +66,10 @@ class MailService(
         send(to, "$productName is weer op voorraad", text, html)
     }
 
+    /** Runs in the background, so a payment or an admin action never waits for the mail server. */
+    @Async
+    fun sendMessage(to: String, subject: String, text: String, html: String) = send(to, subject, text, html)
+
     private fun send(to: String, subject: String, text: String, html: String) {
         val message = mailSender.createMimeMessage()
         MimeMessageHelper(message, true, Charsets.UTF_8.name()).apply {

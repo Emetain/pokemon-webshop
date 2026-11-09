@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { LogOut, Pencil, Plus, Trash2 } from 'lucide-vue-next'
+import { LogOut, Package, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import AddressForm from '../components/account/AddressForm.vue'
 import BinderSettings from '../components/account/BinderSettings.vue'
 import CollectionShare from '../components/account/CollectionShare.vue'
@@ -138,6 +138,10 @@ onMounted(loadAddresses)
         <p class="member-since">{{ t('account.memberSince', { date: formatDate(user.createdAt) }) }}</p>
       </div>
       <div class="head-actions">
+        <router-link class="btn btn-primary" to="/account/bestellingen">
+          <Package :size="18" aria-hidden="true" />
+          {{ t('orders.list.title') }}
+        </router-link>
         <router-link v-if="session.isAdmin.value" class="btn btn-secondary" to="/admin">
           {{ t('account.toAdmin') }}
         </router-link>

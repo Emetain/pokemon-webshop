@@ -89,6 +89,21 @@ class StockService(
         return record(product, -quantity, StockReason.SALE, note, null) { stock.onHand -= quantity }
     }
 
+    /** Sells what a checkout reserved, once it is paid. The reservation becomes the sale, in one movement. */
+    @Transactional
+    fun sellReserved(productId: Long, quantity: Int, note: String? = null): StockMovement {
+        requirePositive(quantity)
+        val product = find(productId)
+        val stock = product.stock
+        check(stock.reserved >= quantity && stock.onHand >= quantity) {
+            "Product $productId has ${stock.reserved} reserved and ${stock.onHand} on hand, can't sell $quantity reserved"
+        }
+        return record(product, -quantity, StockReason.SALE, note, null) {
+            stock.reserved -= quantity
+            stock.onHand -= quantity
+        }
+    }
+
     private fun record(
         product: Product,
         change: Int,

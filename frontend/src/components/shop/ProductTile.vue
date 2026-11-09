@@ -1,14 +1,16 @@
 <script setup>
-import { ShoppingBag } from 'lucide-vue-next'
+import { ref } from 'vue'
+import { LoaderCircle, ShoppingBag } from 'lucide-vue-next'
 import PriceTag from './PriceTag.vue'
 import ProductBadges from './ProductBadges.vue'
 import ProductImage from './ProductImage.vue'
 import WishlistToggle from './WishlistToggle.vue'
 import { productFacts, productLink } from '../../data/shop'
 import { findGame } from '../../data/games'
+import { useCart } from '../../stores/cart'
 import { t } from '../../utils/i18n'
 
-/** A product in a list. The cart arrives in phase 5: until then the button is there but can't be used. */
+/** A product in a list. The cart button adds one and opens the cart drawer. */
 const props = defineProps({
   product: { type: Object, required: true },
   eager: { type: Boolean, default: false },
@@ -17,6 +19,20 @@ const props = defineProps({
 const emit = defineEmits(['wished', 'error'])
 
 const accent = props.product.game ? findGame(props.product.game)?.accent : null
+
+const cart = useCart()
+const adding = ref(false)
+
+async function addToCart() {
+  adding.value = true
+  try {
+    await cart.add(props.product)
+  } catch (exception) {
+    emit('error', exception.message)
+  } finally {
+    adding.value = false
+  }
+}
 </script>
 
 <template>
@@ -50,11 +66,13 @@ const accent = props.product.game ? findGame(props.product.game)?.accent : null
         <button
           class="cart"
           type="button"
-          disabled
+          :disabled="!product.canBuy || adding"
           :aria-label="t('shop.addToCartLabel', { name: product.name })"
-          :title="product.canBuy ? t('shop.cartSoon') : t('shop.badges.soldOut')"
+          :title="product.canBuy ? t('shop.addToCart') : t('shop.badges.soldOut')"
+          @click="addToCart"
         >
-          <ShoppingBag :size="20" aria-hidden="true" />
+          <LoaderCircle v-if="adding" class="spin" :size="20" aria-hidden="true" />
+          <ShoppingBag v-else :size="20" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -135,6 +153,27 @@ const accent = props.product.game ? findGame(props.product.game)?.accent : null
   background: var(--color-brand);
   box-shadow: inset 0 -3px 0 var(--color-brand-edge);
   color: var(--color-on-brand);
+  cursor: pointer;
+}
+
+.cart:hover:not(:disabled) {
+  background: var(--color-brand-hover);
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
 }
 
 .cart:disabled {

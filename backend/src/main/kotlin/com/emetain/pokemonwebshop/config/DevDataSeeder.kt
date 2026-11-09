@@ -1,27 +1,44 @@
 package com.emetain.pokemonwebshop.config
 
 import com.emetain.pokemonwebshop.domain.AccessoryType
+import com.emetain.pokemonwebshop.domain.Carrier
 import com.emetain.pokemonwebshop.domain.Game
+import com.emetain.pokemonwebshop.domain.Order
+import com.emetain.pokemonwebshop.domain.OrderLine
+import com.emetain.pokemonwebshop.domain.OrderStatus
+import com.emetain.pokemonwebshop.domain.OrderStatusChange
+import com.emetain.pokemonwebshop.domain.OrderStockState
+import com.emetain.pokemonwebshop.domain.Product
 import com.emetain.pokemonwebshop.domain.ProductLanguage
 import com.emetain.pokemonwebshop.domain.ProductStatus
 import com.emetain.pokemonwebshop.domain.ProductType
 import com.emetain.pokemonwebshop.domain.Role
+import com.emetain.pokemonwebshop.domain.ShipmentPreference
 import com.emetain.pokemonwebshop.domain.StockReason
 import com.emetain.pokemonwebshop.domain.User
 import com.emetain.pokemonwebshop.dto.HeroSlideRequest
 import com.emetain.pokemonwebshop.dto.ProductRequest
+import com.emetain.pokemonwebshop.repository.OrderRepository
 import com.emetain.pokemonwebshop.repository.ProductRepository
 import com.emetain.pokemonwebshop.repository.UserRepository
 import com.emetain.pokemonwebshop.service.HeroSlideService
+import com.emetain.pokemonwebshop.service.OrderMath
+import com.emetain.pokemonwebshop.service.OrderNumbers
+import com.emetain.pokemonwebshop.service.PricedLine
 import com.emetain.pokemonwebshop.service.ProductService
+import com.emetain.pokemonwebshop.service.ProductRules
+import com.emetain.pokemonwebshop.service.ShippingPrice
 import com.emetain.pokemonwebshop.service.StockService
+import com.emetain.pokemonwebshop.service.TokenService
 import com.emetain.pokemonwebshop.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.Clock
+import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -35,6 +52,9 @@ class DevDataSeeder(
     private val productService: ProductService,
     private val stockService: StockService,
     private val heroSlideService: HeroSlideService,
+    private val orderRepository: OrderRepository,
+    private val tokenService: TokenService,
+    private val transactions: TransactionTemplate,
     private val clock: Clock,
 ) : ApplicationRunner {
 
@@ -42,10 +62,11 @@ class DevDataSeeder(
 
     override fun run(args: ApplicationArguments) {
         val admin = seedUser(ADMIN_EMAIL, ADMIN_PASSWORD, "Demo Beheerder", Role.ADMIN)
-        seedUser(CUSTOMER_EMAIL, CUSTOMER_PASSWORD, "Demo Klant", Role.CUSTOMER)
+        val customer = seedUser(CUSTOMER_EMAIL, CUSTOMER_PASSWORD, "Demo Klant", Role.CUSTOMER)
         if (productRepository.count() == 0L) {
             seedProducts(admin)
             seedSlides()
+            transactions.executeWithoutResult { seedOrders(customer) }
         }
 
         log.info("Demo admin login: {} / {}", ADMIN_EMAIL, ADMIN_PASSWORD)
@@ -137,6 +158,81 @@ class DevDataSeeder(
                 game = Game.LORCANA.slug,
             ),
         )
+    }
+
+    /**
+     * Two paid orders of the demo customer, without Stripe: one to ship, with a pre-order in it, and one on its way.
+     * Cancelling them in admin pays nothing back, because there is no payment at Stripe.
+     */
+    private fun seedOrders(customer: User) {
+        val products = productRepository.findAll().associateBy { it.name }
+        demoOrder(
+            customer,
+            listOf(products.getValue("Destined Rivals Elite Trainer Box") to 1, products.getValue("Delta Reign Elite Trainer Box") to 1),
+            paidAgo = Duration.ofHours(3),
+        )
+        demoOrder(
+            customer,
+            listOf(products.getValue("Surging Sparks Booster") to 6, products.getValue("Toploaders 35pt (25 stuks)") to 2),
+            paidAgo = Duration.ofDays(2),
+        ) { order, at ->
+            order.status = OrderStatus.SHIPPED
+            order.shippedAt = at
+            order.carrier = Carrier.POSTNL
+            order.trackingCode = "3SDEMO1234567"
+            order.trackingUrl = "https://jouw.postnl.nl/track-and-trace/3SDEMO1234567-NL-1421AB"
+            order.history += OrderStatusChange(order, OrderStatus.SHIPPED, at, "Verzonden: PostNL 3SDEMO1234567")
+        }
+        log.info("Demo shop: 2 orders for {}", customer.email)
+    }
+
+    private fun demoOrder(
+        customer: User,
+        items: List<Pair<Product, Int>>,
+        paidAgo: Duration,
+        after: (Order, java.time.Instant) -> Unit = { _, _ -> },
+    ) {
+        val paidAt = clock.instant().minus(paidAgo)
+        val priced = items.map { (product, quantity) -> PricedLine(ProductRules.shownPriceCents(product)!!, quantity) }
+        val totals = OrderMath.totals(priced, ShippingPrice(495, 7500))
+        val order = Order(
+            number = OrderNumbers.generate(),
+            user = customer,
+            email = customer.email,
+            customerName = customer.displayName,
+            street = "Dorpsstraat",
+            houseNumber = "12",
+            postcode = "1421 AB",
+            city = "Uithoorn",
+            country = "NL",
+            subtotalCents = totals.subtotalCents,
+            shippingCents = totals.shippingCents,
+            totalCents = totals.totalCents,
+            vatCents = totals.vatCents,
+            deliveryTime = "1 tot 2 werkdagen",
+            shipmentPreference = ShipmentPreference.TOGETHER,
+            accessToken = tokenService.generate(),
+            cartId = null,
+            termsAcceptedAt = paidAt,
+            createdAt = paidAt.minusSeconds(90),
+            updatedAt = paidAt,
+            status = OrderStatus.PAID,
+            stockState = OrderStockState.SOLD,
+            paymentMethod = "ideal",
+            paidAt = paidAt,
+        )
+        items.zip(priced).forEach { (item, price) ->
+            val (product, quantity) = item
+            order.lines += OrderLine(
+                order, product, product.name, product.slug, product.type, product.images.firstOrNull(), false,
+                price.unitPriceCents, quantity, price.totalCents, product.preOrder, product.shipsFrom,
+            )
+            stockService.sell(product.id, quantity, "Demobestelling ${order.number}")
+        }
+        order.history += OrderStatusChange(order, OrderStatus.PENDING_PAYMENT, order.createdAt, "Afgerekend, wacht op de betaling")
+        order.history += OrderStatusChange(order, OrderStatus.PAID, paidAt, "Betaald met iDEAL (demo, zonder Stripe)")
+        after(order, paidAt.plus(Duration.ofHours(20)))
+        orderRepository.save(order)
     }
 
     private data class Demo(

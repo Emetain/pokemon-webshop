@@ -6,6 +6,8 @@ import com.emetain.pokemonwebshop.dto.LoginRequest
 import com.emetain.pokemonwebshop.dto.RegisterRequest
 import com.emetain.pokemonwebshop.dto.ResetPasswordRequest
 import com.emetain.pokemonwebshop.dto.UserDto
+import com.emetain.pokemonwebshop.service.CartCookieService
+import com.emetain.pokemonwebshop.service.CartService
 import com.emetain.pokemonwebshop.service.MailService
 import com.emetain.pokemonwebshop.service.PasswordResetService
 import com.emetain.pokemonwebshop.service.SessionCookieService
@@ -24,16 +26,18 @@ class AuthOrchestrator(
     private val sessionCookieService: SessionCookieService,
     private val passwordResetService: PasswordResetService,
     private val mailService: MailService,
+    private val cartService: CartService,
+    private val cartCookieService: CartCookieService,
 ) {
 
-    fun register(request: RegisterRequest): ResponseEntity<UserDto> {
+    fun register(request: RegisterRequest, httpRequest: HttpServletRequest): ResponseEntity<UserDto> {
         val user = userService.register(request.email, request.password, request.displayName)
-        return startSession(user, HttpStatus.CREATED)
+        return startSession(user, HttpStatus.CREATED, httpRequest)
     }
 
-    fun login(request: LoginRequest): ResponseEntity<UserDto> {
+    fun login(request: LoginRequest, httpRequest: HttpServletRequest): ResponseEntity<UserDto> {
         val user = userService.authenticate(request.email, request.password)
-        return startSession(user, HttpStatus.OK)
+        return startSession(user, HttpStatus.OK, httpRequest)
     }
 
     fun logout(request: HttpServletRequest): ResponseEntity<Void> {
@@ -56,10 +60,16 @@ class AuthOrchestrator(
         passwordResetService.reset(request.token, request.password)
     }
 
-    private fun startSession(user: User, status: HttpStatus): ResponseEntity<UserDto> {
+    /** The guest cart goes into the account, and its cookie goes away. */
+    private fun startSession(user: User, status: HttpStatus, httpRequest: HttpServletRequest): ResponseEntity<UserDto> {
         val token = sessionService.create(user)
-        return ResponseEntity.status(status)
+        val response = ResponseEntity.status(status)
             .header(HttpHeaders.SET_COOKIE, sessionCookieService.create(token).toString())
-            .body(UserDto.from(user))
+        cartCookieService.readToken(httpRequest)?.let { cartToken ->
+            if (cartService.mergeGuestCart(cartToken, user)) {
+                response.header(HttpHeaders.SET_COOKIE, cartCookieService.clear().toString())
+            }
+        }
+        return response.body(UserDto.from(user))
     }
 }

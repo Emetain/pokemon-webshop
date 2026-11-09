@@ -3,6 +3,8 @@ package com.emetain.pokemonwebshop.repository
 import com.emetain.pokemonwebshop.domain.AccessoryType
 import com.emetain.pokemonwebshop.domain.CardSet
 import com.emetain.pokemonwebshop.domain.Game
+import com.emetain.pokemonwebshop.domain.OrderLine
+import com.emetain.pokemonwebshop.domain.OrderStatus
 import com.emetain.pokemonwebshop.domain.Product
 import com.emetain.pokemonwebshop.domain.ProductImportSource
 import com.emetain.pokemonwebshop.domain.ProductLanguage
@@ -129,8 +131,11 @@ object ProductSpecifications {
         builder.exists(entries)
     }
 
-    /** Always ends on id, because a product has to stay in its place from one page to the next. */
-    fun sortedBy(sort: ProductSort) = Specification<Product> { root, query, builder ->
+    /**
+     * Always ends on id, because a product has to stay in its place from one page to the next. [soldSince] is where
+     * "Populair" starts counting sales: the products sold most since then come first.
+     */
+    fun sortedBy(sort: ProductSort, soldSince: Instant? = null) = Specification<Product> { root, query, builder ->
         // The count query for the total runs through here too, and can't have an order.
         if (query != null && query.resultType != Long::class.javaObjectType) {
             val buyableFirst = builder.asc(
@@ -164,9 +169,10 @@ object ProductSpecifications {
                 ProductSort.PRICE_LOWEST -> listOf(withoutPriceLast, builder.asc(price), buyableFirst)
                 ProductSort.PRICE_HIGHEST -> listOf(withoutPriceLast, builder.desc(price), buyableFirst)
                 ProductSort.NAME -> listOf(builder.asc(root.get<String>("nameSearch")))
-                // The most popular sets in the market first, then within a set what customers here want most.
-                ProductSort.POPULAR -> listOf(mostPopularSetFirst) + newestSetFirst +
-                    listOf(builder.desc(demand(root, query, builder)), buyableFirst, biggestFirst, newest)
+                // What customers bought here first. Then, for products without sales, the most popular sets in the
+                // market, and within a set what customers here want most.
+                ProductSort.POPULAR -> listOf(builder.desc(sold(root, query, builder, soldSince)), mostPopularSetFirst) +
+                    newestSetFirst + listOf(builder.desc(demand(root, query, builder)), buyableFirst, biggestFirst, newest)
                 ProductSort.RELEASE -> listOf(
                     builder.asc(builder.selectCase<Int>().`when`(builder.isNull(release), 1).otherwise(0)),
                     builder.asc(release),
@@ -214,7 +220,27 @@ object ProductSpecifications {
         return builder.and(builder.isNotNull(sale), builder.lessThan(sale, root.get<Long>("priceCents")))
     }
 
-    /** Until there are orders: how many customers want the product, on their wishlist or waiting for stock. */
+    /** Units sold in paid orders that weren't cancelled, since [since]. */
+    private fun sold(
+        root: Root<Product>,
+        query: jakarta.persistence.criteria.CriteriaQuery<*>,
+        builder: CriteriaBuilder,
+        since: Instant?,
+    ): Expression<Long> {
+        val units = query.subquery(Long::class.javaObjectType)
+        val line = units.from(OrderLine::class.java)
+        val order = line.join<OrderLine, com.emetain.pokemonwebshop.domain.Order>("order")
+        val conditions = listOfNotNull(
+            builder.equal(line.get<Product>("product"), root),
+            order.get<OrderStatus>("status").`in`(OrderStatus.SOLD),
+            since?.let { builder.greaterThanOrEqualTo(order.get("paidAt"), it) },
+        )
+        units.select(builder.coalesce(builder.sum(line.get<Int>("quantity")).`as`(Long::class.javaObjectType), 0L))
+            .where(*conditions.toTypedArray())
+        return units
+    }
+
+    /** How many customers want the product, on their wishlist or waiting for stock. */
     private fun demand(
         root: Root<Product>,
         query: jakarta.persistence.criteria.CriteriaQuery<*>,
@@ -245,7 +271,7 @@ enum class ProductSort(val param: String?) {
     PRICE_HIGHEST("price-high"),
     NAME("name"),
 
-    /** The sets on `app.shop.popular-sets` first, then the newest sets. */
+    /** What sold most here first, then the sets on `app.shop.popular-sets`, then the newest sets. */
     POPULAR("popular"),
 
     /** Soonest first, for pre-orders. */

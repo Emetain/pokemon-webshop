@@ -5,6 +5,8 @@ import { Heart, Menu, Search, ShoppingBag, Truck, User } from 'lucide-vue-next'
 import AppLogo from './AppLogo.vue'
 import MegaMenu from './MegaMenu.vue'
 import MobileMenu from './MobileMenu.vue'
+import CartDrawer from '../cart/CartDrawer.vue'
+import { useCart } from '../../stores/cart'
 import { useSession } from '../../stores/session'
 import { t } from '../../utils/i18n'
 
@@ -16,7 +18,10 @@ const mobileMenu = ref(null)
 const searchInput = ref(null)
 const searchOpen = ref(false)
 const searchQuery = ref('')
-const cartCount = 0
+
+const cart = useCart()
+cart.start()
+const cartCount = computed(() => cart.count.value)
 
 const accountLabel = computed(() =>
   session.isLoggedIn.value ? t('layout.account') : t('layout.login'),
@@ -99,20 +104,23 @@ watch(
         <router-link class="action wishlist" to="/verlanglijst" :aria-label="t('layout.wishlist')">
           <Heart :size="22" aria-hidden="true" />
         </router-link>
-        <router-link
+        <button
           class="action"
-          to="/winkelwagen"
+          type="button"
+          aria-haspopup="dialog"
           :aria-label="t('layout.cartWithCount', { count: cartCount })"
+          @click="cart.openDrawer()"
         >
           <ShoppingBag :size="22" aria-hidden="true" />
           <span class="action-label">{{ t('layout.cart') }}</span>
           <span class="cart-count" aria-hidden="true">{{ cartCount }}</span>
-        </router-link>
+        </button>
       </div>
     </div>
 
     <MegaMenu />
     <MobileMenu ref="mobileMenu" />
+    <CartDrawer />
   </header>
 </template>
 

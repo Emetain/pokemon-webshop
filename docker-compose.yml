@@ -61,6 +61,8 @@ services:
       CATALOG_SYNC_CRON: ${CATALOG_SYNC_CRON:-0 0 3 * * *}
       COLLECTION_SNAPSHOT_CRON: ${COLLECTION_SNAPSHOT_CRON:-0 0 7 * * *}
       MEDIA_DIRECTORY: /app/media
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
     volumes:
       - media-data:/app/media
     depends_on:

@@ -105,6 +105,26 @@ Ways to fill the shop:
 
 Stock only changes through `StockService`, which writes every change to the stock log. The hero on the home page is a carousel: the first slide is the hero with the binder, the others are managed at `/admin/hero`.
 
+## Orders and payments
+
+Customers pay with [Stripe Checkout](https://docs.stripe.com/payments/checkout): iDEAL | Wero and card in the Netherlands, Bancontact and card in Belgium. Checkout holds the stock for 15 minutes while the customer pays. An order only becomes paid through Stripe's webhook, never through the page the customer returns to. Orders, track & trace, cancelling and refunds are at `/admin/bestellingen`, shipping costs at `/admin/verzending`.
+
+Without `STRIPE_SECRET_KEY` the shop works, but checkout says online payment isn't set up. To test a payment locally:
+
+1. Put a test key from the [Stripe dashboard](https://dashboard.stripe.com/test/apikeys) in `.env` as `STRIPE_SECRET_KEY=sk_test_...`.
+2. Install the [Stripe CLI](https://docs.stripe.com/stripe-cli), log in and forward the webhooks:
+
+   ```sh
+   brew install stripe/stripe-cli/stripe
+   stripe login
+   stripe listen --forward-to localhost:8080/api/v1/payments/stripe/webhook
+   ```
+
+3. Put the `whsec_...` that `stripe listen` prints in `.env` as `STRIPE_WEBHOOK_SECRET` and restart the backend.
+4. Order something and pay with card `4242 4242 4242 4242`, any future date and any CVC, or choose iDEAL and authorize the test payment. The order turns paid within seconds, and the confirmation mail is in Mailpit.
+
+In production, add a webhook endpoint in the Stripe dashboard for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`, pointing at `https://<your domain>/api/v1/payments/stripe/webhook`, and use its signing secret.
+
 ## Profiles
 
 | Profile  | Database                                    | ddl-auto    | show-sql | Flyway |

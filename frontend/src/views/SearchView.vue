@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import CardFilters from '../components/catalog/CardFilters.vue'
+import FormMessage from '../components/FormMessage.vue'
 import CardGrid from '../components/catalog/CardGrid.vue'
 import CatalogBand from '../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../components/catalog/CatalogNotice.vue'
@@ -38,6 +39,7 @@ const result = ref(null)
 const products = ref(null)
 const loading = ref(false)
 const error = ref('')
+const productError = ref('')
 
 const query = computed(() => props.q.trim())
 const queryTooShort = computed(() => query.value.length > 0 && query.value.length < MIN_QUERY_LENGTH)
@@ -146,7 +148,12 @@ watch(() => [query.value, props.game, currentPage.value], searchProducts, { imme
             {{ t('search.allProducts', { count: formatNumber(products.totalItems) }) }}
           </router-link>
         </div>
-        <ProductGrid :products="products.items" @wished="(product, wished) => (product.wished = wished)" />
+        <FormMessage v-if="productError" class="product-error">{{ productError }}</FormMessage>
+        <ProductGrid
+          :products="products.items"
+          @wished="(product, wished) => (product.wished = wished)"
+          @error="productError = $event"
+        />
       </section>
 
       <h2 v-if="products?.items.length" class="cards-title">{{ t('search.cards') }}</h2>
@@ -223,5 +230,9 @@ watch(() => [query.value, props.game, currentPage.value], searchProducts, { imme
   margin-block: var(--space-3);
   color: var(--color-ink-soft);
   font-size: var(--text-sm);
+}
+
+.product-error {
+  margin-bottom: var(--space-3);
 }
 </style>
