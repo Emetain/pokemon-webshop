@@ -67,7 +67,8 @@ const owned = computed(() => tracking.value && props.card.owned.length > 0)
         <Check :size="14" aria-hidden="true" />
         {{ t('collection.owned') }}
       </p>
-      <p v-else class="status">{{ t('collection.missing') }}</p>
+      <!-- A card you don't have gets no label, but the same empty line, so the prices in a row stay level. -->
+      <p v-else class="status" aria-hidden="true">&nbsp;</p>
     </template>
     <slot />
   </article>

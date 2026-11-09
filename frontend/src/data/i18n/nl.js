@@ -693,7 +693,6 @@ export default {
     progressOf: '{owned} van {total}',
     progressLabel: 'Voortgang {name}',
     owned: 'In bezit',
-    missing: 'Gemist',
     addCard: '{name} toevoegen aan je collectie',
     increase: 'Eén {name} meer',
     decrease: 'Eén {name} minder',
