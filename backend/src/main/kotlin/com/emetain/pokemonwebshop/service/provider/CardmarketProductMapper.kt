@@ -46,7 +46,7 @@ object CardmarketProductMapper {
     fun parse(json: JsonNode): List<CardmarketProduct> =
         json.path("products").mapNotNull { node ->
             val id = node.path("idProduct").asLong(0)
-            val name = node.path("name").asText("").replace("\"\"", "\"").trim()
+            val name = shopName(node.path("name").asText("").replace("\"\"", "\"").trim())
             val expansion = node.path("idExpansion").asLong(0)
             if (id == 0L || name.isEmpty() || expansion == 0L) {
                 null
@@ -54,6 +54,12 @@ object CardmarketProductMapper {
                 CardmarketProduct(id, name, node.path("categoryName").asText(""), expansion)
             }
         }
+
+    /**
+     * The name as shops say it. Cardmarket calls a box of 18 boosters "Booster Box (18 Boosters)", next to the
+     * "Booster Box" of 36, and shops call it a half booster box.
+     */
+    fun shopName(name: String): String = name.replace(HALF_BOOSTER_BOX, "Half Booster Box")
 
     /** Null for things the shop doesn't sell as a product type, such as coins, lots and complete card sets. */
     fun typeOf(category: String, name: String): ProductType? {
@@ -133,6 +139,8 @@ object CardmarketProductMapper {
             .maxByOrNull { (setName) -> setName.length }
             ?.second
     }
+
+    private val HALF_BOOSTER_BOX = Regex("""\bBooster Box \(18 Boosters\)""", RegexOption.IGNORE_CASE)
 
     /** Whole words, in `nameSearch` form. */
     private val NOT_IN_EUROPE = listOf(

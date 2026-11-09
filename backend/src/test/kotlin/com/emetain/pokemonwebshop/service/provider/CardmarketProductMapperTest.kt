@@ -30,6 +30,20 @@ class CardmarketProductMapperTest {
         assertEquals("Star Trek \"Beam Me Up\" Fat Pack Bundle", products.single { it.id == 601L }.name)
     }
 
+    @Test
+    fun `a box of 18 boosters is called a half booster box`() {
+        val parsed = CardmarketProductMapper.parse(
+            ObjectMapper().readTree(
+                """{"products": [
+                    {"idProduct": 1, "name": "Delta Reign Booster Box (18 Boosters)", "categoryName": "Pokémon Display", "idExpansion": 7},
+                    {"idProduct": 2, "name": "Delta Reign Booster Box", "categoryName": "Pokémon Display", "idExpansion": 7}
+                ]}""",
+            ),
+        )
+        assertEquals(listOf("Delta Reign Half Booster Box", "Delta Reign Booster Box"), parsed.map { it.name })
+        assertEquals(ProductType.BOOSTER_BOX, CardmarketProductMapper.typeOf("Pokémon Display", parsed.first().name))
+    }
+
     @ParameterizedTest
     @CsvSource(
         delimiter = '|',
