@@ -57,9 +57,9 @@ object CardmarketProductMapper {
 
     /**
      * The name as shops say it. Cardmarket calls a box of 18 boosters "Booster Box (18 Boosters)", next to the
-     * "Booster Box" of 36, and shops call it a half booster box.
+     * "Booster Box" of 36, and Dutch shops call it a "Halve Booster Box".
      */
-    fun shopName(name: String): String = name.replace(HALF_BOOSTER_BOX, "Half Booster Box")
+    fun shopName(name: String): String = name.replace(HALF_BOOSTER_BOX, "Halve Booster Box")
 
     /** Null for things the shop doesn't sell as a product type, such as coins, lots and complete card sets. */
     fun typeOf(category: String, name: String): ProductType? {

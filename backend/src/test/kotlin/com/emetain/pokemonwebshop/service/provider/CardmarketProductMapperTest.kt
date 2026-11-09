@@ -31,7 +31,7 @@ class CardmarketProductMapperTest {
     }
 
     @Test
-    fun `a box of 18 boosters is called a half booster box`() {
+    fun `a box of 18 boosters is called a halve booster box`() {
         val parsed = CardmarketProductMapper.parse(
             ObjectMapper().readTree(
                 """{"products": [
@@ -40,7 +40,7 @@ class CardmarketProductMapperTest {
                 ]}""",
             ),
         )
-        assertEquals(listOf("Delta Reign Half Booster Box", "Delta Reign Booster Box"), parsed.map { it.name })
+        assertEquals(listOf("Delta Reign Halve Booster Box", "Delta Reign Booster Box"), parsed.map { it.name })
         assertEquals(ProductType.BOOSTER_BOX, CardmarketProductMapper.typeOf("Pokémon Display", parsed.first().name))
     }
 
