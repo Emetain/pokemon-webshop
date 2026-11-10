@@ -141,6 +141,20 @@ How it runs:
 
 During the drop, `/admin/drops/{id}/live` shows the waiting room and sales, and has buttons to pause the line, change its speed or end the drop. After the drop the same page is the report. The timings are under `app.drops` in `application.yml`.
 
+## Preview server and deploys
+
+The shop runs as a closed preview on the owner's server: every page asks for a shared login, search engines are kept
+out, and online payment is off. Every push to `main` runs the backend tests and the frontend build in GitHub Actions.
+When both pass, the images go to GitHub's container registry and the server starts them, going back to the previous
+version by itself when the new one doesn't get healthy.
+
+- `deploy/compose.yml` and `deploy/Caddyfile`: Postgres, the backend on the `prod` profile, Caddy with HTTPS, Mailpit.
+- `deploy/server/`: the scripts on the server (deploy, backup, restore check, make an account admin) and the template
+  of the server's `.env`.
+- `.github/workflows/deploy.yml`: needs the secrets `DEPLOY_HOST`, `DEPLOY_SSH_KEY` and `DEPLOY_KNOWN_HOSTS`.
+
+How to deploy, roll back, restore a backup and where every secret lives: [docs/phases/phase-07.md](docs/phases/phase-07.md).
+
 ## Profiles
 
 | Profile  | Database                                    | ddl-auto    | show-sql | Flyway |

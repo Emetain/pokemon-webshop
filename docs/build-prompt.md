@@ -64,6 +64,7 @@ These decisions came up while building and apply to every later phase. The phase
 - **Before going live:** the owner does a legal check and has asked to be reminded. See phase 9.
 - **Going live is its own phase:** added by the owner on 2026-11-10. Phase 10 opens the shop under its own domain with live credentials, after the legal check.
 - **Online preview first:** added by the owner on 2026-11-10, so a friend can help with missing images. Phase 7 puts the shop online as a closed preview on the owner's own server, with automatic deploys on every push to `main`. The phases after it moved one number up: the phase docs up to `phase-06.md` still use the old numbers, where phase 7 means Extras (now 8), phase 8 Polish and hardening (now 9) and phase 9 Go live (now 10).
+- **The server and its deploys:** since phase 7 the shop runs on the owner's VPS. GitHub Actions deploys every push to `main` with `deploy/server/deploy.sh`, through an SSH key that may only run that script. The server's settings and secrets are in `/opt/poketopia/.env`, never in the repo. Migrations must keep the previous version working (add first, remove in a later release), because a rollback can't undo them. Details in `docs/phases/phase-07.md`.
 
 ---
 
