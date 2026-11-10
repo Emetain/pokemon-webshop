@@ -62,6 +62,7 @@ These decisions came up while building and apply to every later phase. The phase
 - **Payments:** Stripe Checkout behind a `PaymentGateway` interface. An order is made when checkout starts and only becomes paid through the verified webhook, after the shop asks Stripe for the session itself. Stock is reserved for 15 minutes. Stripe's page lasts at least 30, so the shop closes it at Stripe before it releases the stock. Customers see "iDEAL | Wero", as Stripe asks from 2026.
 - **Popular follows sales:** "Populair" and the bestsellers put what sold here in the last 90 days first, then the popular sets, then the newest sets.
 - **Before going live:** the owner does a legal check and has asked to be reminded. See phase 8.
+- **Going live is its own phase:** added by the owner on 2026-11-10. Phase 9 puts the shop on a real server with its own domain, IP address and live credentials, after the legal check.
 
 ---
 
@@ -292,6 +293,51 @@ Goal: ready to show, ready to deploy.
 
 Done when:
 - All tests pass, the production build works, and the `prod` profile starts cleanly on an empty database.
+
+## Phase 9: Go live
+
+Goal: the shop runs on its own server under its own domain, with live credentials, and real customers can order and pay.
+
+Most steps here need the owner: accounts, payments, DNS and passwords. Prepare everything that can be prepared, tell the owner exactly what to fill in where, and check the result after each step. Live keys and passwords only go into the environment file on the server, never into the repository, the docs or a commit. Don't start before the owner confirms that the legal check from phase 8 is done.
+
+Ask the owner first for:
+- The domain name and where it is registered.
+- The hosting. Recommend a VPS in the EU, for the privacy policy, with a fixed public IPv4 address, at least 4 GB of memory (the Magic sync needs a 2 GB heap), and room for the database, media and logs.
+- The shop's email address and a mail provider that can send from the shop's domain.
+- A Stripe account activated for live payments, with the business details, KVK number and bank account approved.
+
+Server:
+- A current Ubuntu LTS. SSH with a key only, password and root login off. A firewall that only lets in SSH, HTTP and HTTPS. Automatic security updates.
+- A production Docker Compose file with Postgres, the backend on the `prod` profile and a reverse proxy. Only the proxy can be reached from outside. Everything restarts after a crash or a reboot.
+- The reverse proxy (Caddy, or nginx with Let's Encrypt) serves the built frontend and passes `/api` to the backend, with certificates that renew by themselves, a redirect from HTTP to HTTPS and between `www` and the main domain (the owner chooses which one stays), and HSTS. Set `FORWARD_HEADERS_STRATEGY=native`, so rate limits see the customer's IP address.
+- The database and `MEDIA_DIRECTORY` on volumes that survive a new version.
+- A deploy script: build, upload, start the new version (Flyway runs the migrations), and go back to the previous version when the new one doesn't start.
+
+Domain and DNS:
+- An A record for the domain and for `www` pointing at the server's IP address, and an AAAA record when the server has IPv6. Lower the TTL a day before the switch.
+- SPF, DKIM and DMARC records from the mail provider, so order mails don't end up in spam.
+
+Configuration:
+- A `.env` on the server that only its owner can read, with every variable from `.env.example` filled in for production: `APP_BASE_URL=https://<domain>` (used in mails and Stripe's return pages), the database with a long generated password, `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM` and the SMTP login from phase 8, `MEDIA_DIRECTORY`, the cron times, and `FORWARD_HEADERS_STRATEGY`. Keep a checklist of every variable and where its value comes from, without the values.
+- Stripe live: `STRIPE_SECRET_KEY=sk_live_...`, a webhook endpoint in the live dashboard at `https://<domain>/api/v1/payments/stripe/webhook` with the four events from the README, and its signing secret as `STRIPE_WEBHOOK_SECRET`. iDEAL | Wero, Bancontact and card switched on in the dashboard, and the shop name as the statement descriptor.
+- `OPENAI_API_KEY` from phase 7 with a monthly limit in OpenAI's dashboard, if the owner wants AI-written slides.
+- The owner's admin account, created the way phase 8 added. No demo accounts or demo data.
+
+Filling the shop:
+- Run the card sync for all four games and the product list import on the server, then set prices, stock and shipping rates in admin. Copying the local database instead saves the long Pokémon sync, but Hibernate made that schema, not Flyway: only do it after checking it against the migrations and removing test orders and test accounts.
+
+Backups and monitoring:
+- A daily `pg_dump` and a copy of the media folder, stored somewhere other than the server and kept for at least 30 days.
+- An uptime check on the home page and on an API endpoint that mails the owner when the shop is down. Logs rotate, and the owner gets a warning when the disk is 80% full.
+- If the owner wants, submit the sitemap from phase 8 to Google Search Console.
+
+Done when:
+- `https://<domain>` loads with a valid certificate, `http://` and `www` redirect to it, and from outside the server only answers on SSH, HTTP and HTTPS (a port scan doesn't reach Postgres or the backend).
+- A real order of a small amount is paid with iDEAL in live mode, the webhook marks it paid, the confirmation mail arrives in a normal Gmail or Outlook inbox and not in spam, and a refund from the admin comes back.
+- Swagger, the H2 console and demo data are off, and no test key is left anywhere.
+- A backup is restored on a test database and the shop starts from it.
+- A new version goes out with the deploy script, and a version that doesn't start is rolled back by it.
+- `docs/phases/phase-09.md` describes the server, the domain and DNS records, where every secret lives (never the secret itself), and how to deploy, roll back and restore a backup.
 
 ---
 
