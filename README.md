@@ -137,6 +137,7 @@ How it runs:
 - An account is required by default. Drop endpoints are rate limited per IP address and per account, and the join and checkout forms have a hidden honeypot field.
 - "Herinner mij" sends one mail 15 minutes before the start.
 - Upcoming and live drops get their own slide in the home page hero, with a countdown, unless you switch that off per drop. The menu shows LIVE while a drop runs.
+- The slide of a drop is black by default, or red, yellow or green as chosen per drop. It shows the drop's banner, or without one the pictures of up to three of its products. Product photos with a transparent background (PNG or WebP) look best on it.
 
 During the drop, `/admin/drops/{id}/live` shows the waiting room and sales, and has buttons to pause the line, change its speed or end the drop. After the drop the same page is the report. The timings are under `app.drops` in `application.yml`.
 

@@ -21,6 +21,8 @@ data class DropRequest(
     /** `RETURN_TO_STOCK` or `KEEP`. */
     val leftover: String? = null,
     val showInHero: Boolean = true,
+    /** `BLACK`, `RED`, `YELLOW` or `GREEN`. Null keeps the colour the drop has. */
+    val heroColour: String? = null,
     val admitPerMinute: Int? = null,
 )
 
@@ -76,6 +78,7 @@ data class AdminDropDto(
     val maxPerCustomer: Int?,
     val leftover: String,
     val showInHero: Boolean,
+    val heroColour: String,
     val admitPerMinute: Int,
     val queuePaused: Boolean,
     val startedAt: Instant?,

@@ -28,7 +28,7 @@ const onProducts = computed(
 <template>
   <div class="admin">
     <aside class="sidebar">
-      <AppLogo class="sidebar-logo" inverse />
+      <AppLogo class="sidebar-logo" />
       <nav class="sidebar-nav" :aria-label="t('admin.navigation')">
         <router-link class="sidebar-link" to="/admin" exact-active-class="is-active">
           <LayoutDashboard :size="18" aria-hidden="true" />
@@ -158,8 +158,12 @@ const onProducts = computed(
     padding: var(--space-5) var(--space-3);
   }
 
+  /* The round badge sits in the middle of the sidebar, as big as in the shop header. */
   .sidebar-logo {
-    padding-inline: var(--space-3);
+    --logo-height: 6rem;
+    --logo-height-wide: 6rem;
+
+    align-self: center;
   }
 
   .sidebar-nav {

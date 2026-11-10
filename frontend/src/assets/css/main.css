@@ -50,6 +50,22 @@
   --game-one-piece: #d3263d;
   --game-one-piece-ink: #ffffff;
 
+  /* Drop colours: the background of the hero slide of a drop, chosen per drop, so a drop stands apart from the
+     blue hero of the shop. Each runs from the first shade to the -end shade: a gradient you only just see. */
+  --drop-black: #22252b;
+  --drop-black-end: #111215;
+  --drop-black-ink: #ffffff;
+  --drop-red: #cf1f36;
+  --drop-red-end: #b3152c;
+  --drop-red-ink: #ffffff;
+  --drop-yellow: #fdd12f;
+  --drop-yellow-end: #f4be12;
+  --drop-yellow-ink: #1d1a0e;
+  --drop-green: #188552;
+  --drop-green-end: #0f6c42;
+  --drop-green-ink: #ffffff;
+  --color-drop-picture-shadow: rgb(0 0 0 / 35%);
+
   /* The accent of the current context. [data-game] below overrides it. */
   --accent: var(--color-brand);
   --accent-ink: var(--color-on-brand);
@@ -121,6 +137,35 @@
 [data-game='one-piece'] {
   --accent: var(--game-one-piece);
   --accent-ink: var(--game-one-piece-ink);
+}
+
+/* A drop in its colour. --accent is the solid shade, for what can't show a gradient. */
+[data-drop-colour] {
+  --drop-gradient: linear-gradient(135deg, var(--accent), var(--accent-end));
+}
+
+[data-drop-colour='black'] {
+  --accent: var(--drop-black);
+  --accent-end: var(--drop-black-end);
+  --accent-ink: var(--drop-black-ink);
+}
+
+[data-drop-colour='red'] {
+  --accent: var(--drop-red);
+  --accent-end: var(--drop-red-end);
+  --accent-ink: var(--drop-red-ink);
+}
+
+[data-drop-colour='yellow'] {
+  --accent: var(--drop-yellow);
+  --accent-end: var(--drop-yellow-end);
+  --accent-ink: var(--drop-yellow-ink);
+}
+
+[data-drop-colour='green'] {
+  --accent: var(--drop-green);
+  --accent-end: var(--drop-green-end);
+  --accent-ink: var(--drop-green-ink);
 }
 
 @media (min-width: 768px) {

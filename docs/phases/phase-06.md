@@ -54,7 +54,10 @@ report afterwards.
 - **"Herinner mij"**: one mail 15 minutes before the start (`app.drops.reminder-before`), on the account's address or an
   address a guest fills in.
 - **Hero**: every upcoming and live drop with the slide switched on gets a slide by itself, first in the carousel, live
-  drops before upcoming ones. It goes away when the drop ends.
+  drops before upcoming ones. It goes away when the drop ends. Its background is a colour chosen per drop, black by
+  default or red, yellow or green, each with a slight gradient, so it stands apart from the blue hero of the shop. It
+  shows the banner when the drop has one, and otherwise the main pictures of up to three of its products, fanned out.
+  The colour came with `V9__drop_hero_colour.sql`, after the owner saw the first version.
 - **Product page**: a product in an upcoming or live drop says so and links to the drop, so a product whose stock all
   went to the drop doesn't just look sold out.
 - **Report**: queue (joined, in the waiting room at the start, still waiting, through, shopping now), and per product

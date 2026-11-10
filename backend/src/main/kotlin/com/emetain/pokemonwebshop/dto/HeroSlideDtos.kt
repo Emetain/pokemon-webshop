@@ -43,7 +43,14 @@ data class HeroDropDto(
     val endsAt: Instant?,
     /** For the countdown: the browser's clock can be off. */
     val serverTime: Instant,
+    /** The background of the slide: `BLACK`, `RED`, `YELLOW` or `GREEN`. */
+    val colour: String,
+    /** What drops, in the order of the drop: the main picture of up to three products. Empty without pictures. */
+    val pictures: List<HeroDropPictureDto> = emptyList(),
 )
+
+/** [card] is a card scan, which gets the rounded corners of a card. */
+data class HeroDropPictureDto(val url: String, val card: Boolean)
 
 /** A slide as the admin manages it. [showing] says whether the home page shows it right now. */
 data class AdminHeroSlideDto(

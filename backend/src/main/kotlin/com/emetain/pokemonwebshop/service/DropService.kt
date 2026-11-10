@@ -2,6 +2,7 @@ package com.emetain.pokemonwebshop.service
 
 import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.domain.Drop
+import com.emetain.pokemonwebshop.domain.DropHeroColour
 import com.emetain.pokemonwebshop.domain.DropLeftover
 import com.emetain.pokemonwebshop.domain.DropProduct
 import com.emetain.pokemonwebshop.domain.DropStatus
@@ -239,10 +240,11 @@ class DropService(
         drop.maxPerCustomer = request.maxPerCustomer
         drop.leftover = leftover(request.leftover)
         drop.showInHero = request.showInHero
+        request.heroColour?.let { drop.heroColour = heroColour(it) }
         request.admitPerMinute?.let { drop.admitPerMinute = it }
     }
 
-    /** During the drop: the text, the end time, the hero, the speed and what happens to the leftover. */
+    /** During the drop: the text, the end time, the hero and its colour, the speed and what happens to the leftover. */
     private fun applyWhileLive(drop: Drop, request: DropRequest) {
         val fixed = request.startsAt != drop.startsAt ||
             request.requiresAccount != drop.requiresAccount ||
@@ -262,6 +264,7 @@ class DropService(
         drop.description = request.description?.trim()?.takeIf { it.isNotEmpty() }
         drop.endsAt = request.endsAt
         drop.showInHero = request.showInHero
+        request.heroColour?.let { drop.heroColour = heroColour(it) }
         drop.leftover = leftover(request.leftover)
     }
 
@@ -295,6 +298,10 @@ class DropService(
 
     private fun leftover(value: String?): DropLeftover =
         value?.let { runCatching { DropLeftover.valueOf(it) }.getOrNull() } ?: DropLeftover.RETURN_TO_STOCK
+
+    private fun heroColour(value: String): DropHeroColour =
+        DropHeroColour.entries.firstOrNull { it.name == value }
+            ?: throw ApiException.validation("Kies zwart, rood, geel of groen als kleur van de hero.")
 
     private fun requireBeforeStart(drop: Drop) {
         if (drop.status == DropStatus.LIVE || drop.status == DropStatus.ENDED) {

@@ -161,7 +161,11 @@ watch(
   margin-left: calc(var(--space-2) * -1);
 }
 
+/* The logo is the biggest thing in the bar: the header grows with it. */
 .bar-logo {
+  --logo-height: 4rem;
+  --logo-height-wide: 6rem;
+
   grid-area: logo;
   justify-self: start;
 }

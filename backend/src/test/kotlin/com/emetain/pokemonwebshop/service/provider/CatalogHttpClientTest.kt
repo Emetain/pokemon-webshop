@@ -65,7 +65,7 @@ class CatalogHttpClientTest {
         val json = client.getJson(url, noPause)
 
         assertEquals("Pikachu", json.path("name").asText())
-        assertEquals("UithoornTCG/test", headers.single()["User-Agent"])
+        assertEquals("Poketopia/test", headers.single()["User-Agent"])
         assertTrue(headers.single()["Accept"]!!.contains("application/json"))
     }
 

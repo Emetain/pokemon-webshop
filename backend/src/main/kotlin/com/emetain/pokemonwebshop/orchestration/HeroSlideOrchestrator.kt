@@ -5,6 +5,7 @@ import com.emetain.pokemonwebshop.domain.DropStatus
 import com.emetain.pokemonwebshop.domain.HeroSlide
 import com.emetain.pokemonwebshop.dto.AdminHeroSlideDto
 import com.emetain.pokemonwebshop.dto.HeroDropDto
+import com.emetain.pokemonwebshop.dto.HeroDropPictureDto
 import com.emetain.pokemonwebshop.dto.HeroSlideDto
 import com.emetain.pokemonwebshop.dto.HeroSlideRequest
 import com.emetain.pokemonwebshop.repository.DropRepository
@@ -40,16 +41,36 @@ class HeroSlideOrchestrator(
                 linkUrl = "/drops/${drop.slug}",
                 imageUrl = drop.bannerUrl,
                 game = DropOrchestrator.gameOf(drop),
-                drop = HeroDropDto(drop.slug, drop.status.name, drop.startsAt, drop.endsAt, now),
+                drop = HeroDropDto(
+                    slug = drop.slug,
+                    status = drop.status.name,
+                    startsAt = drop.startsAt,
+                    endsAt = drop.endsAt,
+                    serverTime = now,
+                    colour = drop.heroColour.name,
+                    pictures = if (drop.bannerUrl == null) pictures(drop) else emptyList(),
+                ),
             )
         }
     }
+
+    /** A banner the admin uploaded is the picture of the slide. Without one, the slide shows the products. */
+    private fun pictures(drop: Drop): List<HeroDropPictureDto> = drop.products.asSequence()
+        .mapNotNull { dropProduct ->
+            val product = dropProduct.product
+            product.images.firstOrNull()?.let { HeroDropPictureDto(it, card = false) }
+                ?: (product.card?.shownImageLargeUrl ?: product.card?.shownImageSmallUrl)?.let { HeroDropPictureDto(it, card = true) }
+        }
+        .distinctBy { it.url }
+        .take(SLIDE_PICTURES)
+        .toList()
 
     private fun shorten(text: String): String =
         if (text.length <= SLIDE_TEXT) text else text.take(SLIDE_TEXT - 1).substringBeforeLast(' ').trimEnd(',', '.', ' ') + "…"
 
     private companion object {
         const val SLIDE_TEXT = 160
+        const val SLIDE_PICTURES = 3
     }
 
     fun all(): List<AdminHeroSlideDto> = slideService.all().map(::admin)

@@ -1,16 +1,17 @@
 <script setup>
-import BallMark from '../BallMark.vue'
+import logoUrl from '../../assets/brand/poketopia-logo.webp'
 import { t } from '../../utils/i18n'
 
-defineProps({
-  inverse: { type: Boolean, default: false },
-})
+/**
+ * The Poketopia logo, linking to the home page. The file is a small copy of `docs/Poketopia-logo.png`: trimmed to the
+ * emblem and three times the height the header shows it at, so it stays sharp on high-density screens. A parent can
+ * set the height with --logo-height and, from 1024px, --logo-height-wide.
+ */
 </script>
 
 <template>
-  <router-link class="logo" :class="{ inverse }" to="/">
-    <BallMark class="logo-mark" />
-    <span>{{ t('brand.name') }}</span>
+  <router-link class="logo" to="/">
+    <img class="logo-image" :src="logoUrl" :alt="t('brand.name')" width="386" height="288" />
   </router-link>
 </template>
 
@@ -18,39 +19,18 @@ defineProps({
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  color: var(--color-ink);
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  font-stretch: 85%;
-  font-weight: 800;
-  line-height: 1;
-  text-decoration: none;
-  white-space: nowrap;
+  border-radius: var(--radius-sm);
 }
 
-.logo-mark {
-  flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
-}
-
-.logo.inverse {
-  color: var(--color-on-brand);
-}
-
-.logo.inverse .logo-mark {
-  --ball-line: var(--color-brand-deep);
+.logo-image {
+  display: block;
+  width: auto;
+  height: var(--logo-height, 2.75rem);
 }
 
 @media (min-width: 1024px) {
-  .logo {
-    font-size: var(--text-xl);
-  }
-
-  .logo-mark {
-    width: 2.25rem;
-    height: 2.25rem;
+  .logo-image {
+    height: var(--logo-height-wide, 3.5rem);
   }
 }
 </style>

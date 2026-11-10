@@ -626,8 +626,8 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     @Test
     fun `admin endpoints for orders need an admin`() {
         val customer = loggedInUser(Role.CUSTOMER)
-        mockMvc.perform(get("/v1/admin/orders/UT-AAAAAA").cookie(customer)).andExpect(status().isForbidden)
-        mockMvc.perform(post("/v1/admin/orders/UT-AAAAAA/cancel").cookie(customer).json(emptyMap<String, Any>())).andExpect(status().isForbidden)
+        mockMvc.perform(get("/v1/admin/orders/PT-AAAAAA").cookie(customer)).andExpect(status().isForbidden)
+        mockMvc.perform(post("/v1/admin/orders/PT-AAAAAA/cancel").cookie(customer).json(emptyMap<String, Any>())).andExpect(status().isForbidden)
         mockMvc.perform(get("/v1/account/orders")).andExpect(status().isUnauthorized)
     }
 

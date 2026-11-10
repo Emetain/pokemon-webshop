@@ -238,12 +238,12 @@ object OrderMails {
         <!doctype html>
         <html lang="nl"><body style="margin:0;padding:24px 12px;background:#eef4fe;font-family:Arial,Helvetica,sans-serif;color:$INK;font-size:15px;line-height:1.5">
         <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;border-collapse:collapse;background:#ffffff;border-radius:12px">
-        <tr><td style="padding:20px 24px;background:$BRAND;border-radius:12px 12px 0 0;color:#ffffff;font-weight:700;font-size:18px">Uithoorn TCG</td></tr>
+        <tr><td style="padding:20px 24px;background:$BRAND;border-radius:12px 12px 0 0;color:#ffffff;font-weight:700;font-size:18px">Poketopia</td></tr>
         <tr><td style="padding:24px">
         <h1 style="margin:0 0 4px;font-size:22px">${esc(title)}</h1>
         <p style="margin:0 0 20px;color:$SOFT;font-size:13px">Bestelling ${esc(order.number)}</p>
         $body
-        <p style="margin:24px 0 0;color:$SOFT;font-size:13px">Groeten,<br>Uithoorn TCG</p>
+        <p style="margin:24px 0 0;color:$SOFT;font-size:13px">Groeten,<br>Poketopia</p>
         </td></tr></table></body></html>
     """.trimIndent()
 
@@ -257,5 +257,5 @@ object OrderMails {
 
     private fun esc(text: String): String = HtmlUtils.htmlEscape(text, Charsets.UTF_8.name())
 
-    private const val SIGNATURE = "Groeten,\nUithoorn TCG"
+    private const val SIGNATURE = "Groeten,\nPoketopia"
 }

@@ -43,7 +43,7 @@ import java.time.Instant
     ],
 )
 class Order(
-    /** What the customer sees, such as `UT-7K3M9Q`. Random, so it says nothing about how much the shop sells. */
+    /** What the customer sees, such as `PT-7K3M9Q`. Random, so it says nothing about how much the shop sells. */
     @Column(nullable = false, length = 20)
     val number: String,
 

@@ -23,10 +23,10 @@ class DropMailsTest {
 
     @Test
     fun `the reminder says when it starts in Dutch time, links to the drop and explains the random order`() {
-        val mail = DropMails.reminder(drop(), "https://uithoorntcg.nl", now)
+        val mail = DropMails.reminder(drop(), "https://poketopia.nl", now)
         assertEquals("Over 15 minuten begint de drop: Pikachu & <Friends>", mail.subject)
         assertContains(mail.text, "vandaag om 20:00")
-        assertContains(mail.text, "https://uithoorntcg.nl/drops/pikachu-friends")
+        assertContains(mail.text, "https://poketopia.nl/drops/pikachu-friends")
         assertContains(mail.text, "willekeurige plek")
         assertContains(mail.text, "account nodig")
         assertContains(mail.html, "Pikachu &amp; &lt;Friends&gt;")
@@ -35,6 +35,6 @@ class DropMailsTest {
 
     @Test
     fun `a drop without account doesn't ask to log in`() {
-        assertFalse(DropMails.reminder(drop(requiresAccount = false), "https://uithoorntcg.nl", now).text.contains("account"))
+        assertFalse(DropMails.reminder(drop(requiresAccount = false), "https://poketopia.nl", now).text.contains("account"))
     }
 }

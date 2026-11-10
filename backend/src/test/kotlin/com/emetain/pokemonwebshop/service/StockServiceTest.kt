@@ -128,7 +128,7 @@ class StockServiceTest {
         service.adjust(7, 5, StockReason.PURCHASE, null, null)
         service.reserve(7, 2)
 
-        val movement = service.sellReserved(7, 2, "Bestelling UT-ABC234")
+        val movement = service.sellReserved(7, 2, "Bestelling PT-ABC234")
 
         assertEquals(3, product.stock.onHand)
         assertEquals(0, product.stock.reserved)

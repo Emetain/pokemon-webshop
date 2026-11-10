@@ -87,7 +87,7 @@ object DropMails {
         val account = if (drop.requiresAccount) "Je hebt een account nodig om mee te doen. Log alvast in, dan ben je er klaar voor." else null
         val text = listOfNotNull(
             "Hoi,",
-            "Over $minutes minuten begint de drop ${drop.name} bij Uithoorn TCG, $whenText.",
+            "Over $minutes minuten begint de drop ${drop.name} bij Poketopia, $whenText.",
             "Ga nu naar de wachtkamer:\n$link",
             "Iedereen die voor de start in de wachtkamer zit, krijgt bij de start een willekeurige plek in de rij. Wie later komt, sluit achteraan aan. Op tijd zijn is dus genoeg, op de seconde verversen helpt niet.",
             account,
@@ -96,7 +96,7 @@ object DropMails {
         val name = HtmlUtils.htmlEscape(drop.name)
         val html = listOfNotNull(
             "<p>Hoi,</p>",
-            "<p>Over $minutes minuten begint de drop <strong>$name</strong> bij Uithoorn TCG, $whenText.</p>",
+            "<p>Over $minutes minuten begint de drop <strong>$name</strong> bij Poketopia, $whenText.</p>",
             "<p><a href=\"$link\">Ga naar de wachtkamer</a></p>",
             "<p>Iedereen die voor de start in de wachtkamer zit, krijgt bij de start een willekeurige plek in de rij. Wie later komt, sluit achteraan aan. Op tijd zijn is dus genoeg, op de seconde verversen helpt niet.</p>",
             account?.let { "<p>$it</p>" },

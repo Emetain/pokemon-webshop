@@ -13,6 +13,7 @@ import jakarta.persistence.OneToMany
 import jakarta.persistence.OrderBy
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import org.hibernate.annotations.ColumnDefault
 import java.time.Instant
 
 /**
@@ -72,6 +73,11 @@ class Drop(
     /** The drop gets a slide in the hero carousel on the home page while it is upcoming or live. */
     @Column(nullable = false)
     var showInHero: Boolean = true,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @ColumnDefault("'BLACK'")
+    var heroColour: DropHeroColour = DropHeroColour.BLACK,
 
     /** How many people the waiting room lets through per minute. The admin can change it during the drop. */
     @Column(nullable = false)

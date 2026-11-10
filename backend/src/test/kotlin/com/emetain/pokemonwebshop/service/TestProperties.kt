@@ -20,7 +20,7 @@ fun testProperties(maxAttempts: Int = 3, window: Duration = Duration.ofMinutes(1
 )
 
 fun testCatalogProperties(baseUrl: String = "http://localhost") = AppProperties.Catalog(
-    userAgent = "UithoornTCG/test",
+    userAgent = "Poketopia/test",
     rateLimitDelay = Duration.ZERO,
     retryDelay = Duration.ZERO,
     tcgdex = AppProperties.CatalogSource(baseUrl, Duration.ZERO),

@@ -38,8 +38,12 @@ const blank = () => ({
   leftover: 'RETURN_TO_STOCK',
   requiresAccount: true,
   showInHero: true,
+  heroColour: 'BLACK',
 })
 const form = reactive(blank())
+
+/** The backgrounds a drop can have in the hero. main.css draws each with a slight gradient. */
+const HERO_COLOURS = ['BLACK', 'RED', 'YELLOW', 'GREEN']
 
 /** Per product in the drop: what the admin is typing, until they save it. */
 const rows = reactive({})
@@ -61,6 +65,7 @@ function fill(value) {
     leftover: value.leftover,
     requiresAccount: value.requiresAccount,
     showInHero: value.showInHero,
+    heroColour: value.heroColour ?? 'BLACK',
   })
   for (const key of Object.keys(rows)) delete rows[key]
   for (const product of value.products) {
@@ -115,6 +120,7 @@ function body() {
     leftover: form.leftover,
     requiresAccount: form.requiresAccount,
     showInHero: form.showInHero,
+    heroColour: form.heroColour,
   }
 }
 
@@ -305,6 +311,17 @@ if (router.currentRoute.value.query.created) message.value = t('admin.drops.crea
           {{ t('admin.drops.showInHero') }}
         </label>
       </div>
+      <fieldset class="admin-field wide choices" :disabled="ended">
+        <legend class="admin-label">{{ t('admin.drops.heroColour') }}</legend>
+        <div class="colours">
+          <label v-for="colour in HERO_COLOURS" :key="colour" class="admin-check">
+            <input v-model="form.heroColour" type="radio" :value="colour" />
+            <span class="swatch" :data-drop-colour="colour.toLowerCase()" aria-hidden="true"></span>
+            {{ t(`admin.drops.heroColour${colour}`) }}
+          </label>
+        </div>
+        <p class="admin-hint">{{ t('admin.drops.heroColourHint') }}</p>
+      </fieldset>
     </div>
     <div class="admin-actions">
       <button class="btn btn-primary btn-small" type="submit" :disabled="busy">
@@ -469,6 +486,20 @@ if (router.currentRoute.value.query.created) message.value = t('admin.drops.crea
 .choices {
   border: 0;
   padding: 0;
+}
+
+.colours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+}
+
+.swatch {
+  width: 1.75rem;
+  height: 1.25rem;
+  border-radius: var(--radius-xs);
+  background: var(--drop-gradient);
+  box-shadow: inset 0 0 0 1px var(--color-line);
 }
 
 .banner {

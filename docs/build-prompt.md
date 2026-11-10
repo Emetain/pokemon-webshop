@@ -38,7 +38,7 @@ Don't push, and don't start the next phase on your own.
 
 These decisions came up while building and apply to every later phase. The phase texts below already include them. Details and research are in `docs/phases/`.
 
-- **Shop name and design:** the shop is called Uithoorn TCG, white and blue, with visible Pokémon touches. Follow the familiar patterns of big Dutch TCG shops such as catchyourcards.nl for shop pages. Never copy their logo, images or text.
+- **Shop name and design:** the shop is called Poketopia (renamed from Uithoorn TCG on 2026-11-10), white and blue, with visible Pokémon touches. Follow the familiar patterns of big Dutch TCG shops such as catchyourcards.nl for shop pages. Never copy their logo, images or text.
 - **Prices:** Pokémon and Magic use Cardmarket (EUR). Lorcana and One Piece use TCGplayer prices (USD), delivered by Lorcast and the OPTCG API, because Cardmarket's files can't be matched to these cards reliably. A card price always shows its source and date.
 - **Dollar prices are converted, not left out.** A converted price is better than "geen prijs". Customers on the default euro setting see every price in euros. Lists sort on `Card.sortPriceCents`, the list price in euro cents.
 - **Currency setting:** customers choose EUR or USD in their profile. This only changes how card prices are shown. No "≈" sign in front of converted prices: the card page says in a small line that a price was converted.
@@ -56,13 +56,14 @@ These decisions came up while building and apply to every later phase. The phase
 - **Except sets out of print:** the owner can't get those, so their products only show while they are in stock, and their sets stay out of the navigation. A set is in print while it's legal in its game's rotating format, set per game in `app.shop.in-print-from`.
 - **No price while a product can't be bought:** no "Prijs volgt" and no old price, only the "Uitverkocht" badge.
 - **Product lists go by set:** "Nieuwste" and the default order put the newest set first, by release date, with the products of a set together. "Populair" puts the most popular sets of the moment first, from `app.shop.popular-sets`, until orders can decide.
-- **Hero carousel:** the hero on the home page is a carousel, the owner's idea. The hero with the binder stays the first slide, and admins add, edit, reorder, switch off and remove the other slides: promotions, upcoming set releases and other news. Phase 6 adds a slide for upcoming and live drops by itself, and phase 7 lets the admin have a slide written by AI from a prompt.
+- **Hero carousel:** the hero on the home page is a carousel, the owner's idea. The hero with the binder stays the first slide, and admins add, edit, reorder, switch off and remove the other slides: promotions, upcoming set releases and other news. Phase 6 adds a slide for upcoming and live drops by itself, and phase 8 lets the admin have a slide written by AI from a prompt.
 - **Value graph:** added at the owner's request, inspired by the portfolio graph in the Collectr app. Card prices have no history, so one value per customer per day is saved. It only starts when a customer starts, and can't be filled in afterwards.
 - **Viewer on public endpoints:** a nullable `@CurrentUser` parameter gives the logged-in user when there is one. Card lists then include what the viewer owns.
 - **Payments:** Stripe Checkout behind a `PaymentGateway` interface. An order is made when checkout starts and only becomes paid through the verified webhook, after the shop asks Stripe for the session itself. Stock is reserved for 15 minutes. Stripe's page lasts at least 30, so the shop closes it at Stripe before it releases the stock. Customers see "iDEAL | Wero", as Stripe asks from 2026.
 - **Popular follows sales:** "Populair" and the bestsellers put what sold here in the last 90 days first, then the popular sets, then the newest sets.
-- **Before going live:** the owner does a legal check and has asked to be reminded. See phase 8.
-- **Going live is its own phase:** added by the owner on 2026-11-10. Phase 9 puts the shop on a real server with its own domain, IP address and live credentials, after the legal check.
+- **Before going live:** the owner does a legal check and has asked to be reminded. See phase 9.
+- **Going live is its own phase:** added by the owner on 2026-11-10. Phase 10 opens the shop under its own domain with live credentials, after the legal check.
+- **Online preview first:** added by the owner on 2026-11-10, so a friend can help with missing images. Phase 7 puts the shop online as a closed preview on the owner's own server, with automatic deploys on every push to `main`. The phases after it moved one number up: the phase docs up to `phase-06.md` still use the old numbers, where phase 7 means Extras (now 8), phase 8 Polish and hardening (now 9) and phase 9 Go live (now 10).
 
 ---
 
@@ -257,7 +258,44 @@ Done when:
 - Limits can't be bypassed by calling the API directly (add tests for this).
 - A test with many simulated buyers never sells more than the allocated quantity.
 
-## Phase 7: Extras
+## Phase 7: Online preview and automatic deploys
+
+Goal: the shop runs online as a closed preview, so the owner and a friend can work in the admin (the friend adds missing images), and every push to `main` updates it by itself. Added by the owner on 2026-11-10.
+
+Decisions by the owner:
+- **Closed preview:** every page asks for one shared password at the reverse proxy, the site stays out of search engines (an `X-Robots-Tag: noindex` header and a `robots.txt` that disallows everything), and online payment is off (no Stripe key). Opening the shop to customers is phase 10, after the legal check.
+- **The owner's own server.** Ask first: what it is (a VPS with its provider and location, or a machine at home), the operating system, memory and disk, whether Docker is installed, what else runs on it and on which ports, and how it is reached over SSH. A machine at home needs ports 80 and 443 forwarded on the router, and GitHub can't reach it over SSH without extra setup: then let the server pull new versions itself.
+- **A temporary address** based on the server's IP address, such as `<ip-with-dashes>.sslip.io`, with a real Let's Encrypt certificate, until the legal check has cleared the name Poketopia. A domain can be added later without moving anything.
+- **The friend gets full admin:** a normal account promoted to admin. Add to the legal check that the privacy policy says who can see customer data.
+
+Server, built for production because phase 10 opens this same server:
+- A production Docker Compose file with Postgres, the backend on the `prod` profile and Caddy as the reverse proxy, which serves the built frontend and passes `/api` to the backend. Only Caddy can be reached from outside. Everything restarts after a crash or a reboot. The database and `MEDIA_DIRECTORY` live on volumes that survive a new version. `FORWARD_HEADERS_STRATEGY=native`, and a heap of at least 2 GB for the Magic sync.
+- Mail goes to a Mailpit container that is only reachable through an SSH tunnel, until phase 10 sets up real mail.
+- A `.env` on the server that only its owner can read, with every variable from `.env.example`. Secrets never go into the repository, the docs or a commit.
+- Backups from the first day, because what the friend adds only exists on this server: a daily `pg_dump` and a copy of the media folder, stored somewhere other than the server and kept for at least 30 days. Ask the owner where.
+
+From phase 9, because the shop is reachable from the internet now:
+- A way to create the first admin without demo data, and to promote the friend's account.
+- Swagger and the H2 console off in `prod`, and security headers at the proxy.
+- Tests that every admin endpoint refuses customers and visitors.
+
+Automatic deploys with GitHub Actions (the repository is on GitHub):
+- On every push to `main`: run `./gradlew test` and `npm run build`. Only when both pass, build the backend and frontend images, push them to GitHub's container registry tagged with the commit, and deploy them.
+- The deploy starts the new version (Flyway runs the migrations), waits until the backend answers a health check, and goes back to the previous version when it doesn't. Going back can't undo a migration that already ran: say so in the docs.
+- The SSH key and the server's address are GitHub Actions secrets. The server's `.env` stays on the server.
+- Pushing stays with the owner: Claude never pushes.
+
+Filling the preview:
+- Run the card sync for all four games and the product list import on the server, or copy the local database after checking it against the Flyway migrations and removing test orders and test accounts. Ask the owner which.
+
+Done when:
+- The preview loads over HTTPS at the temporary address, asks for the password first, and from outside the server only answers on SSH, HTTP and HTTPS.
+- The owner and the friend log in as admin and upload a picture at `/admin/afbeeldingen`, and it is still there after a new deploy.
+- A push to `main` with a passing build is online within minutes, a push with a failing test deploys nothing, and a version that doesn't start is rolled back by itself.
+- A backup is restored on a test database and the shop starts from it.
+- `docs/phases/phase-07.md` describes the server, the address, where every secret lives (never the secret itself), how a deploy works, how to roll back and how to restore a backup.
+
+## Phase 8: Extras
 
 Goal: the features that make the big Dutch TCG shops feel complete.
 
@@ -277,7 +315,7 @@ Goal: the features that make the big Dutch TCG shops feel complete.
 Done when:
 - Each feature works from both the customer side and the admin side, and discount codes calculate correctly in combination with bundles, tiered prices and shipping (unit tests for every combination).
 
-## Phase 8: Polish and hardening
+## Phase 9: Polish and hardening
 
 Goal: ready to show, ready to deploy.
 
@@ -288,17 +326,19 @@ Goal: ready to show, ready to deploy.
 - Security review: authorization on every admin and account endpoint (add tests), input validation, file upload checks (type and size), no secrets in the repo, security headers.
 - Start the app with the `prod` profile against the Docker Postgres and check that all Flyway migrations run and Hibernate validation passes.
 - Update the root `README.md`: what the app does, how to run it, environment variables, how to sync card data, how to test payments with the Stripe CLI, and the phase overview with links to `docs/phases/`.
-- Production basics left open by earlier phases: a way to create the first admin (only `dev` seeds accounts), SMTP username and password settings, Swagger closed in `prod`, `FORWARD_HEADERS_STRATEGY=native` behind a proxy, a heap of at least 2 GB for the Magic sync, and the `npm audit` issue in dev tooling.
-- **Go-live reminder:** before anything goes live, remind the owner to do the legal check. They asked for this reminder. It covers the Wizards Fan Content Policy, Ravensburger's Community Code and Lorcast's "prohibited from charging" notice for a commercial shop, reusing TCGplayer prices from Lorcast and the OPTCG API, Cardmarket and ECB data, the PokéAPI data, pictures uploaded at `/admin/afbeeldingen`, a product list from Cardmarket or TCGplayer, the ball emblem in the logo, the public collection pages and saved value history in the privacy policy, images and text generated by OpenAI for hero slides and what OpenAI's terms say about using them, and the draft legal pages. Also the KVK number that iDEAL requires on the website, Stripe in the privacy policy, the 14-day withdrawal right in the terms the checkout links to, and the switch from iDEAL to Wero that Stripe asks for during 2026 and 2027. Also bring up the One Piece images: they load from one person's server and carry a "SAMPLE" watermark. And the drop data in the privacy policy: reminder signups, the waiting room (account or visitor cookie, when someone joined and was last seen) and the email and address keys drop orders keep for the limits. Full notes are in `docs/phases/phase-02.md`, `docs/phases/phase-03.md`, `docs/phases/phase-05.md` and `docs/phases/phase-06.md`.
+- Production basics left open by earlier phases: SMTP username and password settings and the `npm audit` issue in dev tooling. Phase 7 already brings the first admin, Swagger closed in `prod`, `FORWARD_HEADERS_STRATEGY=native` and the 2 GB heap.
+- **Go-live reminder:** before anything goes live, remind the owner to do the legal check. They asked for this reminder. It covers the Wizards Fan Content Policy, Ravensburger's Community Code and Lorcast's "prohibited from charging" notice for a commercial shop, reusing TCGplayer prices from Lorcast and the OPTCG API, Cardmarket and ECB data, the PokéAPI data, pictures uploaded at `/admin/afbeeldingen`, a product list from Cardmarket or TCGplayer, the Poketopia logo (`docs/Poketopia-logo.png`, on the site since 2026-11-10: it shows Poké Balls, a building like a Pokémon Center and yellow-on-blue lettering in the style of the Pokémon logo, all of which The Pokémon Company protects), the public collection pages and saved value history in the privacy policy, images and text generated by OpenAI for hero slides and what OpenAI's terms say about using them, and the draft legal pages. Also the KVK number that iDEAL requires on the website, Stripe in the privacy policy, the 14-day withdrawal right in the terms the checkout links to, and the switch from iDEAL to Wero that Stripe asks for during 2026 and 2027. Also bring up the One Piece images: they load from one person's server and carry a "SAMPLE" watermark. And who can see customer data: the owner's friend has full admin since phase 7, so the privacy policy names everyone with admin access. And the shop name Poketopia: Pokétopia is also the island in the Nintendo game Pokémon Battle Revolution, and "Poké" names belong to The Pokémon Company's trademarks, so check the name before registering a domain or a company name with it. And the drop data in the privacy policy: reminder signups, the waiting room (account or visitor cookie, when someone joined and was last seen) and the email and address keys drop orders keep for the limits. Full notes are in `docs/phases/phase-02.md`, `docs/phases/phase-03.md`, `docs/phases/phase-05.md` and `docs/phases/phase-06.md`.
 
 Done when:
 - All tests pass, the production build works, and the `prod` profile starts cleanly on an empty database.
 
-## Phase 9: Go live
+## Phase 10: Go live
 
 Goal: the shop runs on its own server under its own domain, with live credentials, and real customers can order and pay.
 
-Most steps here need the owner: accounts, payments, DNS and passwords. Prepare everything that can be prepared, tell the owner exactly what to fill in where, and check the result after each step. Live keys and passwords only go into the environment file on the server, never into the repository, the docs or a commit. Don't start before the owner confirms that the legal check from phase 8 is done.
+The server, the proxy, the automatic deploys and the backups from phase 7 are already there. This phase opens that preview: it adds the domain, real mail and live payments, and takes away the password and the `noindex`. Reuse what phase 7 built and only add what the lists below ask for beyond it.
+
+Most steps here need the owner: accounts, payments, DNS and passwords. Prepare everything that can be prepared, tell the owner exactly what to fill in where, and check the result after each step. Live keys and passwords only go into the environment file on the server, never into the repository, the docs or a commit. Don't start before the owner confirms that the legal check from phase 9 is done.
 
 Ask the owner first for:
 - The domain name and where it is registered.
@@ -318,10 +358,10 @@ Domain and DNS:
 - SPF, DKIM and DMARC records from the mail provider, so order mails don't end up in spam.
 
 Configuration:
-- A `.env` on the server that only its owner can read, with every variable from `.env.example` filled in for production: `APP_BASE_URL=https://<domain>` (used in mails and Stripe's return pages), the database with a long generated password, `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM` and the SMTP login from phase 8, `MEDIA_DIRECTORY`, the cron times, and `FORWARD_HEADERS_STRATEGY`. Keep a checklist of every variable and where its value comes from, without the values.
+- A `.env` on the server that only its owner can read, with every variable from `.env.example` filled in for production: `APP_BASE_URL=https://<domain>` (used in mails and Stripe's return pages), the database with a long generated password, `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM` and the SMTP login from phase 9, `MEDIA_DIRECTORY`, the cron times, and `FORWARD_HEADERS_STRATEGY`. Keep a checklist of every variable and where its value comes from, without the values.
 - Stripe live: `STRIPE_SECRET_KEY=sk_live_...`, a webhook endpoint in the live dashboard at `https://<domain>/api/v1/payments/stripe/webhook` with the four events from the README, and its signing secret as `STRIPE_WEBHOOK_SECRET`. iDEAL | Wero, Bancontact and card switched on in the dashboard, and the shop name as the statement descriptor.
-- `OPENAI_API_KEY` from phase 7 with a monthly limit in OpenAI's dashboard, if the owner wants AI-written slides.
-- The owner's admin account, created the way phase 8 added. No demo accounts or demo data.
+- `OPENAI_API_KEY` from phase 8 with a monthly limit in OpenAI's dashboard, if the owner wants AI-written slides.
+- The owner's admin account, created the way phase 7 added. No demo accounts or demo data.
 
 Filling the shop:
 - Run the card sync for all four games and the product list import on the server, then set prices, stock and shipping rates in admin. Copying the local database instead saves the long Pokémon sync, but Hibernate made that schema, not Flyway: only do it after checking it against the migrations and removing test orders and test accounts.
@@ -329,7 +369,7 @@ Filling the shop:
 Backups and monitoring:
 - A daily `pg_dump` and a copy of the media folder, stored somewhere other than the server and kept for at least 30 days.
 - An uptime check on the home page and on an API endpoint that mails the owner when the shop is down. Logs rotate, and the owner gets a warning when the disk is 80% full.
-- If the owner wants, submit the sitemap from phase 8 to Google Search Console.
+- If the owner wants, submit the sitemap from phase 9 to Google Search Console.
 
 Done when:
 - `https://<domain>` loads with a valid certificate, `http://` and `www` redirect to it, and from outside the server only answers on SSH, HTTP and HTTPS (a port scan doesn't reach Postgres or the backend).
@@ -337,7 +377,7 @@ Done when:
 - Swagger, the H2 console and demo data are off, and no test key is left anywhere.
 - A backup is restored on a test database and the shop starts from it.
 - A new version goes out with the deploy script, and a version that doesn't start is rolled back by it.
-- `docs/phases/phase-09.md` describes the server, the domain and DNS records, where every secret lives (never the secret itself), and how to deploy, roll back and restore a backup.
+- `docs/phases/phase-10.md` describes the server, the domain and DNS records, where every secret lives (never the secret itself), and how to deploy, roll back and restore a backup.
 
 ---
 

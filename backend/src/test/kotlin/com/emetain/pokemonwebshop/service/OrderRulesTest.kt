@@ -68,10 +68,10 @@ class OrderRulesTest {
     fun `order numbers are short, random and without letters that look alike`() {
         val numbers = (1..500).map { OrderNumbers.generate() }
         numbers.forEach {
-            assertTrue(Regex("UT-[2-9A-HJKMNP-Z]{6}").matches(it), it)
+            assertTrue(Regex("PT-[2-9A-HJKMNP-Z]{6}").matches(it), it)
         }
         assertTrue(numbers.toSet().size > 495)
-        assertEquals("UT-7K3M9Q", OrderNumbers.normalize("  ut-7k3m9q "))
+        assertEquals("PT-7K3M9Q", OrderNumbers.normalize("  pt-7k3m9q "))
     }
 
     @Test
@@ -110,7 +110,7 @@ class OrderRulesTest {
     }
 
     private fun order(status: OrderStatus, paid: Boolean) = Order(
-        number = "UT-TEST23",
+        number = "PT-TEST23",
         user = null,
         email = "a@example.com",
         customerName = "Ash",

@@ -49,7 +49,7 @@ class MailService(
         val text = """
             Hoi,
 
-            Goed nieuws: $productName is weer op voorraad bij Uithoorn TCG.
+            Goed nieuws: $productName is weer op voorraad bij Poketopia.
 
             $link
 
@@ -58,7 +58,7 @@ class MailService(
         val name = HtmlUtils.htmlEscape(productName)
         val html = """
             <p>Hoi,</p>
-            <p>Goed nieuws: <strong>$name</strong> is weer op voorraad bij Uithoorn TCG.</p>
+            <p>Goed nieuws: <strong>$name</strong> is weer op voorraad bij Poketopia.</p>
             <p><a href="$link">Bekijk $name</a></p>
             <p>Op is op, dus wacht niet te lang. Je krijgt deze mail één keer. Wil je een volgende keer weer een bericht, meld je dan opnieuw aan op de productpagina.</p>
         """.trimIndent()

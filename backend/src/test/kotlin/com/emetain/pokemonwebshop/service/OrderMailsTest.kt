@@ -27,7 +27,7 @@ class OrderMailsTest {
     )
 
     private fun order(name: String = "Ash Ketchum", preference: ShipmentPreference = ShipmentPreference.TOGETHER) = Order(
-        number = "UT-ABC234",
+        number = "PT-ABC234",
         user = null,
         email = "ash@example.com",
         customerName = name,
@@ -54,15 +54,15 @@ class OrderMailsTest {
 
     @Test
     fun `the confirmation lists the lines, the totals, the address and when the pre-order ships`() {
-        val mail = OrderMails.build(OrderMail.CONFIRMATION, order(), "https://shop.test/bestelling/UT-ABC234?token=token")
+        val mail = OrderMails.build(OrderMail.CONFIRMATION, order(), "https://shop.test/bestelling/PT-ABC234?token=token")
 
-        assertContains(mail.subject, "UT-ABC234")
+        assertContains(mail.subject, "PT-ABC234")
         assertContains(mail.text, "Hoi Ash,")
         assertContains(mail.text, "1 × Delta Reign Elite Trainer Box (pre-order, vanaf 5 december 2026): € 59,95")
         assertContains(mail.text, "Totaal: € 69,85 (waarvan € 12,12 btw)")
         assertContains(mail.text, "We versturen alles samen zodra de pre-order binnen is (verwacht vanaf 5 december 2026).")
         assertContains(mail.text, "Dorpsstraat 12a\n1421 AB Uithoorn\nNederland")
-        assertContains(mail.html, "https://shop.test/bestelling/UT-ABC234?token=token")
+        assertContains(mail.html, "https://shop.test/bestelling/PT-ABC234?token=token")
         assertContains(mail.html, "Inclusief € 12,12 btw")
     }
 

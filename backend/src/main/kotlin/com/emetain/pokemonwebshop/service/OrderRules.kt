@@ -39,16 +39,16 @@ object OrderRules {
         order.refundableCents > 0 && order.status in setOf(SHIPPED, DELIVERED, REFUNDED, CANCELLED)
 }
 
-/** Short, random order numbers without letters that look alike, such as `UT-7K3M9Q`. */
+/** Short, random order numbers without letters that look alike, such as `PT-7K3M9Q`. */
 object OrderNumbers {
-    private const val PREFIX = "UT-"
+    private const val PREFIX = "PT-"
     private const val LENGTH = 6
     private const val ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
     private val random = SecureRandom()
 
     fun generate(): String = PREFIX + (1..LENGTH).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
 
-    /** Accepts `ut-7k3m9q` and ` UT-7K3M9Q ` as well. */
+    /** Accepts `pt-7k3m9q` and ` PT-7K3M9Q ` as well. */
     fun normalize(input: String): String = input.trim().uppercase()
 }
 

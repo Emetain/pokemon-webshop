@@ -6,7 +6,9 @@ import com.emetain.pokemonwebshop.domain.Role
 import jakarta.mail.Message
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Test
+import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -374,6 +376,45 @@ class DropIntegrationTest : DropTestSupport() {
             mockMvc.perform(post("/v1/admin/drops/${drop.id}/end").cookie(admin))
         }
         assertEquals(DropStatus.ENDED, dropRepository.findById(drop.id).orElseThrow().status)
+    }
+
+    @Test
+    fun `a drop slide is black until the admin picks a colour, and shows the products until there is a banner`() {
+        val withPicture = stocked(quantity = 2)
+        val picture = uploadImage(withPicture["id"].asLong()).andExpect(status().isOk).json()["images"][0].asText()
+        val withoutPicture = stocked(quantity = 2)
+        val drop = createDrop(
+            listOf(withoutPicture["id"].asLong() to 1, withPicture["id"].asLong() to 1),
+            extra = mapOf("showInHero" to true),
+        )
+        try {
+            fun dropSlide() = mockMvc.perform(get("/v1/shop/hero-slides")).andExpect(status().isOk).json()
+                .first { it["drop"] != null && !it["drop"].isNull && it["drop"]["slug"].asText() == drop.slug }["drop"]
+            val current = adminDrop(drop.id)
+            fun save(vararg fields: Pair<String, Any>) = mockMvc.perform(
+                put("/v1/admin/drops/${drop.id}").cookie(admin)
+                    .json(mapOf("name" to current["name"].asText(), "startsAt" to current["startsAt"].asText(), "showInHero" to true) + fields),
+            )
+
+            assertEquals("BLACK", current["heroColour"].asText())
+            assertEquals("BLACK", dropSlide()["colour"].asText())
+            assertEquals(listOf(picture), dropSlide()["pictures"].map { it["url"].asText() })
+            assertEquals(false, dropSlide()["pictures"][0]["card"].asBoolean())
+
+            save("heroColour" to "YELLOW").andExpect(status().isOk)
+            assertEquals("YELLOW", adminDrop(drop.id)["heroColour"].asText())
+            assertEquals("YELLOW", dropSlide()["colour"].asText())
+            save("heroColour" to "PURPLE").andExpect(status().isBadRequest)
+            save().andExpect(status().isOk)
+            assertEquals("YELLOW", dropSlide()["colour"].asText())
+
+            mockMvc.perform(
+                multipart("/v1/admin/drops/${drop.id}/banner").file(MockMultipartFile("file", "banner.png", "image/png", png)).cookie(admin),
+            ).andExpect(status().isOk)
+            assertTrue(dropSlide()["pictures"].isEmpty)
+        } finally {
+            changeDrop(drop.id) { it.showInHero = false }
+        }
     }
 
     @Test

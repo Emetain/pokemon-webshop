@@ -1,6 +1,6 @@
 export default {
   brand: {
-    name: 'Uithoorn TCG',
+    name: 'Poketopia',
   },
   layout: {
     skipToContent: 'Ga naar de inhoud',
@@ -1158,7 +1158,7 @@ export default {
       preOrderNote: 'Pre-order, vanaf {date}',
       together: 'Alles samen versturen: wacht op de pre-order.',
       inStockFirst: 'Wat op voorraad is nu versturen, de pre-order later apart.',
-      thanks: 'Bedankt voor je bestelling bij Uithoorn TCG!',
+      thanks: 'Bedankt voor je bestelling bij Poketopia!',
     },
     shipping: {
       nav: 'Verzending',
@@ -1455,13 +1455,19 @@ export default {
       requiresAccount: 'Alleen met een account (aanbevolen)',
       requiresAccountHint: 'Accounts maken bots en dubbele bestellingen een stuk lastiger.',
       showInHero: 'Slide in de hero op de homepage, met aftelklok',
+      heroColour: 'Kleur van de slide',
+      heroColourBLACK: 'Zwart',
+      heroColourRED: 'Rood',
+      heroColourYELLOW: 'Geel',
+      heroColourGREEN: 'Groen',
+      heroColourHint: 'Zo valt de drop op naast de blauwe hero van de shop. Elke kleur heeft een subtiel verloop.',
       leftover: 'Wat niet verkocht is',
       leftoverRETURN_TO_STOCK: 'Terug naar de normale voorraad zodra de drop eindigt',
       leftoverKEEP: 'Bij de drop houden tot ik het teruggeef',
       admitPerMinute: 'Mensen per minuut uit de wachtkamer',
       admitPerMinuteHint: 'Ze komen per 10 seconden in groepjes binnen. Ook tijdens de drop aan te passen.',
       banner: 'Banner',
-      bannerHint: 'Breed beeld, bijvoorbeeld 1600 × 900. JPG, PNG of WebP, tot 5 MB. Staat op de droppagina en in de hero.',
+      bannerHint: 'Breed beeld, bijvoorbeeld 1600 × 900. JPG, PNG of WebP, tot 5 MB. Staat op de droppagina en in de hero. Zonder banner toont de hero de foto\'s van de producten.',
       chooseBanner: 'Banner kiezen',
       removeBanner: 'Banner weghalen',
       save: 'Opslaan',

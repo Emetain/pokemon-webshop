@@ -98,7 +98,7 @@ class DevDataSeeder(
             Demo("Pokémon Mini Tin", Game.POKEMON, ProductType.TIN, 1295, stock = 1),
             Demo("Charizard ex Premium Collection", Game.POKEMON, ProductType.COLLECTION_BOX, 3995),
             Demo("Pokémon bulk: 100 kaarten", Game.POKEMON, ProductType.BULK, 995, stock = 15, language = null),
-            Demo("Uithoorn TCG Mystery Box", Game.POKEMON, ProductType.MYSTERY_BOX, 4995, stock = 5, language = null),
+            Demo("Poketopia Mystery Box", Game.POKEMON, ProductType.MYSTERY_BOX, 4995, stock = 5, language = null),
             Demo("Archazia's Island Booster Box", Game.LORCANA, ProductType.BOOSTER_BOX, 13495, stock = 4),
             Demo("Fabled Starter Deck", Game.LORCANA, ProductType.STARTER_DECK, 1695, stock = 8),
             Demo("Foundations Play Booster Box", Game.MTG, ProductType.BOOSTER_BOX, 14995, stock = 5),

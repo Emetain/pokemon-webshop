@@ -188,6 +188,7 @@ class AdminDropOrchestrator(
         maxPerCustomer = drop.maxPerCustomer,
         leftover = drop.leftover.name,
         showInHero = drop.showInHero,
+        heroColour = drop.heroColour.name,
         admitPerMinute = drop.admitPerMinute,
         queuePaused = drop.queuePaused,
         startedAt = drop.startedAt,

@@ -28,8 +28,15 @@ const root = ref(null)
 
 const total = computed(() => props.slides.length + 1)
 const turning = computed(() => total.value > 1 && !paused.value && !reducedMotion.value)
-const accentOf = (slide) => (slide?.game ? findGame(slide.game)?.accent : undefined)
-const currentAccent = computed(() => (current.value === 0 ? undefined : accentOf(props.slides[current.value - 1])))
+/** A drop slide has the colour the admin chose for it, the other slides the colour of their game. */
+const accentOf = (slide) => (slide?.game && !slide.drop ? findGame(slide.game)?.accent : undefined)
+const colourOf = (slide) => (slide?.drop ? (slide.drop.colour ?? 'BLACK').toLowerCase() : undefined)
+const currentSlide = computed(() => (current.value === 0 ? undefined : props.slides[current.value - 1]))
+const currentAccent = computed(() => accentOf(currentSlide.value))
+const currentColour = computed(() => colourOf(currentSlide.value))
+/** A banner from admin is the picture of a drop slide. Without one, the slide shows the products of the drop. */
+const picturesOf = (slide) => (slide.imageUrl ? [] : (slide.drop?.pictures ?? []))
+const hasPicture = (slide) => Boolean(slide.imageUrl) || picturesOf(slide).length > 0
 
 const isExternal = (url) => /^https:\/\//.test(url)
 
@@ -84,6 +91,7 @@ onBeforeUnmount(() => {
     ref="root"
     class="carousel"
     :data-game="currentAccent"
+    :data-drop-colour="currentColour"
     :aria-label="t('home.hero.label')"
     aria-roledescription="carousel"
     @mouseenter="hovering = true"
@@ -110,16 +118,17 @@ onBeforeUnmount(() => {
         v-for="(slide, index) in slides"
         :key="slide.key ?? slide.id"
         class="slide promo"
-        :class="{ active: current === index + 1 }"
+        :class="{ active: current === index + 1, 'with-pictures': picturesOf(slide).length }"
         :data-game="accentOf(slide)"
+        :data-drop-colour="colourOf(slide)"
         role="group"
         aria-roledescription="slide"
         :aria-label="t('home.hero.slide', { number: index + 2, total })"
         :inert="current !== index + 1"
       >
         <!-- The ball is the Pokémon touch of the shop: not on a slide in the colour of another game. -->
-        <BallMark v-if="!slide.imageUrl && (!slide.game || slide.game === 'pokemon')" class="promo-ball" outline />
-        <div class="container promo-grid" :class="{ 'with-image': slide.imageUrl }">
+        <BallMark v-if="!hasPicture(slide) && (!slide.game || slide.game === 'pokemon')" class="promo-ball" outline />
+        <div class="container promo-grid" :class="{ 'with-image': hasPicture(slide) }">
           <div class="promo-text">
             <p v-if="slide.drop" class="drop-label" :class="{ live: dropLive(slide) }">
               <span v-if="dropLive(slide)" class="live-dot" aria-hidden="true"></span>
@@ -144,6 +153,18 @@ onBeforeUnmount(() => {
             </template>
           </div>
           <img v-if="slide.imageUrl" class="promo-image" :src="slide.imageUrl" alt="" decoding="async" />
+          <!-- Up to three products: the first in front, the others fanned out behind it. -->
+          <div v-else-if="picturesOf(slide).length" class="drop-pictures" :data-count="picturesOf(slide).length">
+            <img
+              v-for="picture in picturesOf(slide)"
+              :key="picture.url"
+              class="drop-picture"
+              :class="{ card: picture.card }"
+              :src="picture.url"
+              alt=""
+              decoding="async"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -228,6 +249,21 @@ onBeforeUnmount(() => {
   color: var(--accent-ink);
 }
 
+.promo[data-drop-colour] {
+  background: var(--drop-gradient);
+}
+
+/* White on yellow is hard to see: there the button and the focus ring take the dark ink. */
+.promo[data-drop-colour='yellow'] .btn-on-brand {
+  background: var(--accent-ink);
+  box-shadow: none;
+  color: var(--color-surface);
+}
+
+.carousel[data-drop-colour='yellow'] :focus-visible {
+  outline-color: var(--accent-ink);
+}
+
 .promo-ball {
   position: absolute;
   top: 50%;
@@ -284,6 +320,12 @@ onBeforeUnmount(() => {
   color: var(--color-on-brand);
 }
 
+/* A red label would vanish on a red slide. */
+.promo[data-drop-colour='red'] .drop-label.live {
+  background: var(--color-surface);
+  color: var(--color-sale);
+}
+
 .live-dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -318,6 +360,73 @@ onBeforeUnmount(() => {
   object-fit: contain;
 }
 
+.drop-pictures {
+  position: relative;
+  justify-self: center;
+  width: 100%;
+  max-width: 20rem;
+  height: 15rem;
+}
+
+/*
+ * Every picture is as tall as the space for it and as wide as its shape makes it, so the shadow and the corners of
+ * a card follow the picture itself. Only a picture too wide for the space is narrowed, and keeps its shape inside.
+ */
+.drop-picture {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  margin: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 18px var(--color-drop-picture-shadow));
+}
+
+.drop-picture.card {
+  border-radius: var(--radius-card);
+}
+
+.drop-picture:first-child {
+  z-index: 1;
+}
+
+/*
+ * Two or three: the first product in front and biggest, the others smaller and pinned to the sides behind it. Their
+ * size is capped in both directions, so a tall booster or a wide box behind never outgrows the product in front.
+ */
+.drop-pictures:not([data-count='1']) .drop-picture:not(:first-child) {
+  height: 74%;
+  max-width: 46%;
+}
+
+.drop-pictures[data-count='2'] .drop-picture:first-child {
+  inset: 0 auto 0 4%;
+  max-width: 62%;
+  transform: rotate(-3deg);
+}
+
+.drop-pictures[data-count='2'] .drop-picture:nth-child(2) {
+  inset: 0 0 0 auto;
+  height: 80%;
+  max-width: 52%;
+  transform: rotate(6deg);
+}
+
+.drop-pictures[data-count='3'] .drop-picture:first-child {
+  max-width: 58%;
+}
+
+.drop-pictures[data-count='3'] .drop-picture:nth-child(2) {
+  inset: 0 auto 0 0;
+  transform: rotate(-6deg);
+}
+
+.drop-pictures[data-count='3'] .drop-picture:nth-child(3) {
+  inset: 0 0 0 auto;
+  transform: rotate(6deg);
+}
+
 .controls {
   position: absolute;
   right: 0;
@@ -349,6 +458,10 @@ onBeforeUnmount(() => {
 
 .control:hover {
   background: rgb(255 255 255 / 16%);
+}
+
+.carousel[data-drop-colour='yellow'] .control:hover {
+  background: rgb(0 0 0 / 8%);
 }
 
 .dots {
@@ -399,6 +512,23 @@ onBeforeUnmount(() => {
 
   .promo-image {
     max-height: 24rem;
+  }
+
+  /* Next to the text, the pictures take the full height of the slide but 20px: 10px above and below. */
+  .promo.with-pictures {
+    align-items: stretch;
+  }
+
+  /* Half the width for the pictures, so a square one can be that tall too. */
+  .promo.with-pictures .promo-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .drop-pictures {
+    align-self: stretch;
+    max-width: none;
+    height: auto;
+    margin-block: calc(10px - var(--space-6)) calc(10px - var(--space-8));
   }
 }
 

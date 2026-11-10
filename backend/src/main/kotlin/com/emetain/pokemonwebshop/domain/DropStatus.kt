@@ -23,3 +23,14 @@ enum class DropLeftover {
     /** Stays with the drop until the admin gives it back, for example for a second round. */
     KEEP,
 }
+
+/**
+ * The background of the hero slide of a drop, chosen per drop. It sets the drop apart from the blue hero of the
+ * shop. The page draws each colour with a slight gradient.
+ */
+enum class DropHeroColour {
+    BLACK,
+    RED,
+    YELLOW,
+    GREEN,
+}
