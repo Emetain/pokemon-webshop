@@ -264,7 +264,10 @@ Goal: the shop runs online as a closed preview, so the owner and a friend can wo
 
 Decisions by the owner:
 - **Closed preview:** every page asks for one shared password at the reverse proxy, the site stays out of search engines (an `X-Robots-Tag: noindex` header and a `robots.txt` that disallows everything), and online payment is off (no Stripe key). Opening the shop to customers is phase 10, after the legal check.
-- **The owner's own server.** Ask first: what it is (a VPS with its provider and location, or a machine at home), the operating system, memory and disk, whether Docker is installed, what else runs on it and on which ports, and how it is reached over SSH. A machine at home needs ports 80 and 443 forwarded on the router, and GitHub can't reach it over SSH without extra setup: then let the server pull new versions itself.
+- **The owner's own server:** a VPS rented from mc-node in the Netherlands, shared with the owner's Minecraft server. Checked on 2026-11-10: Ubuntu 24.04 LTS, 4 CPUs, 11 GB memory, 33 GB of 96 GB disk free. Docker 29.1.3 from Ubuntu's own package is there without the Compose plugin. Nothing listens on 80 or 443, no firewall is on, and SSH accepts root and passwords. The address and login are in the owner's hands and in GitHub secrets, never in the repo.
+- **Claude works on the server over SSH from the owner's Mac** (key login works). Read-only checks are fine, but every command that changes something on the server is shown to the owner and only runs after their approval.
+- **Leave alone:** Minecraft on port 25565 (it must stay reachable through any firewall, and needs its memory: the shop gets about 3.5 GB of the 11), the owner's monitor container `mck-wachtlijst-monitor` that mails them, and the `gitlab-runner` service from an old school project, which the owner keeps just in case.
+- **Firewall:** only SSH, HTTP, HTTPS and Minecraft's 25565 in. **SSH with keys only:** the owner never logs in with a password and no longer knows it. Before switching passwords off, check once more that key login works, and tell the owner that mc-node's web console is the way in if the key is ever lost.
 - **A temporary address** based on the server's IP address, such as `<ip-with-dashes>.sslip.io`, with a real Let's Encrypt certificate, until the legal check has cleared the name Poketopia. A domain can be added later without moving anything.
 - **The friend gets full admin:** a normal account promoted to admin. Add to the legal check that the privacy policy says who can see customer data.
 
@@ -272,7 +275,7 @@ Server, built for production because phase 10 opens this same server:
 - A production Docker Compose file with Postgres, the backend on the `prod` profile and Caddy as the reverse proxy, which serves the built frontend and passes `/api` to the backend. Only Caddy can be reached from outside. Everything restarts after a crash or a reboot. The database and `MEDIA_DIRECTORY` live on volumes that survive a new version. `FORWARD_HEADERS_STRATEGY=native`, and a heap of at least 2 GB for the Magic sync.
 - Mail goes to a Mailpit container that is only reachable through an SSH tunnel, until phase 10 sets up real mail.
 - A `.env` on the server that only its owner can read, with every variable from `.env.example`. Secrets never go into the repository, the docs or a commit.
-- Backups from the first day, because what the friend adds only exists on this server: a daily `pg_dump` and a copy of the media folder, stored somewhere other than the server and kept for at least 30 days. Ask the owner where.
+- Backups from the first day, because what the friend adds only exists on this server: a daily `pg_dump` and a copy of the media folder, kept for 30 days. The owner chose to keep them on the same VPS, outside the Docker volumes, and no copy on their Mac (not enough space there). They know these backups are lost with the server; phase 10 can still add a copy elsewhere.
 
 From phase 9, because the shop is reachable from the internet now:
 - A way to create the first admin without demo data, and to promote the friend's account.
@@ -286,13 +289,14 @@ Automatic deploys with GitHub Actions (the repository is on GitHub):
 - Pushing stays with the owner: Claude never pushes.
 
 Filling the preview:
-- Run the card sync for all four games and the product list import on the server, or copy the local database after checking it against the Flyway migrations and removing test orders and test accounts. Ask the owner which.
+- The owner chose to fetch the card data on the server rather than copy the local database: run the card sync for all four games and the product list import there (Pokémon takes about an hour and a half). Products, prices and stock are then set again in the admin.
 
 Done when:
 - The preview loads over HTTPS at the temporary address, asks for the password first, and from outside the server only answers on SSH, HTTP and HTTPS.
 - The owner and the friend log in as admin and upload a picture at `/admin/afbeeldingen`, and it is still there after a new deploy.
 - A push to `main` with a passing build is online within minutes, a push with a failing test deploys nothing, and a version that doesn't start is rolled back by itself.
 - A backup is restored on a test database and the shop starts from it.
+- Minecraft's port 25565 and the owner's monitor container still work afterwards.
 - `docs/phases/phase-07.md` describes the server, the address, where every secret lives (never the secret itself), how a deploy works, how to roll back and how to restore a backup.
 
 ## Phase 8: Extras

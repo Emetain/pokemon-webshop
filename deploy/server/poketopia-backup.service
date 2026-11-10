@@ -1,0 +1,11 @@
+[Unit]
+Description=Poketopia backup of the database and uploaded images
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/poketopia/bin/backup.sh
+# Gives way to Minecraft and the shop.
+Nice=10
+IOSchedulingClass=idle

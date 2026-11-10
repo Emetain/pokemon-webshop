@@ -14,3 +14,13 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration,classpath:db/vendor/{vendor}
+  h2:
+    console:
+      enabled: false
+
+# The API documentation is for development only. The shop is reachable from the internet in prod.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

@@ -1,0 +1,7 @@
+# The images in deploy/ build from the repository root and only need these files. backend/Dockerfile has its own
+# build context (backend/) and isn't affected.
+*
+!deploy/Caddyfile
+!deploy/compose.yml
+!frontend/dist/
+!backend/build/app.jar

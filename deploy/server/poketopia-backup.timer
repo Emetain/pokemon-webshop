@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Poketopia backup
+
+[Timer]
+# After the card sync (03:00, about an hour and a half) and before the value graph job (07:00).
+OnCalendar=*-*-* 05:30:00 Europe/Amsterdam
+# Runs at the next boot when the server was off at that time.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

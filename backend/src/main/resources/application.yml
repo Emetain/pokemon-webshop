@@ -35,6 +35,23 @@ server:
   # Set to "native" behind a reverse proxy, otherwise every visitor shares the proxy's IP for rate limiting.
   forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
 
+# Only /api/actuator/health, without details. The deploy waits for it before it switches to a new version.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+      # No /api/actuator page that lists the endpoints.
+      discovery:
+        enabled: false
+  endpoint:
+    health:
+      show-details: never
+  health:
+    # Mail going down shouldn't make the shop count as down and roll a deploy back.
+    mail:
+      enabled: false
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

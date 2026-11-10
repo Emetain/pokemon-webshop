@@ -1,0 +1,130 @@
+# The shop on the preview server (phase 7), and later the live shop (phase 10).
+#
+# Don't run this file by hand on the server: deploy.sh sets IMAGE_TAG to the commit, and compose.sh runs commands on
+# the version that is live. Every version carries its own copy of this file inside its web image, so a deploy and a
+# rollback always use the file that belongs to that version.
+#
+# Only the web container (Caddy) can be reached from outside. Postgres and the backend are on the internal network,
+# and Mailpit's page only on the server itself. Everything restarts after a crash or a reboot. The memory limits keep
+# the shop at about 3.5 GB, because the server also runs Minecraft.
+
+name: poketopia
+
+x-logging: &logging
+  # Docker keeps container logs forever by default. This keeps 5 files of 10 MB per container.
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=\"$$POSTGRES_USER\" --dbname=\"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    mem_limit: 576m
+    shm_size: 128m
+    logging: *logging
+
+  # Catches every mail until phase 10 sets up real mail. Its page is only on the server itself: open an SSH tunnel.
+  mailpit:
+    image: axllent/mailpit:v1.33
+    restart: unless-stopped
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: 2000
+    volumes:
+      - mailpit-data:/data
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
+    mem_limit: 128m
+    logging: *logging
+
+  backend:
+    image: ghcr.io/emetain/pokemon-webshop-backend:${IMAGE_TAG:?deploy.sh sets IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # The Magic sync needs a heap of at least 2 GB. The container gets about 600 MB more for the rest of Java.
+      JAVA_TOOL_OPTIONS: -Xms512m -Xmx${BACKEND_HEAP:-2g} -XX:+ExitOnOutOfMemoryError
+      TZ: Europe/Amsterdam
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      APP_BASE_URL: ${APP_BASE_URL:?set APP_BASE_URL in .env}
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_FROM: ${MAIL_FROM:?set MAIL_FROM in .env}
+      # Caddy sets X-Forwarded-For, so rate limits see the visitor's IP address instead of Caddy's.
+      FORWARD_HEADERS_STRATEGY: native
+      MEDIA_DIRECTORY: /app/media
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      CATALOG_SYNC_CRON: ${CATALOG_SYNC_CRON:-0 0 3 * * *}
+      COLLECTION_SNAPSHOT_CRON: ${COLLECTION_SNAPSHOT_CRON:-0 0 7 * * *}
+      TCGDEX_BASE_URL: ${TCGDEX_BASE_URL:-https://api.tcgdex.net/v2}
+      SCRYFALL_BASE_URL: ${SCRYFALL_BASE_URL:-https://api.scryfall.com}
+      LORCAST_BASE_URL: ${LORCAST_BASE_URL:-https://api.lorcast.com/v0}
+      OPTCG_BASE_URL: ${OPTCG_BASE_URL:-https://optcgapi.com/api}
+      ECB_BASE_URL: ${ECB_BASE_URL:-https://www.ecb.europa.eu}
+      POKEAPI_BASE_URL: ${POKEAPI_BASE_URL:-https://pokeapi.co/api/v2}
+      CARDMARKET_PRODUCTS_BASE_URL: ${CARDMARKET_PRODUCTS_BASE_URL:-https://downloads.s3.cardmarket.com}
+    volumes:
+      # Uploaded images. The volume stays when a new version starts.
+      - media:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:8080/api/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      # Flyway runs the migrations during the start.
+      start_period: 240s
+      start_interval: 5s
+    stop_grace_period: 30s
+    mem_limit: 2600m
+    logging: *logging
+
+  # Caddy: HTTPS with a Let's Encrypt certificate, the built frontend, and /api to the backend.
+  web:
+    image: ghcr.io/emetain/pokemon-webshop-web:${IMAGE_TAG:?deploy.sh sets IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env}
+      PREVIEW_USER: ${PREVIEW_USER:?set PREVIEW_USER in .env}
+      PREVIEW_PASSWORD_HASH: ${PREVIEW_PASSWORD_HASH:?set PREVIEW_PASSWORD_HASH in .env}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      # HTTP/3
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      # Certificates. Keeping them avoids asking Let's Encrypt again at every deploy.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+    mem_limit: 192m
+    logging: *logging
+
+volumes:
+  postgres-data:
+  media:
+  mailpit-data:
+  caddy-data:
+  caddy-config:

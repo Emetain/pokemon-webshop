@@ -1,0 +1,113 @@
+# Every push to main: run the backend tests and the frontend build. Only when both pass, build the images, push them
+# to GitHub's container registry tagged with the commit, and deploy them to the preview server.
+#
+# Secrets (Settings > Secrets and variables > Actions), described in docs/phases/phase-07.md:
+#   DEPLOY_HOST         the server's address
+#   DEPLOY_SSH_KEY      private key of the deploy user, which may only run deploy.sh on the server
+#   DEPLOY_KNOWN_HOSTS  the server's SSH host key, so the job can't be sent to another machine
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One run at a time, in the order of the pushes. A push while a run is busy waits for it.
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io/emetain
+
+jobs:
+  build:
+    name: Test and build images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Backend tests and jar
+        working-directory: backend
+        run: |
+          ./gradlew test bootJar --no-daemon
+          cp "$(ls build/libs/*.jar | grep -v -- '-plain\.jar$')" build/app.jar
+
+      - name: Keep the test report of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report
+          path: backend/build/reports/tests/test/
+          retention-days: 7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Backend image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/backend.Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/pokemon-webshop-backend:${{ github.sha }}
+
+      - name: Web image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/web.Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/pokemon-webshop-web:${{ github.sha }}
+
+  deploy:
+    name: Deploy to the preview server
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: preview
+    permissions:
+      packages: read
+    steps:
+      - name: Deploy over SSH
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # The server only lets this key run deploy.sh with the commit. The token, which stops working when this run
+          # ends, goes in on stdin so the server can pull the images.
+          printf '%s\n' "$REGISTRY_TOKEN" | ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 "deploy@$HOST" "$GITHUB_SHA"

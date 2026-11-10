@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.ServerSocket
 import java.time.Duration
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
@@ -159,11 +161,11 @@ class CatalogHttpClientTest {
 
     @Test
     fun `an unreachable host counts as a failure`() {
-        val closedPort = HttpServer.create(InetSocketAddress("localhost", 0), 0).run {
-            address.port.also { stop(0) }
-        }
+        // A plain ServerSocket closes right away. HttpServer.stop(0) sometimes left the port listening on macOS, so
+        // every attempt waited for the full request timeout: four minutes for this test.
+        val closedPort = ServerSocket(0, 0, InetAddress.getLoopbackAddress()).use { it.localPort }
 
-        assertThrows<CatalogHttpException> { client.getJson("http://localhost:$closedPort/data", noPause) }
+        assertThrows<CatalogHttpException> { client.getJson("http://127.0.0.1:$closedPort/data", noPause) }
     }
 
     @Test

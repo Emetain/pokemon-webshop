@@ -1,0 +1,55 @@
+# Caddy in front of the shop: HTTPS with a Let's Encrypt certificate that renews by itself, a redirect from HTTP,
+# the built frontend, and /api to the backend. The values come from the server's .env through compose.yml.
+#
+# Closed preview (phase 7): every page asks for one shared login, and search engines are kept out. Phase 10 opens the
+# shop by removing the lines marked "preview".
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), usb=()"
+		# Card images come from the card sources (TCGdex, Scryfall, Lorcast, OPTCG) and uploads, so images may come
+		# from any https address. Scripts, styles, fonts and API calls only from the shop itself.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		-Server
+		# preview: keep search engines out
+		X-Robots-Tag "noindex, nofollow"
+	}
+
+	# preview: readable without the login, so search engines can see they aren't welcome
+	handle /robots.txt {
+		header Content-Type "text/plain; charset=utf-8"
+		respond "User-agent: *
+Disallow: /
+"
+	}
+
+	handle {
+		# preview: one shared login for every page
+		basic_auth {
+			{$PREVIEW_USER} {$PREVIEW_PASSWORD_HASH}
+		}
+
+		handle /api/* {
+			# The shop has its own login with a cookie. The preview login stays here.
+			request_header -Authorization
+			reverse_proxy backend:8080
+		}
+
+		handle {
+			root * /srv
+			# Vite puts a hash in the name of every file in /assets, so a file there never changes.
+			@assets path /assets/*
+			header @assets Cache-Control "public, max-age=31536000, immutable"
+			header ?Cache-Control "no-cache"
+			# Routes of the Vue app, such as /kaarten/pokemon, all get index.html.
+			try_files {path} /index.html
+			file_server
+		}
+	}
+}
