@@ -69,8 +69,9 @@ class CheckoutOrchestrator(
         return CheckoutStartDto(order.number, order.accessToken, session.url)
     }
 
-    private fun paymentRequest(order: Order): CheckoutRequest {
-        val query = "order=${order.number}&token=${order.accessToken}"
+    /** What Stripe gets: the lines at the prices of the order, and where the customer comes back to. */
+    fun paymentRequest(order: Order, dropSlug: String? = null): CheckoutRequest {
+        val query = "order=${order.number}&token=${order.accessToken}" + (dropSlug?.let { "&drop=$it" } ?: "")
         return CheckoutRequest(
             orderNumber = order.number,
             email = order.email,

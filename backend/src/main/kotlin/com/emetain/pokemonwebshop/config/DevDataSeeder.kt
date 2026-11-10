@@ -16,11 +16,14 @@ import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.domain.ShipmentPreference
 import com.emetain.pokemonwebshop.domain.StockReason
 import com.emetain.pokemonwebshop.domain.User
+import com.emetain.pokemonwebshop.dto.DropProductRequest
+import com.emetain.pokemonwebshop.dto.DropRequest
 import com.emetain.pokemonwebshop.dto.HeroSlideRequest
 import com.emetain.pokemonwebshop.dto.ProductRequest
 import com.emetain.pokemonwebshop.repository.OrderRepository
 import com.emetain.pokemonwebshop.repository.ProductRepository
 import com.emetain.pokemonwebshop.repository.UserRepository
+import com.emetain.pokemonwebshop.service.DropService
 import com.emetain.pokemonwebshop.service.HeroSlideService
 import com.emetain.pokemonwebshop.service.OrderMath
 import com.emetain.pokemonwebshop.service.OrderNumbers
@@ -39,6 +42,7 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.support.TransactionTemplate
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -52,6 +56,7 @@ class DevDataSeeder(
     private val productService: ProductService,
     private val stockService: StockService,
     private val heroSlideService: HeroSlideService,
+    private val dropService: DropService,
     private val orderRepository: OrderRepository,
     private val tokenService: TokenService,
     private val transactions: TransactionTemplate,
@@ -67,6 +72,7 @@ class DevDataSeeder(
             seedProducts(admin)
             seedSlides()
             transactions.executeWithoutResult { seedOrders(customer) }
+            seedDrop(admin)
         }
 
         log.info("Demo admin login: {} / {}", ADMIN_EMAIL, ADMIN_PASSWORD)
@@ -129,6 +135,43 @@ class DevDataSeeder(
             if (demo.sold > 0) stockService.sell(product.id, demo.sold, "Demoverkoop")
         }
         log.info("Demo shop: {} products", products.size)
+    }
+
+    /**
+     * One upcoming drop, two hours after startup on the next quarter hour, with a product only sold in the drop and
+     * two booster boxes from the normal stock. The waiting room opens half an hour before the start.
+     */
+    private fun seedDrop(admin: User) {
+        val exclusive = productService.create(
+            ProductRequest(
+                game = Game.POKEMON.slug,
+                type = ProductType.COLLECTION_BOX,
+                name = "Prismatic Evolutions Super Premium Collection",
+                description = "Alleen in de drop. Maximaal 1 per klant.",
+                language = ProductLanguage.EN,
+                priceCents = 12995,
+                status = ProductStatus.ACTIVE,
+            ),
+        )
+        stockService.adjust(exclusive.id, 10, StockReason.PURCHASE, "Demovoorraad voor de drop", admin)
+        val boosterBox = productRepository.findBySlug("destined-rivals-booster-box") ?: return
+
+        val now = clock.instant()
+        val quarter = Duration.ofMinutes(15).toSeconds()
+        val startsAt = Instant.ofEpochSecond((now.plus(Duration.ofHours(2)).epochSecond / quarter + 1) * quarter)
+        val drop = dropService.create(
+            DropRequest(
+                name = "Prismatic Evolutions drop",
+                description = "De Super Premium Collection, alleen in deze drop, en twee Destined Rivals Booster Boxen voor een dropprijs.\n" +
+                    "Kom een paar minuten voor de start naar de wachtkamer: bij de start krijgt iedereen die wacht een willekeurige plek.",
+                startsAt = startsAt,
+                maxPerCustomer = 2,
+            ),
+        )
+        dropService.addProduct(drop.id, DropProductRequest(productId = exclusive.id, allocated = 10, maxPerCustomer = 1), admin)
+        dropService.addProduct(drop.id, DropProductRequest(productId = boosterBox.id, allocated = 2, maxPerCustomer = 1, priceCents = 14995), admin)
+        dropService.publish(drop.id)
+        log.info("Demo drop starts at {}", startsAt)
     }
 
     private fun seedSlides() {

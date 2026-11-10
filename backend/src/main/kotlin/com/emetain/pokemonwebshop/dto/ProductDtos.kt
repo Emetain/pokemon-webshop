@@ -162,6 +162,8 @@ data class ProductDetailDto(
     val related: List<ProductSummaryDto>,
     /** The most one customer can put in the cart now: what is left, up to 99. 0 when it can't be bought. */
     val maxQuantity: Int,
+    /** The upcoming or live drop this product is in, so a product that seems sold out says where it went. */
+    val drop: ProductDropDto? = null,
 ) {
     companion object {
         fun from(
@@ -170,6 +172,7 @@ data class ProductDetailDto(
             prices: List<CardPrice>,
             otherOffers: List<ProductSummaryDto>,
             related: List<ProductSummaryDto>,
+            drop: ProductDropDto? = null,
         ) = ProductDetailDto(
             product = ProductSummaryDto.from(product, wished),
             status = product.status,
@@ -193,6 +196,7 @@ data class ProductDetailDto(
             otherOffers = otherOffers,
             related = related,
             maxQuantity = if (ProductRules.canBuy(product)) CartRules.maxQuantity(product.stock.available) else 0,
+            drop = drop,
         )
     }
 }

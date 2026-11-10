@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChevronLeft, Lock } from 'lucide-vue-next'
 import CartTotals from '../../components/cart/CartTotals.vue'
@@ -7,12 +7,17 @@ import CountrySelect from '../../components/account/CountrySelect.vue'
 import FormField from '../../components/FormField.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import ProductImage from '../../components/shop/ProductImage.vue'
-import { accountApi, cartApi, checkoutApi } from '../../services/api'
+import { accountApi, cartApi, checkoutApi, dropApi } from '../../services/api'
 import { useCart } from '../../stores/cart'
 import { useRegion } from '../../stores/region'
 import { useSession } from '../../stores/session'
 import { formatDate, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
+
+/** With `dropSlug`, this is the checkout of a drop: the lines come from the drop cart, and only while it is your turn. */
+const props = defineProps({
+  dropSlug: { type: String, default: null },
+})
 
 const route = useRoute()
 const session = useSession()
@@ -37,6 +42,13 @@ const acceptTerms = ref(false)
 const submitting = ref(false)
 const error = ref('')
 
+/** Drop checkout only: the drop, its cart with the access time, the hidden field for bots, and whether it's your turn. */
+const drop = ref(null)
+const dropCart = ref(null)
+const website = ref('')
+const noAccess = ref(false)
+const backLink = computed(() => (props.dropSlug ? `/drops/${props.dropSlug}` : '/winkelwagen'))
+
 /** The cart priced for the country of the chosen address, which can differ from the region setting. */
 const quote = ref(null)
 
@@ -58,12 +70,47 @@ let latestQuote = 0
 async function loadQuote() {
   const request = ++latestQuote
   try {
-    const result = await cartApi.get(country.value)
-    if (request === latestQuote) quote.value = result
+    if (props.dropSlug) {
+      const result = await dropApi.cart(props.dropSlug, country.value)
+      if (request === latestQuote) {
+        dropCart.value = result
+        quote.value = result.cart
+      }
+    } else {
+      const result = await cartApi.get(country.value)
+      if (request === latestQuote) quote.value = result
+    }
   } catch (exception) {
-    if (request === latestQuote) error.value = exception.message
+    if (request !== latestQuote) return
+    if (exception.code?.startsWith('drop_')) noAccess.value = true
+    error.value = exception.message
   }
 }
+
+/** The time left to start the payment of a drop, against the server's clock. */
+const now = ref(Date.now())
+let clock = null
+const accessLeft = computed(() => {
+  const cartOfDrop = dropCart.value
+  if (!cartOfDrop?.accessExpiresAt) return null
+  const offset = Date.parse(cartOfDrop.serverTime) - Date.now()
+  return Math.max(0, Date.parse(cartOfDrop.accessExpiresAt) - (now.value + offset))
+})
+const accessText = computed(() => {
+  const total = Math.ceil((accessLeft.value ?? 0) / 1000)
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
+})
+
+onMounted(() => {
+  if (!props.dropSlug) return
+  dropApi.get(props.dropSlug).then((result) => (drop.value = result)).catch(() => {})
+  clock = setInterval(() => {
+    now.value = Date.now()
+    if (accessLeft.value === 0) noAccess.value = true
+  }, 1000)
+})
+
+onBeforeUnmount(() => clearInterval(clock))
 
 onMounted(async () => {
   try {
@@ -93,7 +140,7 @@ async function pay() {
   submitting.value = true
   try {
     const usingSaved = chosenAddress.value !== 'new'
-    const started = await checkoutApi.start({
+    const body = {
       addressId: usingSaved ? chosenAddress.value : null,
       address: usingSaved ? null : { ...address },
       saveAddress: Boolean(user.value) && !usingSaved && saveAddress.value,
@@ -101,13 +148,17 @@ async function pay() {
       email: user.value ? null : contact.email,
       shipmentPreference: mixed.value ? shipmentPreference.value : null,
       acceptTerms: true,
-    })
+    }
+    const started = props.dropSlug
+      ? await dropApi.checkout(props.dropSlug, { ...body, website: website.value })
+      : await checkoutApi.start(body)
     window.location.assign(started.redirectUrl)
   } catch (exception) {
     error.value = exception.message
     submitting.value = false
+    if (exception.code?.startsWith('drop_')) noAccess.value = true
     if (exception.code === 'cart_changed') {
-      await Promise.all([loadQuote(), cart.load()])
+      await Promise.all([loadQuote(), props.dropSlug ? Promise.resolve() : cart.load()])
     }
   }
 }
@@ -117,21 +168,35 @@ const loginLink = computed(() => ({ path: '/inloggen', query: { redirect: route.
 
 <template>
   <div class="container page">
-    <router-link class="back" to="/winkelwagen">
+    <router-link class="back" :to="backLink">
       <ChevronLeft :size="18" aria-hidden="true" />
-      {{ t('checkout.back') }}
+      {{ dropSlug ? t('drops.checkout.back') : t('checkout.back') }}
     </router-link>
-    <h1>{{ t('checkout.title') }}</h1>
+    <h1>{{ dropSlug && drop ? t('drops.checkout.title', { name: drop.name }) : t('checkout.title') }}</h1>
 
     <p v-if="loading" class="muted" aria-busy="true">{{ t('cart.loading') }}</p>
     <FormMessage v-else-if="loadError">{{ loadError }}</FormMessage>
 
+    <div v-else-if="dropSlug && noAccess" class="empty">
+      <FormMessage>{{ error || t('drops.checkout.noAccess') }}</FormMessage>
+      <router-link class="btn btn-primary" :to="backLink">{{ t('drops.checkout.back') }}</router-link>
+    </div>
+
     <div v-else-if="!quote?.items.length" class="empty">
-      <p>{{ t('checkout.empty') }}</p>
-      <router-link class="btn btn-primary" to="/producten">{{ t('cart.toShop') }}</router-link>
+      <p>{{ dropSlug ? t('drops.checkout.empty') : t('checkout.empty') }}</p>
+      <router-link v-if="dropSlug" class="btn btn-primary" :to="backLink">{{ t('drops.checkout.back') }}</router-link>
+      <router-link v-else class="btn btn-primary" to="/producten">{{ t('cart.toShop') }}</router-link>
     </div>
 
     <form v-else class="layout" novalidate @submit.prevent="pay">
+      <p v-if="accessLeft !== null" class="access" :class="{ urgent: accessLeft < 120000 }" role="timer">
+        {{ t('drops.checkout.timeLeft', { time: accessText }) }}
+      </p>
+      <!-- People never see this field. A bot that fills in every field gets turned away. -->
+      <div v-if="dropSlug" class="trap" aria-hidden="true">
+        <label for="checkout-website">{{ t('drops.checkout.honeypot') }}</label>
+        <input id="checkout-website" v-model="website" type="text" name="website" tabindex="-1" autocomplete="off" />
+      </div>
       <ol class="steps">
         <li class="step">
           <h2 class="step-title"><span class="number" aria-hidden="true">1</span>{{ t('checkout.steps.contact') }}</h2>
@@ -255,7 +320,13 @@ const loginLink = computed(() => ({ path: '/inloggen', query: { redirect: route.
                 </li>
               </ul>
             </div>
-            <p class="muted small">{{ t('checkout.reservation', { minutes: options.reservationMinutes }) }}</p>
+            <p class="muted small">
+              {{
+                dropCart
+                  ? t('drops.checkout.reservation', { minutes: dropCart.reservationMinutes })
+                  : t('checkout.reservation', { minutes: options.reservationMinutes })
+              }}
+            </p>
             <p class="muted small">{{ t('checkout.payNote') }}</p>
           </div>
         </li>
@@ -311,6 +382,30 @@ const loginLink = computed(() => ({ path: '/inloggen', query: { redirect: route.
 
 .small {
   font-size: var(--text-sm);
+}
+
+.access {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.access.urgent {
+  background: var(--color-sale-soft);
+  color: var(--color-sale);
+}
+
+.trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
 }
 
 .empty {

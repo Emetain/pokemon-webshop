@@ -68,4 +68,19 @@ class RateLimitServiceTest {
         repeat(2) { service.check("login", "2.2.2.2") }
         assertThrows<ApiException> { service.check("login", "2.2.2.2") }
     }
+
+    @Test
+    fun `a bucket with its own limit uses it, and accounts are counted apart from addresses`() {
+        val properties = testProperties(maxAttempts = 3).let {
+            it.copy(rateLimit = it.rateLimit.copy(buckets = mapOf("drop-ping" to com.emetain.pokemonwebshop.config.AppProperties.Bucket(maxAttempts = 5))))
+        }
+        val limiter = RateLimitService(properties, clock)
+
+        repeat(5) { limiter.check("drop-ping", "1.1.1.1") }
+        assertThrows<ApiException> { limiter.check("drop-ping", "1.1.1.1") }
+
+        repeat(3) { limiter.checkAccount("drop-cart-account", 7) }
+        assertThrows<ApiException> { limiter.checkAccount("drop-cart-account", 7) }
+        assertDoesNotThrow { limiter.checkAccount("drop-cart-account", 8) }
+    }
 }

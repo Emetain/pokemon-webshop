@@ -1,14 +1,17 @@
 package com.emetain.pokemonwebshop.service
 
 import com.emetain.pokemonwebshop.config.AppProperties
+import com.emetain.pokemonwebshop.domain.Drop
 import com.emetain.pokemonwebshop.domain.Order
 import com.emetain.pokemonwebshop.domain.OrderLine
 import com.emetain.pokemonwebshop.domain.OrderStatus
 import com.emetain.pokemonwebshop.domain.OrderStatusChange
 import com.emetain.pokemonwebshop.domain.OrderStockState
+import com.emetain.pokemonwebshop.domain.Product
 import com.emetain.pokemonwebshop.domain.ProductStatus
 import com.emetain.pokemonwebshop.domain.SUPPORTED_COUNTRIES
 import com.emetain.pokemonwebshop.domain.ShipmentPreference
+import com.emetain.pokemonwebshop.domain.ShippingRate
 import com.emetain.pokemonwebshop.domain.User
 import com.emetain.pokemonwebshop.dto.AddressRequest
 import com.emetain.pokemonwebshop.dto.StartCheckoutRequest
@@ -21,9 +24,26 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
+import java.time.Duration
 import java.util.Locale
 
-/** Turns a cart into an order that holds its stock, and lets go of that stock when the order isn't paid. */
+/** Who orders and where it goes, checked and written one way. Addresses have no name: the order has the contact's. */
+data class CheckoutParty(
+    val name: String,
+    val email: String,
+    val address: AddressRequest,
+    /** The postcode as the shop writes it, such as `1421 AB`. */
+    val postcode: String,
+    val rate: ShippingRate,
+) {
+    val emailKey: String get() = DropRules.emailKey(email)
+    val addressKey: String get() = DropRules.addressKey(address.street, address.houseNumber, postcode, address.country)
+}
+
+/** A product going into an order, at the price it is sold for. */
+data class CheckoutLine(val product: Product, val quantity: Int, val unitPriceCents: Long)
+
+/** Turns a cart or a drop cart into an order that holds its stock, and lets go of that stock when the order isn't paid. */
 @Service
 class CheckoutService(
     private val orderRepository: OrderRepository,
@@ -32,6 +52,7 @@ class CheckoutService(
     private val addressService: AddressService,
     private val shippingRateService: ShippingRateService,
     private val stockService: StockService,
+    private val dropStockService: DropStockService,
     private val tokenService: TokenService,
     private val properties: AppProperties,
     private val clock: Clock,
@@ -49,10 +70,7 @@ class CheckoutService(
         if (cart.items.size > CartRules.MAX_LINES) {
             throw ApiException.validation("Je kunt maximaal ${CartRules.MAX_LINES} verschillende producten in één bestelling doen.")
         }
-        val (name, email) = contact(viewer, request)
-        val address = address(viewer, request)
-        val rate = shippingRateService.active(address.country)
-            ?: throw ApiException.validation("We verzenden op dit moment niet naar dit land.")
+        val party = party(viewer, request)
 
         for (item in cart.items) {
             val product = item.product
@@ -60,35 +78,71 @@ class CheckoutService(
             if (product.status != ProductStatus.ACTIVE || !ProductRules.canBuy(product)) throw cartChanged("${product.name} is uitverkocht.")
             if (item.quantity > available) throw cartChanged("Van ${product.name} zijn er nog maar $available.")
         }
-        val priced = cart.items.map { PricedLine(ProductRules.shownPriceCents(it.product)!!, it.quantity) }
-        val totals = OrderMath.totals(priced, ShippingPrice(rate.priceCents, rate.freeFromCents))
-        val mixed = cart.items.any { it.product.preOrder } && cart.items.any { !it.product.preOrder }
+        val lines = cart.items.map { CheckoutLine(it.product, it.quantity, ProductRules.shownPriceCents(it.product)!!) }
+        val order = newOrder(party, lines, viewer, request, properties.checkout.reservationTtl, cartId = cart.id)
+        for (line in order.lines) stockService.reserve(line.product.id, line.quantity, "Bestelling ${order.number}")
+        saveAddressIfAsked(viewer, request, party)
+        return order
+    }
+
+    /** Checks who orders and where it goes, before anything is reserved. */
+    fun party(viewer: User?, request: StartCheckoutRequest): CheckoutParty {
+        if (!request.acceptTerms) throw ApiException.validation("Ga akkoord met de algemene voorwaarden om te bestellen.")
+        val (name, email) = contact(viewer, request)
+        val address = address(viewer, request)
+        val rate = shippingRateService.active(address.country)
+            ?: throw ApiException.validation("We verzenden op dit moment niet naar dit land.")
+        return CheckoutParty(name, email, address, addressService.normalizePostcode(address.postcode, address.country), rate)
+    }
+
+    /**
+     * Makes and saves the order, waiting for payment. Holds no stock: the caller reserves it in the same transaction.
+     * A drop order keeps its drop and the keys its limits count by.
+     */
+    fun newOrder(
+        party: CheckoutParty,
+        lines: List<CheckoutLine>,
+        viewer: User?,
+        request: StartCheckoutRequest,
+        reservationTtl: Duration,
+        cartId: Long? = null,
+        drop: Drop? = null,
+        dropEntryId: Long? = null,
+    ): Order {
+        val priced = lines.map { PricedLine(it.unitPriceCents, it.quantity) }
+        val totals = OrderMath.totals(priced, ShippingPrice(party.rate.priceCents, party.rate.freeFromCents))
+        val mixed = lines.any { it.product.preOrder } && lines.any { !it.product.preOrder }
+        val address = party.address
         val now = clock.instant()
         val order = Order(
             number = uniqueNumber(),
             user = viewer,
-            email = email,
-            customerName = name,
+            email = party.email,
+            customerName = party.name,
             street = address.street.trim(),
             houseNumber = address.houseNumber.trim(),
-            postcode = addressService.normalizePostcode(address.postcode, address.country),
+            postcode = party.postcode,
             city = address.city.trim(),
             country = address.country,
             subtotalCents = totals.subtotalCents,
             shippingCents = totals.shippingCents,
             totalCents = totals.totalCents,
             vatCents = totals.vatCents,
-            deliveryTime = rate.deliveryTime,
+            deliveryTime = party.rate.deliveryTime,
             shipmentPreference = if (mixed) request.shipmentPreference ?: ShipmentPreference.TOGETHER else ShipmentPreference.TOGETHER,
             accessToken = tokenService.generate(),
-            cartId = cart.id,
+            cartId = cartId,
             termsAcceptedAt = now,
             createdAt = now,
             updatedAt = now,
-            reservedUntil = now.plus(properties.checkout.reservationTtl),
+            reservedUntil = now.plus(reservationTtl),
+            drop = drop,
+            dropEntryId = dropEntryId,
+            emailKey = drop?.let { party.emailKey },
+            addressKey = drop?.let { party.addressKey },
         )
-        cart.items.zip(priced).forEach { (item, price) ->
-            val product = item.product
+        lines.zip(priced).forEach { (line, price) ->
+            val product = line.product
             val ownImage = product.images.firstOrNull()
             val cardImage = product.card?.shownImageSmallUrl
             order.lines += OrderLine(
@@ -106,14 +160,14 @@ class CheckoutService(
                 shipsFrom = if (product.preOrder) product.shipsFrom ?: product.releaseDate else null,
             )
         }
-        order.history += OrderStatusChange(order, OrderStatus.PENDING_PAYMENT, now, "Afgerekend, wacht op de betaling")
-        orderRepository.save(order)
-        for (line in order.lines) stockService.reserve(line.product.id, line.quantity, "Bestelling ${order.number}")
+        val text = if (drop != null) "Afgerekend in drop ${drop.name}, wacht op de betaling" else "Afgerekend, wacht op de betaling"
+        order.history += OrderStatusChange(order, OrderStatus.PENDING_PAYMENT, now, text)
+        return orderRepository.save(order)
+    }
 
-        if (viewer != null && request.saveAddress && request.addressId == null) {
-            addressService.create(viewer, address)
-        }
-        return order
+    /** A logged-in customer who filled in a new address can keep it. */
+    fun saveAddressIfAsked(viewer: User?, request: StartCheckoutRequest, party: CheckoutParty) {
+        if (viewer != null && request.saveAddress && request.addressId == null) addressService.create(viewer, party.address)
     }
 
     @Transactional
@@ -132,7 +186,11 @@ class CheckoutService(
     fun releaseReservation(orderId: Long, reason: String, admin: User? = null): Boolean {
         val order = orderRepository.findLockedById(orderId) ?: return false
         if (order.status != OrderStatus.PENDING_PAYMENT || order.stockState != OrderStockState.RESERVED) return false
-        for (line in order.lines) stockService.release(line.product.id, line.quantity, "Bestelling ${order.number} niet betaald")
+        if (order.drop != null) {
+            dropStockService.release(order)
+        } else {
+            for (line in order.lines) stockService.release(line.product.id, line.quantity, "Bestelling ${order.number} niet betaald")
+        }
         val now = clock.instant()
         order.stockState = OrderStockState.RELEASED
         order.reservedUntil = null

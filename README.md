@@ -125,6 +125,21 @@ Without `STRIPE_SECRET_KEY` the shop works, but checkout says online payment isn
 
 In production, add a webhook endpoint in the Stripe dashboard for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`, pointing at `https://<your domain>/api/v1/payments/stripe/webhook`, and use its signing secret.
 
+## Drops
+
+A drop is a limited release at a set time, managed at `/admin/drops`. The stock you allocate to a drop leaves the normal stock right away (a `DROP_ALLOCATION` line in the stock log). When the drop ends, whatever wasn't sold goes back, or stays with the drop until you give it back, as chosen per drop.
+
+How it runs:
+
+- The waiting room opens 30 minutes before the start. At the start time everyone in it gets a random place, so refreshing at exactly the right second gives no advantage. Later arrivals join at the back.
+- The shop lets people through in batches every 10 seconds, at the speed set per drop (60 a minute by default). Whoever gets through has 10 minutes to fill the drop cart and start paying. The checkout then holds the stock for 10 minutes.
+- Limits per product and per drop count paid orders and running checkouts by account, email address (Gmail dots and `+tags` don't help) and delivery address. They're checked when something goes in the drop cart and again, under a lock on the drop, when the payment starts.
+- An account is required by default. Drop endpoints are rate limited per IP address and per account, and the join and checkout forms have a hidden honeypot field.
+- "Herinner mij" sends one mail 15 minutes before the start.
+- Upcoming and live drops get their own slide in the home page hero, with a countdown, unless you switch that off per drop. The menu shows LIVE while a drop runs.
+
+During the drop, `/admin/drops/{id}/live` shows the waiting room and sales, and has buttons to pause the line, change its speed or end the drop. After the drop the same page is the report. The timings are under `app.drops` in `application.yml`.
+
 ## Profiles
 
 | Profile  | Database                                    | ddl-auto    | show-sql | Flyway |

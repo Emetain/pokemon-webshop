@@ -2,7 +2,9 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-vue-next'
 import BallMark from '../BallMark.vue'
+import DropCountdown from '../drops/DropCountdown.vue'
 import { findGame } from '../../data/games'
+import { formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
 /**
@@ -30,6 +32,17 @@ const accentOf = (slide) => (slide?.game ? findGame(slide.game)?.accent : undefi
 const currentAccent = computed(() => (current.value === 0 ? undefined : accentOf(props.slides[current.value - 1])))
 
 const isExternal = (url) => /^https:\/\//.test(url)
+
+/** Drop slides come from the shop itself: the page writes their label and button. Started counts once the clock hits zero. */
+const started = ref(new Set())
+const dropLive = (slide) => slide.drop?.status === 'LIVE' || started.value.has(slide.key)
+const buttonLabel = (slide) => {
+  if (!slide.drop) return slide.buttonLabel
+  return dropLive(slide) ? t('drops.hero.join') : t('drops.hero.view')
+}
+function onDropStarted(slide) {
+  started.value = new Set([...started.value, slide.key])
+}
 
 function go(index) {
   current.value = (index + total.value) % total.value
@@ -95,7 +108,7 @@ onBeforeUnmount(() => {
       </div>
       <div
         v-for="(slide, index) in slides"
-        :key="slide.id"
+        :key="slide.key ?? slide.id"
         class="slide promo"
         :class="{ active: current === index + 1 }"
         :data-game="accentOf(slide)"
@@ -108,13 +121,26 @@ onBeforeUnmount(() => {
         <BallMark v-if="!slide.imageUrl && (!slide.game || slide.game === 'pokemon')" class="promo-ball" outline />
         <div class="container promo-grid" :class="{ 'with-image': slide.imageUrl }">
           <div class="promo-text">
+            <p v-if="slide.drop" class="drop-label" :class="{ live: dropLive(slide) }">
+              <span v-if="dropLive(slide)" class="live-dot" aria-hidden="true"></span>
+              {{ dropLive(slide) ? t('drops.hero.live') : t('drops.hero.label') }}
+            </p>
             <h2 class="promo-title">{{ slide.title }}</h2>
             <p v-if="slide.text" class="promo-body">{{ slide.text }}</p>
+            <div v-if="slide.drop && !dropLive(slide)" class="drop-when">
+              <span>{{ t('drops.hero.startsAt', { date: formatDateTime(slide.drop.startsAt) }) }}</span>
+              <DropCountdown
+                class="drop-countdown"
+                :target="slide.drop.startsAt"
+                :server-time="slide.drop.serverTime"
+                @done="onDropStarted(slide)"
+              />
+            </div>
             <template v-if="slide.linkUrl">
               <a v-if="isExternal(slide.linkUrl)" class="btn btn-on-brand" :href="slide.linkUrl" rel="noopener">
-                {{ slide.buttonLabel }}
+                {{ buttonLabel(slide) }}
               </a>
-              <router-link v-else class="btn btn-on-brand" :to="slide.linkUrl">{{ slide.buttonLabel }}</router-link>
+              <router-link v-else class="btn btn-on-brand" :to="slide.linkUrl">{{ buttonLabel(slide) }}</router-link>
             </template>
           </div>
           <img v-if="slide.imageUrl" class="promo-image" :src="slide.imageUrl" alt="" decoding="async" />
@@ -239,6 +265,51 @@ onBeforeUnmount(() => {
   font-size: var(--text-lg);
 }
 
+.drop-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-half) var(--space-3);
+  border-radius: var(--radius-round);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.drop-label.live {
+  background: var(--color-sale);
+  color: var(--color-on-brand);
+}
+
+.live-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-round);
+  background: currentColor;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.drop-when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  font-weight: 650;
+}
+
+.drop-countdown {
+  font-size: var(--text-2xl);
+}
+
 .promo-image {
   justify-self: center;
   width: 100%;
@@ -337,6 +408,10 @@ onBeforeUnmount(() => {
   .slide.active,
   .dot::after {
     transition: none;
+  }
+
+  .live-dot {
+    animation: none;
   }
 }
 </style>

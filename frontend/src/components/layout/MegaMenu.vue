@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChevronDown, X } from 'lucide-vue-next'
 import BallMark from '../BallMark.vue'
+import LiveBadge from '../drops/LiveBadge.vue'
 import { mainNav, menuColumns } from '../../data/navigation'
 import { useShopNavigation } from '../../stores/shopNavigation'
 import { t } from '../../utils/i18n'
@@ -201,6 +202,7 @@ onBeforeUnmount(() => {
           @mouseenter="onPlainLinkHover"
         >
           {{ t(item.labelKey) }}
+          <LiveBadge v-if="item.key === 'drops'" />
         </router-link>
       </li>
     </ul>

@@ -16,6 +16,12 @@ import java.time.Instant
 
 data class RevenueRow(val orders: Long, val totalCents: Long, val refundedCents: Long)
 
+/** How many of a product someone has in a drop's orders. */
+data class DropQuantityRow(val productId: Long, val quantity: Long)
+
+/** Sales of one product in a drop, for the report. */
+data class DropSalesRow(val productId: Long, val quantity: Long, val revenueCents: Long)
+
 interface OrderRepository : JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
 
     @EntityGraph(attributePaths = ["lines", "user"])
@@ -60,4 +66,49 @@ interface OrderRepository : JpaRepository<Order, Long>, JpaSpecificationExecutor
     fun countByStatusIn(statuses: Collection<OrderStatus>): Long
 
     fun existsByNumber(number: String): Boolean
+
+    @Query("select o.id from Order o where o.dropEntryId = :entryId and o.status = :status")
+    fun findIdsByDropEntryAndStatus(entryId: Long, status: OrderStatus = OrderStatus.PENDING_PAYMENT): List<Long>
+
+    /**
+     * What someone has in a drop's orders that count: paid, or waiting for payment with the stock held. "Someone" is
+     * every order with the same account, email, address or waiting room entry, so a second account with the same
+     * address or a +tag on the email doesn't get around the limits. A null value matches nothing.
+     */
+    @Query(
+        "select new com.emetain.pokemonwebshop.repository.DropQuantityRow(l.product.id, sum(l.quantity)) " +
+            "from OrderLine l join l.order o left join o.user u " +
+            "where o.drop.id = :dropId and o.status in :statuses " +
+            "and (u.id = :userId or o.emailKey = :emailKey or o.addressKey = :addressKey or o.dropEntryId = :entryId) " +
+            "group by l.product.id",
+    )
+    fun dropQuantities(
+        dropId: Long,
+        userId: Long?,
+        emailKey: String?,
+        addressKey: String?,
+        entryId: Long?,
+        statuses: Collection<OrderStatus> = DROP_LIMIT_STATUSES,
+    ): List<DropQuantityRow>
+
+    @Query(
+        "select new com.emetain.pokemonwebshop.repository.DropSalesRow(l.product.id, sum(l.quantity), sum(l.lineTotalCents)) " +
+            "from OrderLine l join l.order o where o.drop.id = :dropId and o.status in :statuses group by l.product.id",
+    )
+    fun dropSales(dropId: Long, statuses: Collection<OrderStatus> = OrderStatus.SOLD): List<DropSalesRow>
+
+    /** Buyers: different email addresses with a paid order in the drop. */
+    @Query("select count(distinct o.emailKey) from Order o where o.drop.id = :dropId and o.status in :statuses")
+    fun countDropBuyers(dropId: Long, statuses: Collection<OrderStatus> = OrderStatus.SOLD): Long
+
+    @Query("select count(o) from Order o where o.drop.id = :dropId and o.status in :statuses")
+    fun countDropOrders(dropId: Long, statuses: Collection<OrderStatus> = OrderStatus.SOLD): Long
+
+    @Query("select count(o) from Order o where o.drop.id = :dropId and o.paidAt is not null and o.status in :statuses")
+    fun countDropPaidOrdersWithStatus(dropId: Long, statuses: Collection<OrderStatus>): Long
+
+    companion object {
+        /** Orders that count towards drop limits. Cancelled, refunded and unpaid checkouts that ran out don't. */
+        val DROP_LIMIT_STATUSES: Set<OrderStatus> = OrderStatus.SOLD + OrderStatus.PENDING_PAYMENT
+    }
 }

@@ -55,6 +55,28 @@ app:
   rate-limit:
     max-attempts: 10
     window: 1m
+    # Drops get their own limits. Per IP address they are generous, because a phone network can put hundreds of
+    # people behind one address. Per account they are tight: one person needs only a few calls a minute.
+    buckets:
+      drop-join:
+        max-attempts: 60
+      drop-join-account:
+        max-attempts: 6
+      # The waiting room page asks every 2.5 to 15 seconds.
+      drop-ping:
+        max-attempts: 300
+      drop-ping-account:
+        max-attempts: 60
+      drop-cart:
+        max-attempts: 180
+      drop-cart-account:
+        max-attempts: 40
+      drop-checkout:
+        max-attempts: 30
+      drop-checkout-account:
+        max-attempts: 5
+      drop-reminder:
+        max-attempts: 10
   media:
     # Where uploaded images are stored.
     directory: ${MEDIA_DIRECTORY:data/media}
@@ -123,6 +145,26 @@ app:
         price-cents: 895
         free-from-cents: 12500
         delivery-time: 2 tot 3 werkdagen
+  drops:
+    # How often the drop scheduler looks at the clock: starts and ends drops, and lets the next batch through the
+    # waiting room. In Dutch time. "-" switches it off.
+    tick-cron: "* * * * * *"
+    # The speed of the waiting room for a new drop. The admin changes it per drop, also during the drop.
+    admit-per-minute: 60
+    # The waiting room lets people through in batches this far apart.
+    admit-interval: 10s
+    # How long someone who got through may fill the drop cart and start a checkout.
+    access-ttl: 10m
+    # How long a drop checkout holds the stock. Shorter than the shop, so unpaid stock goes back to the line sooner.
+    # Stripe's page stays open longer: the shop closes it first, as with normal checkouts.
+    reservation-ttl: 10m
+    # Someone whose page hasn't asked for this long has left: the next batch passes over their place. They keep it,
+    # and get in as soon as they're back. Longer than a minute, because a browser tab that has been in the background
+    # for a while runs its timers only once a minute.
+    active-window: 75s
+    waiting-room-opens: 30m
+    # When the "herinner mij" mails go out, before the start.
+    reminder-before: 15m
   payments:
     stripe:
       # Test mode locally: sk_test_... from the Stripe dashboard. Empty switches online payment off.

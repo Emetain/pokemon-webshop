@@ -2,6 +2,7 @@
 import { ref, shallowRef, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChevronLeft, ChevronRight, Heart, ShoppingBag, User, X } from 'lucide-vue-next'
+import LiveBadge from '../drops/LiveBadge.vue'
 import { mainNav, menuColumns } from '../../data/navigation'
 import { useShopNavigation } from '../../stores/shopNavigation'
 import { useSession } from '../../stores/session'
@@ -86,6 +87,7 @@ defineExpose({ open })
             <router-link v-else class="row" :to="item.to">
               <span class="tile"><component :is="item.icon" class="tile-icon" /></span>
               <span class="row-label">{{ t(item.labelKey) }}</span>
+              <LiveBadge v-if="item.key === 'drops'" />
             </router-link>
           </li>
         </ul>

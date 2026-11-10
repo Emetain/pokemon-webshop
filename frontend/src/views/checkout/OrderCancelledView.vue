@@ -13,6 +13,8 @@ import { t } from '../../utils/i18n'
 const props = defineProps({
   order: { type: String, default: undefined },
   token: { type: String, default: undefined },
+  /** Set when the order was made in a drop: the way back goes to the drop, not the cart. */
+  drop: { type: String, default: undefined },
 })
 
 const cart = useCart()
@@ -48,7 +50,11 @@ onMounted(async () => {
       <h1>{{ t('orders.cancelled.title') }}</h1>
       <p>{{ t('orders.cancelled.text') }}</p>
       <FormMessage v-if="error">{{ error }}</FormMessage>
-      <div class="buttons">
+      <div v-if="drop" class="buttons">
+        <router-link class="btn btn-primary" :to="`/drops/${drop}/afrekenen`">{{ t('orders.cancelled.retry') }}</router-link>
+        <router-link class="btn btn-secondary" :to="`/drops/${drop}`">{{ t('drops.checkout.back') }}</router-link>
+      </div>
+      <div v-else class="buttons">
         <router-link class="btn btn-primary" to="/afrekenen">{{ t('orders.cancelled.retry') }}</router-link>
         <router-link class="btn btn-secondary" to="/winkelwagen">{{ t('orders.cancelled.toCart') }}</router-link>
       </div>

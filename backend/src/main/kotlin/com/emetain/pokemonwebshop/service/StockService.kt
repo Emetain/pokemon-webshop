@@ -79,6 +79,32 @@ class StockService(
         return record(product, -released, StockReason.RELEASE, note, null) { stock.reserved -= released }
     }
 
+    /**
+     * Moves [quantity] from the normal stock into a drop. Only what nobody holds can go: a checkout keeps its
+     * reservation. Fails when fewer are left.
+     */
+    @Transactional
+    fun allocateToDrop(productId: Long, quantity: Int, note: String, admin: User?): StockMovement {
+        requirePositive(quantity)
+        val product = find(productId)
+        val stock = product.stock
+        if (stock.available < quantity) {
+            throw ApiException.validation(
+                if (stock.available <= 0) "Er is geen vrije voorraad van ${product.name} om toe te wijzen."
+                else "Er zijn nog maar ${stock.available} van ${product.name} vrij om toe te wijzen.",
+            )
+        }
+        return record(product, -quantity, StockReason.DROP_ALLOCATION, note, admin) { stock.onHand -= quantity }
+    }
+
+    /** Gives stock of a drop back to the normal stock: unsold at the end, or allocated too much. */
+    @Transactional
+    fun returnFromDrop(productId: Long, quantity: Int, note: String, admin: User?): StockMovement {
+        requirePositive(quantity)
+        val product = find(productId)
+        return record(product, quantity, StockReason.DROP_ALLOCATION, note, admin) { product.stock.onHand += quantity }
+    }
+
     /** Sells [quantity] that wasn't reserved. Fails when fewer are left, so the last item can only be sold once. */
     @Transactional
     fun sell(productId: Long, quantity: Int, note: String? = null): StockMovement {

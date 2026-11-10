@@ -36,7 +36,9 @@ class OrderPaymentService(
     private val orderRepository: OrderRepository,
     private val checkoutService: CheckoutService,
     private val stockService: StockService,
+    private val dropStockService: DropStockService,
     private val cartService: CartService,
+    private val dropCartService: DropCartService,
     private val gateway: PaymentGateway,
     private val events: ApplicationEventPublisher,
     private val transactions: TransactionTemplate,
@@ -65,11 +67,17 @@ class OrderPaymentService(
             order.history += note(order, "Let op: betaald bedrag (${state.amountTotalCents} ${state.currency}) wijkt af van het totaal.")
         }
 
-        val outcome = when (order.stockState) {
-            OrderStockState.RESERVED -> {
-                for (line in order.lines) stockService.sellReserved(line.product.id, line.quantity, "Bestelling ${order.number}")
+        val outcome = when {
+            order.stockState == OrderStockState.RESERVED -> {
+                if (order.drop != null) {
+                    dropStockService.sellReserved(order)
+                } else {
+                    for (line in order.lines) stockService.sellReserved(line.product.id, line.quantity, "Bestelling ${order.number}")
+                }
                 PaymentOutcome.PAID
             }
+            // A drop order that ran out gave its stock back to the line. Selling it now would skip the people in it.
+            order.drop != null -> PaymentOutcome.NEEDS_REFUND
             // The reservation had run out. Should Stripe still take a payment, the stock may still be there.
             else -> if (order.lines.all { it.product.stock.available >= it.quantity }) {
                 for (line in order.lines) stockService.sell(line.product.id, line.quantity, "Bestelling ${order.number}")
@@ -86,9 +94,9 @@ class OrderPaymentService(
             order.status = OrderStatus.PAID
             order.cancelledAt = null
             order.history += OrderStatusChange(order, OrderStatus.PAID, now, "Betaald${methodText(order.paymentMethod)}")
-            order.cartId?.let { cartId ->
-                cartService.removeOrdered(cartId, order.lines.groupBy { it.product.id }.mapValues { (_, lines) -> lines.sumOf { it.quantity } })
-            }
+            val bought = order.lines.groupBy { it.product.id }.mapValues { (_, lines) -> lines.sumOf { it.quantity } }
+            order.cartId?.let { cartService.removeOrdered(it, bought) }
+            order.dropEntryId?.let { dropCartService.removeOrdered(it, bought) }
             events.publishEvent(OrderMailEvent(order.id, OrderMail.CONFIRMATION))
         } else {
             order.status = OrderStatus.CANCELLED
@@ -97,7 +105,11 @@ class OrderPaymentService(
                 order,
                 OrderStatus.CANCELLED,
                 now,
-                "Betaald nadat de reservering was verlopen, en niet meer op voorraad. Het bedrag gaat terug.",
+                if (order.drop != null) {
+                    "Betaald nadat de reservering was verlopen. De voorraad was al terug naar de rij van de drop. Het bedrag gaat terug."
+                } else {
+                    "Betaald nadat de reservering was verlopen, en niet meer op voorraad. Het bedrag gaat terug."
+                },
             )
         }
         return outcome

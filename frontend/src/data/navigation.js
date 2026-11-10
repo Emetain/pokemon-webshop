@@ -160,7 +160,7 @@ export const mainNav = [
   },
 ]
 
-const REAL_PAGES = ['/kaarten/', '/collectie', '/verlanglijst', '/accessoires', '/pre-order']
+const REAL_PAGES = ['/kaarten/', '/collectie', '/verlanglijst', '/accessoires', '/pre-order', '/drops']
 const GAME_PAGES = ['/pokemon', '/lorcana', '/magic', '/one-piece']
 
 const hasRealPage = (to) =>

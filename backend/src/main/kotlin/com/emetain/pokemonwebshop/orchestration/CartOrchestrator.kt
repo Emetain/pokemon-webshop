@@ -86,6 +86,11 @@ class CartOrchestrator(
                 problem = CartRules.problem(item.quantity, canBuy, available)?.name,
             )
         }
+        return dto(lines, country)
+    }
+
+    /** Totals, shipping and payment methods for lines that are priced already, from the shop cart or a drop cart. */
+    fun dto(lines: List<CartLineDto>, country: String): CartDto {
         val priced = lines.filter { it.problem == null && it.unitPriceCents != null }
             .map { PricedLine(it.unitPriceCents!!, it.quantity) }
         val rate = shippingRateService.active(country)
@@ -114,6 +119,6 @@ class CartOrchestrator(
     }
 
     /** The country from the region setting, else the customer's, else the Netherlands. */
-    private fun country(viewer: User?, requested: String?): String =
+    fun country(viewer: User?, requested: String?): String =
         requested?.uppercase()?.takeIf { it in SUPPORTED_COUNTRIES } ?: viewer?.country ?: DEFAULT_COUNTRY
 }

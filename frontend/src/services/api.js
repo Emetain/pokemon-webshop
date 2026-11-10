@@ -200,3 +200,37 @@ export const adminOrderApi = {
   updateShippingRate: (country, data) => request('PUT', `/admin/shipping-rates/${country}`, data),
   dashboard: () => request('GET', '/admin/dashboard'),
 }
+
+const dropPath = (slug) => `/drops/${encodeURIComponent(slug)}`
+
+export const dropApi = {
+  list: () => request('GET', '/drops'),
+  live: () => request('GET', '/drops/live'),
+  get: (slug) => request('GET', dropPath(slug)),
+  remind: (slug, data) => request('POST', `${dropPath(slug)}/reminders`, data),
+  join: (slug, data = {}) => request('POST', `${dropPath(slug)}/queue`, data),
+  ping: (slug) => request('POST', `${dropPath(slug)}/queue/ping`),
+  cart: (slug, country) => request('GET', `${dropPath(slug)}/cart${queryString({ country })}`),
+  setQuantity: (slug, dropProductId, quantity, country) =>
+    request('PUT', `${dropPath(slug)}/cart/${dropProductId}${queryString({ country })}`, { quantity }),
+  checkout: (slug, data) => request('POST', `${dropPath(slug)}/checkout`, data),
+}
+
+export const adminDropApi = {
+  list: () => request('GET', '/admin/drops'),
+  get: (id) => request('GET', `/admin/drops/${id}`),
+  create: (data) => request('POST', '/admin/drops', data),
+  update: (id, data) => request('PUT', `/admin/drops/${id}`, data),
+  remove: (id) => request('DELETE', `/admin/drops/${id}`),
+  publish: (id) => request('POST', `/admin/drops/${id}/publish`),
+  unpublish: (id) => request('POST', `/admin/drops/${id}/unpublish`),
+  addProduct: (id, data) => request('POST', `/admin/drops/${id}/products`, data),
+  updateProduct: (id, dropProductId, data) => request('PUT', `/admin/drops/${id}/products/${dropProductId}`, data),
+  removeProduct: (id, dropProductId) => request('DELETE', `/admin/drops/${id}/products/${dropProductId}`),
+  uploadBanner: (id, file) => upload(`/admin/drops/${id}/banner`, file),
+  removeBanner: (id) => request('DELETE', `/admin/drops/${id}/banner`),
+  live: (id) => request('GET', `/admin/drops/${id}/live`),
+  steerQueue: (id, data) => request('POST', `/admin/drops/${id}/queue`, data),
+  end: (id) => request('POST', `/admin/drops/${id}/end`),
+  returnLeftover: (id) => request('POST', `/admin/drops/${id}/leftover`),
+}

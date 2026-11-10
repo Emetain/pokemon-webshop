@@ -10,6 +10,7 @@ import {
   Package,
   ReceiptText,
   Truck,
+  Zap,
 } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
@@ -57,6 +58,10 @@ const onProducts = computed(
         <router-link class="sidebar-link" to="/admin/verzending" active-class="is-active">
           <Truck :size="18" aria-hidden="true" />
           {{ t('admin.shipping.nav') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/drops" active-class="is-active">
+          <Zap :size="18" aria-hidden="true" />
+          {{ t('admin.drops.nav') }}
         </router-link>
         <router-link class="sidebar-link" to="/admin/hero" active-class="is-active">
           <GalleryHorizontal :size="18" aria-hidden="true" />

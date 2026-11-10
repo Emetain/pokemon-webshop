@@ -2,6 +2,7 @@ package com.emetain.pokemonwebshop.orchestration
 
 import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.domain.AccessoryType
+import com.emetain.pokemonwebshop.domain.DropStatus
 import com.emetain.pokemonwebshop.domain.Game
 import com.emetain.pokemonwebshop.domain.Product
 import com.emetain.pokemonwebshop.domain.ProductLanguage
@@ -10,6 +11,7 @@ import com.emetain.pokemonwebshop.domain.ProductType
 import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.domain.User
 import com.emetain.pokemonwebshop.dto.ProductDetailDto
+import com.emetain.pokemonwebshop.dto.ProductDropDto
 import com.emetain.pokemonwebshop.dto.ProductFacetsDto
 import com.emetain.pokemonwebshop.dto.ProductListDto
 import com.emetain.pokemonwebshop.dto.ProductListRequest
@@ -18,12 +20,14 @@ import com.emetain.pokemonwebshop.dto.ProductSummaryDto
 import com.emetain.pokemonwebshop.exception.ApiException
 import com.emetain.pokemonwebshop.repository.CardPriceRepository
 import com.emetain.pokemonwebshop.repository.CardSetRepository
+import com.emetain.pokemonwebshop.repository.DropProductRepository
 import com.emetain.pokemonwebshop.repository.ProductRepository
 import com.emetain.pokemonwebshop.repository.ProductSort
 import com.emetain.pokemonwebshop.repository.ProductSpecifications
 import com.emetain.pokemonwebshop.service.CardOfferService
 import com.emetain.pokemonwebshop.service.CatalogText
 import com.emetain.pokemonwebshop.service.ProductSlugs
+import com.emetain.pokemonwebshop.service.ProductRules
 import com.emetain.pokemonwebshop.service.ProductWishlistService
 import com.emetain.pokemonwebshop.service.StockAlertService
 import org.springframework.data.domain.Page
@@ -47,6 +51,7 @@ class ProductOrchestrator(
     private val wishlistService: ProductWishlistService,
     private val cardOfferService: CardOfferService,
     private val stockAlertService: StockAlertService,
+    private val dropProductRepository: DropProductRepository,
     private val properties: AppProperties,
     private val clock: Clock,
 ) {
@@ -123,12 +128,17 @@ class ProductOrchestrator(
         val otherOffers = card?.let { cardOfferService.buyable(listOf(it.id)) }.orEmpty().filter { it.id != product.id }
         val related = related(product)
         val wished = viewer?.let { wishlistService.wished(it.id, listOf(product.id) + related.map(Product::id) + otherOffers.map(Product::id)) }
+        val drop = dropProductRepository.findInDrops(product.id, listOf(DropStatus.LIVE, DropStatus.SCHEDULED))
+            .sortedBy { it.drop.status != DropStatus.LIVE }
+            .firstOrNull { !it.soldOut }
+            ?.let { ProductDropDto(it.drop.slug, it.drop.name, it.drop.status.name, it.drop.startsAt, it.priceCents ?: ProductRules.shownPriceCents(product)) }
         return ProductDetailDto.from(
             product = product,
             wished = wished?.contains(product.id),
             prices = prices,
             otherOffers = otherOffers.map { ProductSummaryDto.from(it, wished?.contains(it.id)) },
             related = related.map { ProductSummaryDto.from(it, wished?.contains(it.id)) },
+            drop = drop,
         )
     }
 

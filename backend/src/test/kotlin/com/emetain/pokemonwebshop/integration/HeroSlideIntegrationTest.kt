@@ -29,7 +29,10 @@ class HeroSlideIntegrationTest : ShopTestSupport() {
     private fun create(title: String, extra: Map<String, Any?> = emptyMap()) =
         mockMvc.perform(post("/v1/admin/hero-slides").cookie(admin).json(mapOf("title" to title) + extra))
 
-    private fun showing() = mockMvc.perform(get("/v1/shop/hero-slides")).andExpect(status().isOk).json().map { it["title"].asText() }
+    /** The slides from admin. Drops of other tests add slides of their own, which [DropIntegrationTest] covers. */
+    private fun showing() = mockMvc.perform(get("/v1/shop/hero-slides")).andExpect(status().isOk).json()
+        .filter { it["drop"] == null || it["drop"].isNull }
+        .map { it["title"].asText() }
 
     @Test
     fun `slides show in their order, and only while they are on and within their dates`() {

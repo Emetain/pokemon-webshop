@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { CalendarClock, CircleCheck, CircleX, Minus, Plus, ShoppingBag } from 'lucide-vue-next'
+import { CalendarClock, CircleCheck, CircleX, Minus, Plus, ShoppingBag, Zap } from 'lucide-vue-next'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CardImage from '../../components/catalog/CardImage.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
@@ -24,7 +24,7 @@ import { shopApi } from '../../services/api'
 import { useCart } from '../../stores/cart'
 import { useCurrency } from '../../stores/currency'
 import { variantLabel } from '../../utils/catalog'
-import { formatDate } from '../../utils/format'
+import { formatDate, formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
 const props = defineProps({
@@ -250,7 +250,19 @@ watch(() => props.slug, load, { immediate: true })
         </div>
         <FormMessage v-if="message">{{ message }}</FormMessage>
 
-        <StockAlertForm v-if="!product.canBuy" :slug="product.slug" />
+        <p v-if="detail.drop" class="drop-notice" :class="{ live: detail.drop.status === 'LIVE' }">
+          <Zap :size="18" aria-hidden="true" />
+          <span>
+            {{
+              detail.drop.status === 'LIVE'
+                ? t('drops.productNotice.live', { name: detail.drop.name })
+                : t('drops.productNotice.scheduled', { name: detail.drop.name, date: formatDateTime(detail.drop.startsAt) })
+            }}
+            <router-link :to="`/drops/${detail.drop.slug}`">{{ t('drops.productNotice.link') }}</router-link>
+          </span>
+        </p>
+
+        <StockAlertForm v-if="!product.canBuy && !detail.drop" :slug="product.slug" />
 
         <dl class="facts">
           <div v-for="fact in facts" :key="fact.label" class="fact">
@@ -319,6 +331,29 @@ watch(() => props.slug, load, { immediate: true })
 </template>
 
 <style scoped>
+.drop-notice {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-tint);
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+}
+
+.drop-notice.live {
+  background: var(--color-sale-soft);
+}
+
+.drop-notice svg {
+  flex: none;
+  color: var(--color-brand);
+}
+
+.drop-notice.live svg {
+  color: var(--color-sale);
+}
+
 .page {
   padding-block: var(--space-4) 0;
 }

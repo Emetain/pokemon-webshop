@@ -99,7 +99,7 @@ const router = createRouter({
           path: 'bestelling/geannuleerd',
           name: 'order-cancelled',
           component: () => import('./views/checkout/OrderCancelledView.vue'),
-          props: withQuery('order', 'token'),
+          props: withQuery('order', 'token', 'drop'),
         },
         {
           path: 'bestelling/:number',
@@ -170,6 +170,15 @@ const router = createRouter({
           props: withQuery('sort', 'priced', 'collection', 'page'),
         },
 
+        { path: 'drops', name: 'drops', component: () => import('./views/drops/DropsView.vue') },
+        { path: 'drops/:slug', name: 'drop', component: () => import('./views/drops/DropView.vue'), props: true },
+        {
+          path: 'drops/:slug/afrekenen',
+          name: 'drop-checkout',
+          component: () => import('./views/checkout/CheckoutView.vue'),
+          props: (route) => ({ dropSlug: route.params.slug }),
+        },
+
         ...gameShopRoutes(),
         shopRoute('accessoires', { mode: 'accessories' }),
         shopRoute('accessoires/:accessorySlug', { mode: 'accessories' }),
@@ -213,6 +222,10 @@ const router = createRouter({
         { path: 'bestellingen/:number', component: () => import('./views/admin/AdminOrderView.vue'), props: true },
         { path: 'verzending', component: () => import('./views/admin/AdminShippingView.vue') },
         { path: 'hero', component: () => import('./views/admin/AdminSlidesView.vue') },
+        { path: 'drops', component: () => import('./views/admin/AdminDropsView.vue') },
+        { path: 'drops/nieuw', component: () => import('./views/admin/AdminDropEditView.vue') },
+        { path: 'drops/:id(\\d+)', component: () => import('./views/admin/AdminDropEditView.vue'), props: true },
+        { path: 'drops/:id(\\d+)/live', component: () => import('./views/admin/AdminDropLiveView.vue'), props: true },
         { path: 'sync', component: () => import('./views/admin/AdminSyncView.vue') },
         {
           path: 'afbeeldingen',

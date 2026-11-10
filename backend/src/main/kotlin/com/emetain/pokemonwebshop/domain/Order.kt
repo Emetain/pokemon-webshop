@@ -38,6 +38,8 @@ import java.time.Instant
         Index(name = "idx_orders_cart_status", columnList = "cart_id, status"),
         Index(name = "idx_orders_stock_reserved_until", columnList = "stock_state, reserved_until"),
         Index(name = "idx_orders_email", columnList = "email"),
+        Index(name = "idx_orders_drop_id", columnList = "drop_id"),
+        Index(name = "idx_orders_drop_entry_id", columnList = "drop_entry_id"),
     ],
 )
 class Order(
@@ -161,6 +163,23 @@ class Order(
     /** Where the customer follows the parcel. Built from the code for PostNL, pasted by the admin for others. */
     @Column(length = 500)
     var trackingUrl: String? = null,
+
+    /** The drop this order was made in. Its stock comes from the drop, not from the normal stock. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "drop_id")
+    val drop: Drop? = null,
+
+    /** The waiting room entry of a drop order: paid products leave its drop cart, a new checkout replaces this one. */
+    @Column(name = "drop_entry_id")
+    val dropEntryId: Long? = null,
+
+    /** For drop limits: the email without dots or a +tag where those make no difference. See `DropRules.emailKey`. */
+    @Column(length = 254)
+    val emailKey: String? = null,
+
+    /** For drop limits: country, postcode and house number written one way. See `DropRules.addressKey`. */
+    @Column(length = 200)
+    val addressKey: String? = null,
 
     @OneToMany(mappedBy = "order", cascade = [CascadeType.ALL], orphanRemoval = true)
     @OrderBy("id ASC")

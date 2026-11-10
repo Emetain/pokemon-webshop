@@ -18,6 +18,7 @@ data class AppProperties(
     val shop: Shop,
     val checkout: Checkout = Checkout(),
     val payments: Payments = Payments(),
+    val drops: Drops = Drops(),
 ) {
     data class Mail(
         val from: String,
@@ -33,6 +34,17 @@ data class AppProperties(
     data class RateLimit(
         val maxAttempts: Int,
         val window: Duration,
+        /** Buckets that need another limit than the default, such as the waiting room that asks every few seconds. */
+        val buckets: Map<String, Bucket> = emptyMap(),
+    ) {
+        fun maxAttempts(bucket: String): Int = buckets[bucket]?.maxAttempts ?: maxAttempts
+
+        fun window(bucket: String): Duration = buckets[bucket]?.window ?: window
+    }
+
+    data class Bucket(
+        val maxAttempts: Int,
+        val window: Duration? = null,
     )
 
     data class Catalog(
@@ -105,4 +117,25 @@ data class AppProperties(
     ) {
         val configured: Boolean get() = secretKey.isNotBlank()
     }
+
+    data class Drops(
+        /** How often the drop scheduler looks at the clock, in Dutch time. "-" switches it off. */
+        val tickCron: String = "* * * * * *",
+        /** The admission speed of a new drop. The admin changes it per drop, also during the drop. */
+        val admitPerMinute: Int = 60,
+        /** The waiting room lets people through in batches this far apart. */
+        val admitInterval: Duration = Duration.ofSeconds(10),
+        /** How long someone who got through may shop and start a checkout. */
+        val accessTtl: Duration = Duration.ofMinutes(10),
+        /** How long a drop checkout holds the stock. Shorter than the shop, so unpaid stock goes back to the line sooner. */
+        val reservationTtl: Duration = Duration.ofMinutes(10),
+        /** Someone who hasn't asked for their place for this long isn't counted when the next batch is let through. */
+        val activeWindow: Duration = Duration.ofSeconds(75),
+        /** How long before the start the waiting room opens. */
+        val waitingRoomOpens: Duration = Duration.ofMinutes(30),
+        /** How long before the start the "herinner mij" mails go out. */
+        val reminderBefore: Duration = Duration.ofMinutes(15),
+        val visitorCookieName: String = "drop_visitor",
+        val accessCookieName: String = "drop_access",
+    )
 }
