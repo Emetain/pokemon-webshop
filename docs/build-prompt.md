@@ -47,7 +47,7 @@ These decisions came up while building and apply to every later phase. The phase
 - **Card images are never changed.** Scryfall's terms forbid covering, cropping, distorting, blurring or tinting images, and adding anything on top. Use `CardImage.vue` for every card image, and put prices, labels and badges below the image.
 - **Skipped on purpose:** TCG Pocket and digital Magic cards, because they aren't physical cards.
 - **Card lists:** use the sorting, filters and URL pattern of `CardFilters.vue` for new lists of cards. Filters and sorting live in the URL, so every view can be shared.
-- **Owned and missing cards:** a blue frame around the image of owned cards, with "In bezit" or "Gemist" below it. Never change the image itself. Use `CollectionControls.vue` for adding and removing.
+- **Owned and missing cards:** a blue frame around the image of owned cards, with "In bezit" below it. Missing cards get no label: the owner had "Gemist" taken out on 2026-11-10, and the collection filter and the list of missing cards say "Nog niet in bezit". Never change the image itself. Use `CollectionControls.vue` for adding and removing.
 - **Share page:** shows the first name, progress, cards and value. Never the full name, because that is also the name on orders.
 - **Home binder:** logged-out visitors see the most expensive Pokémon cards, logged-in customers their own most expensive cards. A choice always stays, and is made in My account only, not on the home page. The binder opens like a real one: page 1 next to the inside of the cover, then 2 and 3, then 4 and 5. A phone turns one page at a time.
 - **Card tiles:** logged-in customers get a + next to the price. It turns into `- count +` in the same element.
@@ -143,7 +143,7 @@ Frontend:
 - Home binder: the binder in the hero shows real cards and opens like a real binder, with two pages side by side where there's room. Logged-in customers see their most expensive cards by default, logged-out visitors see the most expensive Pokémon cards. Customers change what it shows in their settings. Nothing goes on top of the card images.
 - `/collectie`: overview per game with progress bars, total value, most valuable cards.
 - Value graph on `/collectie`, like a stock chart: the change over the chosen period, a line with a tooltip, and the periods 7D, 1M, 3M, 6M, 1J and Alles.
-- On set pages, logged-in users can see which cards they own and which are missing. A + button next to the price adds a card with one click, and then shows the count with a - in the same element. Greying out images isn't allowed for Magic under Scryfall's terms, so owned cards get a blue frame around the image and missing cards a "Gemist" label below it.
+- On set pages, logged-in users can see which cards they own and which are missing. A + button next to the price adds a card with one click, and then shows the count with a - in the same element. Greying out images isn't allowed for Magic under Scryfall's terms, so owned cards get a blue frame around the image and "In bezit" below it.
 - Toggle per set between "normale set" and "master set" progress.
 - `/collectie/pokedex`: a grid of all Pokémon with Pokédex number and name, filled slots show the image of one of the owned cards, filter per generation, and a progress bar per generation. Clicking a slot shows all cards of that Pokémon and which ones you own.
 - Missing-cards list per set, with a link to the matching singles in the shop (once products exist).

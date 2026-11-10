@@ -121,7 +121,7 @@ const router = createRouter({
           props: withQuery(...CARD_FILTERS, 'master', 'page'),
         },
         {
-          path: 'kaarten/:game/:setCode/gemist',
+          path: 'kaarten/:game/:setCode/nog-niet-in-bezit',
           name: 'set-missing',
           component: () => import('./views/collection/SetMissingView.vue'),
           props: withQuery('sort', 'category', 'color', 'rarity', 'variant', 'priced', 'master', 'page'),

@@ -24,7 +24,7 @@ Customers track what they own in all four games, see their progress and what it'
 - Card tiles: a + button next to the price for logged-in customers. Clicking it adds the card and shows the count with a - in the same element, while the + stays in its place.
 - Set pages: a blue frame around owned cards, "In bezit" or "Gemist" below the image, a progress panel with a toggle between normal and master set, a collection filter, and a button to add a whole page.
 - `/collectie`: total value, a value graph, progress per game, Pokédex progress, most valuable cards and all started sets.
-- `/kaarten/:game/:setCode/gemist`: the list of missing cards, with the usual sorting and filters.
+- `/kaarten/:game/:setCode/nog-niet-in-bezit` (`/gemist` until 2026-11-10): the list of missing cards, with the usual sorting and filters.
 - `/collectie/pokedex`: all 1,025 Pokémon with a filter and progress bar per generation. `/collectie/pokedex/:number` shows all cards of one Pokémon.
 - `/verlanglijst`: the card wishlist.
 - `/collectie/gedeeld/:slug`: the public page.
@@ -104,7 +104,7 @@ After the first review the owner reported that adding cards, the binder choice, 
 
 ## Decisions
 
-- **Owned cards get a blue frame,** chosen by the owner. There is a white gap between the frame and the image, so nothing touches the card. Every tile keeps room for the frame, so a row stays aligned. Missing cards show "Gemist" below the image.
+- **Owned cards get a blue frame,** chosen by the owner. There is a white gap between the frame and the image, so nothing touches the card. Every tile keeps room for the frame, so a row stays aligned. Missing cards showed "Gemist" below the image. On 2026-11-10 the owner had that label taken out, and the filter and the list were renamed "Nog niet in bezit".
 - **The share page shows the first name, progress, cards and value,** chosen by the owner. The profile name is also the name on orders, so the full name stays private. It has no value graph, because that shows when and how much someone added.
 - **The value graph is the owner's idea,** after the portfolio graph in the Collectr app. Card prices have no history, and saving all of them would add about 190,000 rows a day. So one value per customer per day is saved, and only from the day someone starts: this can't be worked out afterwards. Today's point is live, so a new card moves the line right away.
 - **The graph has no 1D button,** unlike Collectr, because there's one measurement a day. The periods are 7D, 1M, 3M, 6M, 1J and Alles.
