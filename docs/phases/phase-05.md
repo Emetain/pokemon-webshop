@@ -107,6 +107,18 @@ Put the `whsec_...` that `stripe listen` prints in `.env` as `STRIPE_WEBHOOK_SEC
 something, and pay on Stripe's test page with card `4242 4242 4242 4242`, any future date and any CVC, or choose iDEAL
 and "Authorize". The order turns paid within a few seconds, and the confirmation is in Mailpit at `localhost:8025`.
 
+When Homebrew refuses because the Command Line Tools are too old, download `stripe_<version>_mac-os_arm64.tar.gz` from
+[Stripe's releases on GitHub](https://github.com/stripe/stripe-cli/releases), check it against
+`stripe-mac-checksums.txt`, and put the `stripe` file in a folder on your `PATH`, such as `~/.local/bin`.
+
+The CLI login and the key in `.env` must belong to the same Stripe environment (test mode or a sandbox), or the webhooks
+never arrive. `stripe listen --api-key <the key from .env>` makes sure of that.
+
+**Managed Payments must be off.** Newer Stripe accounts have it on by default (Settings > Managed payments). It makes
+Stripe the seller, is meant for digital products, and refuses the payment methods the shop asks for: checkout then says
+"We konden de betaalpagina niet openen" (502), and the backend log shows "Unsupported parameter:
+payment_method_types". Switching it off needs no restart.
+
 ## Checks
 
 Checks with real data ran on throwaway databases and on ports 8095 to 8097 with a second Vite on 5174. All of them were
@@ -116,7 +128,7 @@ dropped or stopped afterwards. The backend on 8080 and Vite on 5173 were left al
 |-------|--------|
 | `./gradlew test` | 617 tests, 0 failed (see the note on the sync test below) |
 | `npm run build` | Passes |
-| Done when: a full test payment with the Stripe CLI and the mail in Mailpit | **Not done yet.** This machine has no Stripe key and no Stripe CLI, and `stripe login` needs the owner's account. The same road runs in the tests with events signed with the webhook secret, the way Stripe signs them: the order becomes paid, stock goes from reserved to sold, the cart empties and the confirmation mail goes out. To do with the owner, see "Testing a payment" |
+| Done when: a full test payment with the Stripe CLI and the mail in Mailpit | Done on 2026-11-11 with the owner, in a Stripe sandbox with `stripe listen`. Two card payments, for one and for two Elite Trainer Boxes: each webhook got 200, the order turned paid within a second, the stock went from reserved to sold (3 to 0 in the stock log), and the confirmation mail was in Mailpit. Processing, shipping and delivery afterwards worked, with the shipping mail. The first five tries got 502 because Managed Payments was on in the account (see "Testing a payment"); each released its stock right away. An expired session the shop didn't know got 200 and changed nothing |
 | Done when: an abandoned checkout releases its stock | Tests: the job leaves the reservation alone before 15 minutes, then closes the Stripe page and gives the stock back. A checkout that Stripe reports as paid keeps its stock, and the webhook then sells it. Going back from Stripe releases it at once |
 | Done when: refreshing the success page creates nothing twice | Tests: the success page only reads. The same webhook three times, also as `async_payment_succeeded`, sells the stock once and sends one mail. Two deliveries of the same event at the same moment sell it once |
 | Webhook security | A wrong secret, no signature, an old timestamp or a changed body gets 400 and changes nothing. An event for a session that isn't paid changes nothing either |

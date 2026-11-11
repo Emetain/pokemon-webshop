@@ -123,7 +123,9 @@ Without `STRIPE_SECRET_KEY` the shop works, but checkout says online payment isn
 3. Put the `whsec_...` that `stripe listen` prints in `.env` as `STRIPE_WEBHOOK_SECRET` and restart the backend.
 4. Order something and pay with card `4242 4242 4242 4242`, any future date and any CVC, or choose iDEAL and authorize the test payment. The order turns paid within seconds, and the confirmation mail is in Mailpit.
 
-In production, add a webhook endpoint in the Stripe dashboard for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`, pointing at `https://<your domain>/api/v1/payments/stripe/webhook`, and use its signing secret.
+If checkout says "We konden de betaalpagina niet openen", switch off Managed Payments in the Stripe dashboard (Settings > Managed payments). Newer accounts have it on by default, and it refuses the payment methods the shop asks for. More tips, such as installing the CLI without Homebrew, are under "Testing a payment" in [docs/phases/phase-05.md](docs/phases/phase-05.md).
+
+In production, add a webhook endpoint in the Stripe dashboard for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`, pointing at `https://<your domain>/api/v1/payments/stripe/webhook`, and use its signing secret. Managed Payments must be off in the live account too.
 
 ## Drops
 
