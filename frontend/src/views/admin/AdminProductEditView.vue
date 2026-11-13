@@ -3,6 +3,7 @@ import { computed, reactive, ref, useId, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Copy, ExternalLink } from 'lucide-vue-next'
 import CardPicker from '../../components/admin/CardPicker.vue'
+import MysteryBatchesPanel from '../../components/admin/MysteryBatchesPanel.vue'
 import ProductImages from '../../components/admin/ProductImages.vue'
 import StockPanel from '../../components/admin/StockPanel.vue'
 import CardImage from '../../components/catalog/CardImage.vue'
@@ -214,6 +215,14 @@ function onStock(stock) {
   product.value = { ...product.value, stock }
 }
 
+/** A mystery box batch changes the stock: read it again, and let the stock panel start over with it. */
+const stockKey = ref(0)
+async function refreshStock() {
+  const fresh = await adminShopApi.product(props.id)
+  product.value = { ...product.value, stock: fresh.stock }
+  stockKey.value++
+}
+
 watch(() => props.id, load, { immediate: true })
 watch(() => form.game, loadSets, { immediate: true })
 </script>
@@ -399,7 +408,13 @@ watch(() => form.game, loadSets, { immediate: true })
 
     <template v-if="product && !loading">
       <ProductImages :product="product" @change="fill" />
-      <StockPanel :product-id="product.id" :stock="product.stock" @change="onStock" />
+      <MysteryBatchesPanel
+        v-if="product.type === 'MYSTERY_BOX'"
+        :product-id="product.id"
+        :game="product.game ?? ''"
+        @stock="refreshStock"
+      />
+      <StockPanel :key="stockKey" :product-id="product.id" :stock="product.stock" @change="onStock" />
     </template>
   </div>
 </template>

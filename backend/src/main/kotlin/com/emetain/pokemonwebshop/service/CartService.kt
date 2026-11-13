@@ -46,7 +46,7 @@ class CartService(
         val item = cart.items.firstOrNull { it.product.id == productId }
         val inCart = item?.quantity ?: 0
         val max = CartRules.maxQuantity(product.stock.available)
-        if (inCart + quantity > max) throw tooMany(max, inCart)
+        if (inCart + quantity > max) throw tooMany(inCart)
         if (item == null) {
             cart.items.add(CartItem(cart, product, quantity, clock.instant()))
         } else {
@@ -69,7 +69,7 @@ class CartService(
             val product = item.product
             if (!ProductRules.canBuy(product)) throw notBuyable(product)
             val max = CartRules.maxQuantity(product.stock.available)
-            if (quantity > max) throw tooMany(max, null)
+            if (quantity > max) throw tooMany(null)
             item.quantity = quantity
         } else {
             item.quantity = quantity
@@ -155,12 +155,13 @@ class CartService(
         ApiException(HttpStatus.CONFLICT, "not_for_sale", "Dit product kun je nu niet bestellen.")
     }
 
-    private fun tooMany(max: Int, inCart: Int?) = ApiException(
+    /** Never says how many are left: the shop doesn't show its stock. */
+    private fun tooMany(inCart: Int?) = ApiException(
         HttpStatus.CONFLICT,
         "out_of_stock",
         when {
-            inCart != null && inCart > 0 -> "Er zijn er nog maar $max van dit product, en je hebt er al $inCart in je winkelwagen."
-            else -> "Er zijn er nog maar $max van dit product."
+            inCart != null && inCart > 0 -> "We hebben niet genoeg meer van dit product voor dit aantal. Je hebt er al $inCart in je winkelwagen."
+            else -> "We hebben niet genoeg meer van dit product voor dit aantal."
         },
     )
 }

@@ -1,10 +1,18 @@
 <script setup>
+import NewsletterForm from '../content/NewsletterForm.vue'
 import { footerInfoLinks, footerShopLinks } from '../../data/navigation'
 import { t } from '../../utils/i18n'
 </script>
 
 <template>
   <footer class="site-footer">
+    <div class="container newsletter-band">
+      <div>
+        <h2 class="column-title">{{ t('newsletter.title') }}</h2>
+        <p>{{ t('newsletter.intro') }}</p>
+      </div>
+      <NewsletterForm on-brand />
+    </div>
     <div class="container columns">
       <section>
         <h2 class="column-title">{{ t('footer.infoTitle') }}</h2>
@@ -51,6 +59,21 @@ import { t } from '../../utils/i18n'
 
 .site-footer :focus-visible {
   outline-color: var(--color-focus-on-brand);
+}
+
+.newsletter-band {
+  display: grid;
+  gap: var(--space-3) var(--space-6);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-brand-raised);
+}
+
+@media (min-width: 768px) {
+  .newsletter-band {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+    align-items: center;
+  }
 }
 
 .columns {

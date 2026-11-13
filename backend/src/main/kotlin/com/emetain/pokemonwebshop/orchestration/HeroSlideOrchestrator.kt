@@ -1,5 +1,11 @@
 package com.emetain.pokemonwebshop.orchestration
 
+import com.emetain.pokemonwebshop.service.ai.AiSlideService
+import com.emetain.pokemonwebshop.service.ai.AiCost
+import com.emetain.pokemonwebshop.dto.AiStatusDto
+import com.emetain.pokemonwebshop.dto.AiSlideRequest
+import com.emetain.pokemonwebshop.domain.User
+import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.domain.Drop
 import com.emetain.pokemonwebshop.domain.DropStatus
 import com.emetain.pokemonwebshop.domain.HeroSlide
@@ -18,8 +24,25 @@ import java.time.Clock
 class HeroSlideOrchestrator(
     private val slideService: HeroSlideService,
     private val dropRepository: DropRepository,
+    private val aiSlideService: AiSlideService,
+    private val properties: AppProperties,
     private val clock: Clock,
 ) {
+
+    fun aiStatus(): AiStatusDto {
+        val budget = if (aiSlideService.available) aiSlideService.budget() else null
+        return AiStatusDto(
+            available = aiSlideService.available,
+            spentUsd = AiCost.dollars(budget?.spentMicros ?: 0),
+            limitUsd = properties.openai.monthlyLimitUsd,
+            textModel = properties.openai.textModel,
+            imageModel = properties.openai.imageModel,
+        )
+    }
+
+    /** A slide written by AI, switched off until the admin approves it. */
+    fun aiDraft(request: AiSlideRequest, user: User): AdminHeroSlideDto =
+        admin(aiSlideService.draftSlide(request.prompt, request.withImage, user))
 
     /** Live drops first, then upcoming drops by start time, then the slides from admin in their order. */
     @Transactional(readOnly = true)

@@ -323,6 +323,13 @@ object SetProductTemplates {
             ProductType.BOOSTER_BOX to "Booster Box",
             ProductType.STARTER_DECK to "Starter Deck",
         ),
+        Game.RIFTBOUND to linkedMapOf(
+            ProductType.BOOSTER_PACK to "Booster Pack",
+            ProductType.SLEEVED_BOOSTER to "Sleeved Booster Pack",
+            ProductType.BOOSTER_BOX to "Booster Display",
+            ProductType.STARTER_DECK to "Champion Deck",
+            ProductType.COLLECTION_BOX to "Vault Bundle",
+        ),
     )
 
     /** Ticked by default: what nearly every set of the game has. */
@@ -337,6 +344,7 @@ object SetProductTemplates {
         Game.MTG to setOf(ProductType.BOOSTER_PACK, ProductType.BOOSTER_BOX, ProductType.BOOSTER_BUNDLE),
         Game.LORCANA to setOf(ProductType.BOOSTER_PACK, ProductType.BOOSTER_BOX, ProductType.STARTER_DECK),
         Game.ONE_PIECE to setOf(ProductType.BOOSTER_PACK, ProductType.BOOSTER_BOX),
+        Game.RIFTBOUND to setOf(ProductType.BOOSTER_PACK, ProductType.BOOSTER_BOX),
     )
 
     fun of(game: Game): List<Triple<ProductType, String, Boolean>> =

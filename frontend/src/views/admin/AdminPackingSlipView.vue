@@ -86,6 +86,9 @@ onMounted(async () => {
               <span v-if="line.preOrder" class="pre-order">
                 {{ t('admin.packing.preOrderNote', { date: line.shipsFrom ? formatDate(line.shipsFrom) : '?' }) }}
               </span>
+              <span v-for="(box, index) in line.mysteryBoxes" :key="index" class="pre-order">
+                {{ t('admin.packing.mysteryBox', { number: index + 1, name: box }) }}
+              </span>
             </td>
           </tr>
         </tbody>

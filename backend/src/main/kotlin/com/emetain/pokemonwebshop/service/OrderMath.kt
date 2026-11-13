@@ -12,7 +12,10 @@ data class PricedLine(val unitPriceCents: Long, val quantity: Int) {
 data class ShippingPrice(val priceCents: Long, val freeFromCents: Long?)
 
 data class OrderTotals(
+    /** The products before any discount. */
     val subtotalCents: Long,
+    /** What a discount code takes off the products. Never more than [subtotalCents], never on shipping. */
+    val discountCents: Long,
     val shippingCents: Long,
     val totalCents: Long,
     /** The VAT included in the total. */
@@ -27,19 +30,26 @@ object OrderMath {
     /** 21%, the Dutch standard rate. Every product in the shop has it. */
     private val VAT_RATE = BigDecimal("0.21")
 
-    fun totals(lines: List<PricedLine>, shipping: ShippingPrice?): OrderTotals {
+    /**
+     * [discountCents] comes from a discount code, see `DiscountRules`. It only lowers the products: shipping stays
+     * what it costs, and free shipping goes by what the products cost after the discount.
+     */
+    fun totals(lines: List<PricedLine>, shipping: ShippingPrice?, discountCents: Long = 0): OrderTotals {
         require(lines.all { it.unitPriceCents >= 0 && it.quantity > 0 }) { "Every line needs a price and a quantity" }
+        require(discountCents >= 0) { "A discount can't be negative" }
         val subtotal = lines.sumOf { it.totalCents }
-        val freeShipping = shipping?.freeFromCents?.let { subtotal >= it } ?: false
+        val discount = discountCents.coerceAtMost(subtotal)
+        val products = subtotal - discount
+        val freeShipping = shipping?.freeFromCents?.let { products >= it } ?: false
         val shippingCents = when {
             shipping == null || lines.isEmpty() || freeShipping -> 0
             else -> shipping.priceCents
         }
-        val total = subtotal + shippingCents
+        val total = products + shippingCents
         val remaining = shipping?.freeFromCents
             ?.takeIf { !freeShipping && lines.isNotEmpty() }
-            ?.let { it - subtotal }
-        return OrderTotals(subtotal, shippingCents, total, vatIncluded(total), remaining)
+            ?.let { it - products }
+        return OrderTotals(subtotal, discount, shippingCents, total, vatIncluded(total), remaining)
     }
 
     /** The VAT in an amount that includes it: 21/121 of it, rounded half up to a cent. */

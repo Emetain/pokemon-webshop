@@ -8,6 +8,7 @@ import com.emetain.pokemonwebshop.dto.CartLineDto
 import com.emetain.pokemonwebshop.dto.CheckoutStartDto
 import com.emetain.pokemonwebshop.dto.DropCartDto
 import com.emetain.pokemonwebshop.dto.DropCartLimitDto
+import com.emetain.pokemonwebshop.dto.DropPriceDto
 import com.emetain.pokemonwebshop.dto.StartDropCheckoutRequest
 import com.emetain.pokemonwebshop.exception.ApiException
 import com.emetain.pokemonwebshop.repository.OrderRepository
@@ -50,9 +51,9 @@ class DropShopOrchestrator(
 ) {
 
     @Transactional
-    fun cart(slug: String, viewer: User?, httpRequest: HttpServletRequest, country: String?): DropCartDto {
+    fun cart(slug: String, viewer: User?, httpRequest: HttpServletRequest, country: String?, discountCode: String? = null): DropCartDto {
         val (drop, entry) = access(slug, viewer, httpRequest)
-        return dto(drop, entry, cartOrchestrator.country(viewer, country))
+        return dto(drop, entry, cartOrchestrator.country(viewer, country), discountCode, viewer)
     }
 
     @Transactional
@@ -95,7 +96,7 @@ class DropShopOrchestrator(
     }
 
     /** The drop cart in the shape of the shop's cart, so the checkout page shows both the same way. */
-    private fun dto(drop: Drop, entry: DropQueueEntry, country: String): DropCartDto {
+    private fun dto(drop: Drop, entry: DropQueueEntry, country: String, discountCode: String? = null, viewer: User? = null): DropCartDto {
         val ordered = dropCartService.orderedBy(drop, entry)
         val lines = entry.items.map { item ->
             val dropProduct = item.dropProduct
@@ -124,8 +125,7 @@ class DropShopOrchestrator(
                 onSale = shopPrice != null && price != null && price < shopPrice,
                 quantity = item.quantity,
                 lineTotalCents = price?.let { it * item.quantity },
-                available = available,
-                maxQuantity = CartRules.maxQuantity(available),
+                maxQuantity = if (available > 0 && price != null) CartRules.MAX_PER_LINE else 0,
                 canBuy = available > 0 && price != null,
                 preOrder = product.preOrder,
                 shipsFrom = if (product.preOrder) product.shipsFrom ?: product.releaseDate else null,
@@ -136,7 +136,7 @@ class DropShopOrchestrator(
         val orderedTotal = ordered.values.sum()
         val inCartTotal = inCart.values.sum()
         return DropCartDto(
-            cart = cartOrchestrator.dto(lines, country),
+            cart = cartOrchestrator.dto(lines, country, discountCode, viewer, drop = true),
             limits = drop.products.map { dropProduct ->
                 val mine = inCart[dropProduct.id] ?: 0
                 val orderedProduct = ordered[dropProduct.product.id] ?: 0
@@ -147,6 +147,11 @@ class DropShopOrchestrator(
                     inCart = mine,
                     room = DropRules.roomLeft(dropProduct.maxPerCustomer, drop.maxPerCustomer, orderedProduct, orderedTotal, inCartTotal - mine),
                 )
+            },
+            prices = drop.products.map { dropProduct ->
+                val shopPrice = ProductRules.shownPriceCents(dropProduct.product)
+                val price = dropProduct.priceCents ?: shopPrice
+                DropPriceDto(dropProduct.id, price, shopPrice?.takeIf { price != null && it > price })
             },
             maxPerCustomer = drop.maxPerCustomer,
             orderedTotal = orderedTotal,

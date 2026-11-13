@@ -27,8 +27,16 @@ class CartController(
 ) {
 
     @GetMapping
-    fun get(@CurrentUser viewer: User?, request: HttpServletRequest, @RequestParam(required = false) country: String?): CartDto =
-        cartOrchestrator.get(viewer, request, country)
+    fun get(
+        @CurrentUser viewer: User?,
+        request: HttpServletRequest,
+        @RequestParam(required = false) country: String?,
+        @RequestParam(required = false) discountCode: String?,
+    ): CartDto = cartOrchestrator.get(viewer, request, country, discountCode?.take(MAX_CODE))
+
+    private companion object {
+        const val MAX_CODE = 60
+    }
 
     @PostMapping("/items")
     fun add(

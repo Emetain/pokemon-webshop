@@ -70,12 +70,21 @@ services:
       MEDIA_DIRECTORY: /app/media
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      SHOP_EMAIL: ${SHOP_EMAIL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MONTHLY_LIMIT_USD: ${OPENAI_MONTHLY_LIMIT_USD:-5}
+      OPENAI_TEXT_MODEL: ${OPENAI_TEXT_MODEL:-gpt-6.1-terra}
+      OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-2.6-flare}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-6-luna}
+      OPENAI_CHAT_MONTHLY_LIMIT_USD: ${OPENAI_CHAT_MONTHLY_LIMIT_USD:-3}
       CATALOG_SYNC_CRON: ${CATALOG_SYNC_CRON:-0 0 3 * * *}
+      RELEASE_SUGGESTION_CRON: ${RELEASE_SUGGESTION_CRON:-0 45 4 * * *}
       COLLECTION_SNAPSHOT_CRON: ${COLLECTION_SNAPSHOT_CRON:-0 0 7 * * *}
       TCGDEX_BASE_URL: ${TCGDEX_BASE_URL:-https://api.tcgdex.net/v2}
       SCRYFALL_BASE_URL: ${SCRYFALL_BASE_URL:-https://api.scryfall.com}
       LORCAST_BASE_URL: ${LORCAST_BASE_URL:-https://api.lorcast.com/v0}
       OPTCG_BASE_URL: ${OPTCG_BASE_URL:-https://optcgapi.com/api}
+      TCGCSV_BASE_URL: ${TCGCSV_BASE_URL:-https://tcgcsv.com}
       ECB_BASE_URL: ${ECB_BASE_URL:-https://www.ecb.europa.eu}
       POKEAPI_BASE_URL: ${POKEAPI_BASE_URL:-https://pokeapi.co/api/v2}
       CARDMARKET_PRODUCTS_BASE_URL: ${CARDMARKET_PRODUCTS_BASE_URL:-https://downloads.s3.cardmarket.com}

@@ -2,8 +2,11 @@ package com.emetain.pokemonwebshop.orchestration
 
 import com.emetain.pokemonwebshop.domain.Cart
 import com.emetain.pokemonwebshop.domain.DEFAULT_COUNTRY
+import com.emetain.pokemonwebshop.domain.Game
+import com.emetain.pokemonwebshop.domain.ProductType
 import com.emetain.pokemonwebshop.domain.SUPPORTED_COUNTRIES
 import com.emetain.pokemonwebshop.domain.User
+import com.emetain.pokemonwebshop.dto.CartDiscountDto
 import com.emetain.pokemonwebshop.dto.CartDto
 import com.emetain.pokemonwebshop.dto.CartItemRequest
 import com.emetain.pokemonwebshop.dto.CartLineDto
@@ -12,6 +15,9 @@ import com.emetain.pokemonwebshop.service.CartCookieService
 import com.emetain.pokemonwebshop.service.CartOwner
 import com.emetain.pokemonwebshop.service.CartRules
 import com.emetain.pokemonwebshop.service.CartService
+import com.emetain.pokemonwebshop.service.DiscountCodeService
+import com.emetain.pokemonwebshop.service.DiscountLine
+import com.emetain.pokemonwebshop.service.DiscountQuote
 import com.emetain.pokemonwebshop.service.OrderMath
 import com.emetain.pokemonwebshop.service.PaymentMethods
 import com.emetain.pokemonwebshop.service.PricedLine
@@ -29,11 +35,15 @@ class CartOrchestrator(
     private val cartService: CartService,
     private val cartCookieService: CartCookieService,
     private val shippingRateService: ShippingRateService,
+    private val discountCodeService: DiscountCodeService,
 ) {
 
+    /** With [discountCode], the totals show what that code takes off, or why it doesn't apply. */
     @Transactional(readOnly = true)
-    fun get(viewer: User?, request: HttpServletRequest, country: String?): CartDto =
-        dto(cartService.find(owner(viewer, request)), country(viewer, country))
+    fun get(viewer: User?, request: HttpServletRequest, country: String?, discountCode: String? = null): CartDto {
+        val cart = cartService.find(owner(viewer, request))
+        return dto(lines(cart), country(viewer, country), discountCode, viewer, drop = false)
+    }
 
     @Transactional
     fun add(viewer: User?, request: HttpServletRequest, body: CartItemRequest, country: String?): ResponseEntity<CartDto> {
@@ -55,9 +65,11 @@ class CartOrchestrator(
         CartOwner(viewer, if (viewer == null) cartCookieService.readToken(request) else null)
 
     /** Call this inside a transaction. The totals use today's prices: an order copies them at checkout. */
-    fun dto(cart: Cart?, country: String): CartDto {
+    fun dto(cart: Cart?, country: String): CartDto = dto(lines(cart), country)
+
+    private fun lines(cart: Cart?): List<CartLineDto> {
         val items = cart?.items.orEmpty()
-        val lines = items.map { item ->
+        return items.map { item ->
             val product = item.product
             val available = product.stock.available
             val canBuy = ProductRules.canBuy(product)
@@ -78,27 +90,38 @@ class CartOrchestrator(
                 onSale = ProductRules.onSale(product.priceCents, product.salePriceCents),
                 quantity = item.quantity,
                 lineTotalCents = unitPrice?.let { it * item.quantity },
-                available = available.coerceAtLeast(0),
-                maxQuantity = if (canBuy) CartRules.maxQuantity(available) else 0,
+                maxQuantity = if (canBuy) CartRules.MAX_PER_LINE else 0,
                 canBuy = canBuy,
                 preOrder = product.preOrder,
                 shipsFrom = if (product.preOrder) product.shipsFrom ?: product.releaseDate else null,
                 problem = CartRules.problem(item.quantity, canBuy, available)?.name,
             )
         }
-        return dto(lines, country)
     }
 
-    /** Totals, shipping and payment methods for lines that are priced already, from the shop cart or a drop cart. */
-    fun dto(lines: List<CartLineDto>, country: String): CartDto {
-        val priced = lines.filter { it.problem == null && it.unitPriceCents != null }
-            .map { PricedLine(it.unitPriceCents!!, it.quantity) }
+    /**
+     * Totals, shipping and payment methods for lines that are priced already, from the shop cart or a drop cart.
+     * With [discountCode], the totals include what the code takes off. Checkout checks the code again.
+     */
+    fun dto(
+        lines: List<CartLineDto>,
+        country: String,
+        discountCode: String? = null,
+        viewer: User? = null,
+        drop: Boolean = false,
+    ): CartDto {
+        val payable = lines.filter { it.problem == null && it.unitPriceCents != null }
+        val priced = payable.map { PricedLine(it.unitPriceCents!!, it.quantity) }
+        val quote = discountCode?.takeIf { it.isNotBlank() && payable.isNotEmpty() }
+            ?.let { discountCodeService.quote(it, payable.map(::discountLine), viewer, drop) }
         val rate = shippingRateService.active(country)
-        val totals = OrderMath.totals(priced, rate?.let { ShippingPrice(it.priceCents, it.freeFromCents) })
+        val totals = OrderMath.totals(priced, rate?.let { ShippingPrice(it.priceCents, it.freeFromCents) }, quote?.amountCents ?: 0)
         return CartDto(
             items = lines,
             itemCount = lines.sumOf { it.quantity },
             subtotalCents = totals.subtotalCents,
+            discountCents = totals.discountCents,
+            discount = quote?.let(::discountDto),
             shipping = rate?.let {
                 CartShippingDto(
                     country = it.country,
@@ -117,6 +140,16 @@ class CartOrchestrator(
             paymentMethods = PaymentMethods.forCountry(country),
         )
     }
+
+    private fun discountLine(line: CartLineDto) = DiscountLine(
+        unitPriceCents = line.unitPriceCents!!,
+        quantity = line.quantity,
+        game = line.game?.let(Game::fromSlug),
+        type = ProductType.valueOf(line.type),
+    )
+
+    private fun discountDto(quote: DiscountQuote) =
+        CartDiscountDto(quote.code, quote.amountCents, applied = quote.problem == null, message = quote.problem)
 
     /** The country from the region setting, else the customer's, else the Netherlands. */
     fun country(viewer: User?, requested: String?): String =

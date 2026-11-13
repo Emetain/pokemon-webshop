@@ -16,6 +16,7 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -44,8 +45,11 @@ class DropIntegrationTest : DropTestSupport() {
         assertTrue(list["upcoming"].any { it["slug"].asText() == drop.slug })
         val shown = detail(drop)
         assertEquals("SCHEDULED", shown["status"].asText())
-        assertEquals(6, shown["products"][0]["available"].asInt())
-        assertEquals(9995, shown["products"][0]["priceCents"].asLong())
+        // The drop page never shows how many there are, nor the price before it is your turn.
+        for (field in listOf("available", "allocated", "reserved", "priceCents", "regularPriceCents")) {
+            assertFalse(shown["products"][0].has(field), "the drop page has no $field")
+        }
+        assertFalse(shown["products"][0]["allReserved"].asBoolean())
 
         // Less goes back, never below what is sold or held.
         mockMvc.perform(put("/v1/admin/drops/${drop.id}/products/${drop.dropProductIds[0]}").cookie(admin).json(mapOf("allocated" to 2)))
@@ -68,7 +72,7 @@ class DropIntegrationTest : DropTestSupport() {
         mockMvc.perform(post("/v1/admin/drops/${drop.id}/publish").cookie(admin)).andExpect(status().isBadRequest)
         changeDrop(drop.id) { it.startsAt = Instant.now().plusSeconds(600) }
         mockMvc.perform(post("/v1/admin/drops/${drop.id}/publish").cookie(admin)).andExpect(status().isOk)
-        assertEquals(4995, detail(drop)["products"][0]["priceCents"].asLong())
+        assertEquals(4995, dropProduct(drop.id, drop.dropProductIds[0]).priceCents)
     }
 
     @Test
@@ -186,11 +190,14 @@ class DropIntegrationTest : DropTestSupport() {
         assertEquals(2, cart["cart"]["itemCount"].asInt())
         assertEquals(19990, cart["cart"]["subtotalCents"].asLong())
         assertEquals(2, cart["limits"][0]["room"].asInt(), "the limit is 2, in the cart included")
+        assertEquals(drop.dropProductIds[0], cart["prices"][0]["dropProductId"].asLong())
+        assertEquals(9995, cart["prices"][0]["priceCents"].asLong(), "the price comes with the drop cart, once it is your turn")
+        assertFalse(cart["cart"]["items"][0].has("available"))
 
         val started = checkout(drop, buyer).andExpect(status().isCreated).json()
         val number = started["orderNumber"].asText()
         assertEquals(2, dropProduct(drop.id, drop.dropProductIds[0]).reserved)
-        assertEquals(3, detail(drop)["products"][0]["available"].asInt(), "nog 3 over")
+        assertEquals(3, dropProduct(drop.id, drop.dropProductIds[0]).available)
         val request = gateway.sessions.getValue(FakePaymentGateway.sessionId(number))
         assertContains(request.cancelUrl, "drop=${drop.slug}")
 
@@ -217,7 +224,7 @@ class DropIntegrationTest : DropTestSupport() {
         transactions.executeWithoutResult { orderRepository.findByNumber(number)!!.reservedUntil = Instant.now().minusSeconds(60) }
         checkoutJobs.releaseExpiredReservations()
         assertEquals(0, dropProduct(drop.id, drop.dropProductIds[0]).reserved)
-        assertEquals(3, detail(drop)["products"][0]["available"].asInt())
+        assertEquals(3, dropProduct(drop.id, drop.dropProductIds[0]).available)
 
         pay(number).andExpect(status().isOk)
         val order = orderRepository.findByNumber(number)!!
@@ -433,7 +440,7 @@ class DropIntegrationTest : DropTestSupport() {
         // More stock during the drop is fine.
         mockMvc.perform(put("/v1/admin/drops/${drop.id}/products/${drop.dropProductIds[0]}").cookie(admin).json(mapOf("allocated" to 5, "maxPerCustomer" to 1)))
             .andExpect(status().isOk)
-        assertEquals(5, detail(drop)["products"][0]["allocated"].asInt())
+        assertEquals(5, dropProduct(drop.id, drop.dropProductIds[0]).allocated)
     }
 
     @Test

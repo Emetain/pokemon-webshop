@@ -34,8 +34,7 @@ data class CartLineDto(
     val onSale: Boolean,
     val quantity: Int,
     val lineTotalCents: Long?,
-    val available: Int,
-    /** The most this line can go up to. */
+    /** The most this line can go up to: 99, or 0 when it can't be bought. Not the stock: the shop never shows that. */
     val maxQuantity: Int,
     val canBuy: Boolean,
     val preOrder: Boolean,
@@ -57,7 +56,12 @@ data class CartShippingDto(
 data class CartDto(
     val items: List<CartLineDto>,
     val itemCount: Int,
+    /** The products, before a discount code. */
     val subtotalCents: Long,
+    /** What the discount code takes off. 0 without a code, or when it doesn't apply. */
+    val discountCents: Long,
+    /** The discount code asked for, with its amount or why it doesn't apply. */
+    val discount: CartDiscountDto?,
     /** Null when the shop doesn't ship to the chosen country. */
     val shipping: CartShippingDto?,
     val totalCents: Long,

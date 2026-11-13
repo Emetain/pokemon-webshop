@@ -5,6 +5,9 @@ import java.time.Instant
 /** A product line on the payment page. */
 data class PaymentLine(val name: String, val unitAmountCents: Long, val quantity: Int, val imageUrl: String?)
 
+/** A discount code on the payment page: [amountCents] off the products, never off shipping. */
+data class PaymentDiscount(val code: String, val amountCents: Long)
+
 data class CheckoutRequest(
     val orderNumber: String,
     val email: String,
@@ -15,6 +18,7 @@ data class CheckoutRequest(
     val successUrl: String,
     val cancelUrl: String,
     val expiresAt: Instant,
+    val discount: PaymentDiscount? = null,
 )
 
 data class CheckoutSession(val id: String, val url: String, val expiresAt: Instant)

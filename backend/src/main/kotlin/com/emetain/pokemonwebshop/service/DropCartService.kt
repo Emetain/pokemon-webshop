@@ -97,7 +97,7 @@ class DropCartService(
             HttpStatus.CONFLICT,
             "out_of_stock",
             when {
-                dropProduct.available > 0 -> "Er zijn er nog maar ${dropProduct.available} van ${dropProduct.product.name}."
+                dropProduct.available > 0 -> "Van ${dropProduct.product.name} hebben we niet genoeg meer voor dit aantal."
                 dropProduct.reserved > 0 -> "${dropProduct.product.name} is op dit moment helemaal gereserveerd. Er kan nog iets vrijkomen."
                 else -> "${dropProduct.product.name} is uitverkocht."
             },

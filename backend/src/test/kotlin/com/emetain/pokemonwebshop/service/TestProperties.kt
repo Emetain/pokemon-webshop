@@ -27,6 +27,7 @@ fun testCatalogProperties(baseUrl: String = "http://localhost") = AppProperties.
     scryfall = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
     lorcast = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
     optcg = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
+    tcgcsv = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
     ecb = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
     pokeapi = AppProperties.CatalogSource(baseUrl, Duration.ZERO),
     importPokedexOnStart = false,

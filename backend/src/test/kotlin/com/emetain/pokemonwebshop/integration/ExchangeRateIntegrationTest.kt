@@ -11,6 +11,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.test.context.TestPropertySource
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -20,6 +21,11 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import kotlin.test.assertEquals
 
+/**
+ * A mock bean gives this class its own Spring context, so it gets its own database too. On the shared one, its
+ * create-drop would reset the id sequences under the other context, which then hands out ids twice.
+ */
+@TestPropertySource(properties = ["spring.datasource.url=jdbc:h2:mem:exchange-rates;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=20000"])
 class ExchangeRateIntegrationTest : IntegrationTest() {
 
     @MockBean

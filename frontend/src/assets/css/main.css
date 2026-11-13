@@ -49,6 +49,9 @@
   --game-mtg-ink: #ffffff;
   --game-one-piece: #d3263d;
   --game-one-piece-ink: #ffffff;
+  /* Riftbound: the bronze of its card frames, dark enough for white text. */
+  --game-riftbound: #8f5b00;
+  --game-riftbound-ink: #ffffff;
 
   /* Drop colours: the background of the hero slide of a drop, chosen per drop, so a drop stands apart from the
      blue hero of the shop. Each runs from the first shade to the -end shade: a gradient you only just see. */
@@ -137,6 +140,11 @@
 [data-game='one-piece'] {
   --accent: var(--game-one-piece);
   --accent-ink: var(--game-one-piece-ink);
+}
+
+[data-game='riftbound'] {
+  --accent: var(--game-riftbound);
+  --accent-ink: var(--game-riftbound-ink);
 }
 
 /* A drop in its colour. --accent is the solid shade, for what can't show a gradient. */
@@ -436,6 +444,8 @@ textarea.admin-input {
 }
 
 .admin-table-scroll {
+  /* Relative, so a visually hidden label in a cell stays inside the scroll box instead of widening the page. */
+  position: relative;
   margin-top: var(--space-3);
   overflow-x: auto;
 }

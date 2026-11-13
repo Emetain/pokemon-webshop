@@ -45,7 +45,7 @@ class TestMailConfig {
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestMailConfig::class, TestPaymentConfig::class)
+@Import(TestMailConfig::class, TestPaymentConfig::class, TestAiConfig::class, TestTcgplayerConfig::class)
 abstract class IntegrationTest {
 
     @Autowired

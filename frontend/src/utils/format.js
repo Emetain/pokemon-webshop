@@ -69,3 +69,29 @@ export function formatNumber(number) {
 export function formatPercent(percent) {
   return `${percentFormat.format(percent)}%`
 }
+
+const monthFormat = new Intl.DateTimeFormat('nl-NL', { month: 'long', year: 'numeric', timeZone: 'Europe/Amsterdam' })
+const weekdayFormat = new Intl.DateTimeFormat('nl-NL', { weekday: 'short', timeZone: 'Europe/Amsterdam' })
+const shortMonthFormat = new Intl.DateTimeFormat('nl-NL', { month: 'short', timeZone: 'Europe/Amsterdam' })
+const dayFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', timeZone: 'Europe/Amsterdam' })
+
+/** "november 2026", for a date such as `2026-11-28`. */
+export function formatMonth(date) {
+  return monthFormat.format(new Date(date))
+}
+
+/** The parts of a date stamp: "za", "28", "nov". */
+export function dateParts(date) {
+  const value = new Date(date)
+  return {
+    weekday: weekdayFormat.format(value).replace('.', ''),
+    day: dayFormat.format(value),
+    month: shortMonthFormat.format(value).replace('.', ''),
+  }
+}
+
+/** Whole days from today (in Dutch time) to a date such as `2026-11-28`. Negative for a date that passed. */
+export function daysUntil(date, now = new Date()) {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Amsterdam' }).format(now)
+  return Math.round((Date.parse(date) - Date.parse(today)) / 86_400_000)
+}

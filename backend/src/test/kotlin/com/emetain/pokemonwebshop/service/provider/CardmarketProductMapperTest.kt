@@ -59,6 +59,11 @@ class CardmarketProductMapperTest {
             "Magic Fatpack|Foundations Fat Pack Bundle|BOOSTER_BUNDLE",
             "One Piece Preconstructed Decks|Starter Deck: Red Zoro|STARTER_DECK",
             "Lorcana Gift Set|Elsa Gift Box|COLLECTION_BOX",
+            "Riftbound Booster|Radiance Booster|BOOSTER_PACK",
+            "Riftbound Booster|Radiance Sleeved Booster|SLEEVED_BOOSTER",
+            "Riftbound Display|Radiance Booster Box|BOOSTER_BOX",
+            "Riftbound Champion Decks|Vi Champion Deck|STARTER_DECK",
+            "Riftbound Riftbound Box Sets|Radiance Vault|COLLECTION_BOX",
         ],
     )
     fun `categories become product types`(category: String, name: String, type: ProductType) {
@@ -67,6 +72,7 @@ class CardmarketProductMapperTest {
 
     @Test
     fun `coins, lots and complete sets are not products the shop sells`() {
+        assertNull(CardmarketProductMapper.typeOf("RB Set", "Radiance: Full Set"))
         assertNull(CardmarketProductMapper.typeOf("Pokémon Coins", "Pikachu Coin"))
         assertNull(CardmarketProductMapper.typeOf("MtG Set", "Alpha Complete Set"))
         assertNull(CardmarketProductMapper.typeOf("One Piece Lots", "Lot"))
@@ -86,6 +92,10 @@ class CardmarketProductMapperTest {
             "Phantasmal Flames Build & Battle Box Display|COLLECTION_BOX",
             "Wilds Unknown Japanese Booster Box|BOOSTER_BOX",
             "Reality Fracture Promo Pack|BOOSTER_PACK",
+            "Origins Booster (French)|BOOSTER_PACK",
+            "Vendetta Booster Box (Chinese, Jumbo)|BOOSTER_BOX",
+            "Radiance Case (6x Booster Box)|BOOSTER_BOX",
+            "Vendetta Nexus Night Promo Booster|BOOSTER_PACK",
         ],
     )
     fun `products from outside Europe and cartons of other products stay out`(name: String, type: ProductType) {

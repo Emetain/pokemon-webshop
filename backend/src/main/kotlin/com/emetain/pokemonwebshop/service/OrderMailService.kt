@@ -187,11 +187,15 @@ object OrderMails {
         "${line.quantity} × ${line.productName}$preOrder: ${Money.format(line.lineTotalCents)}"
     }
 
-    private fun totalsText(order: Order) = listOf(
+    private fun totalsText(order: Order) = listOfNotNull(
         "Subtotaal: ${Money.format(order.subtotalCents)}",
+        discountLabel(order)?.let { "$it: −${Money.format(order.discountCents)}" },
         "Verzending: ${if (order.shippingCents == 0L) "gratis" else Money.format(order.shippingCents)}",
         "Totaal: ${Money.format(order.totalCents)} (waarvan ${Money.format(order.vatCents)} btw)",
     ).joinToString("\n")
+
+    private fun discountLabel(order: Order): String? =
+        if (order.discountCents > 0) "Korting${order.discountCodeText?.let { " ($it)" }.orEmpty()}" else null
 
     private fun addressText(order: Order) =
         "Verzendadres:\n${order.customerName}\n${order.street} ${order.houseNumber}\n${order.postcode} ${order.city}\n${country(order.country)}"
@@ -216,6 +220,7 @@ object OrderMails {
         }
         return "<table role=\"presentation\" width=\"100%\" style=\"border-collapse:collapse;margin:0 0 16px\">" +
             row("Subtotaal", Money.format(order.subtotalCents)) +
+            discountLabel(order)?.let { row(esc(it), "−${Money.format(order.discountCents)}") }.orEmpty() +
             row("Verzending", if (order.shippingCents == 0L) "Gratis" else Money.format(order.shippingCents)) +
             row("Totaal", Money.format(order.totalCents), strong = true) +
             "<tr><td colspan=\"2\" style=\"color:$SOFT;font-size:13px\">Inclusief ${Money.format(order.vatCents)} btw</td></tr></table>"

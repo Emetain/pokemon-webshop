@@ -65,7 +65,7 @@ interface CollectionEntryRepository : JpaRepository<CollectionEntry, Long> {
     /** The cards in the most collections. Without an image they can't go in the home binder. */
     @Query(
         "select c.id from CollectionEntry e join e.card c " +
-            "where c.imageSmallUrl is not null or c.customImageUrl is not null " +
+            "where c.imageSmallUrl is not null or c.customImageUrl is not null or c.foundImageSmallUrl is not null " +
             "group by c.id, c.sortPriceCents " +
             "order by count(distinct e.user.id) desc, c.sortPriceCents desc nulls last, c.id",
     )

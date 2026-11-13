@@ -41,6 +41,7 @@ object CardmarketProductMapper {
         Game.MTG -> 1
         Game.ONE_PIECE -> 18
         Game.LORCANA -> 19
+        Game.RIFTBOUND -> 22
     }
 
     fun parse(json: JsonNode): List<CardmarketProduct> =
@@ -65,18 +66,19 @@ object CardmarketProductMapper {
     fun typeOf(category: String, name: String): ProductType? {
         val lowerName = name.lowercase()
         return when (category.lowercase()) {
-            "pokémon booster", "magic booster", "one piece booster", "lorcana booster" ->
+            "pokémon booster", "magic booster", "one piece booster", "lorcana booster", "riftbound booster" ->
                 if ("sleeved booster" in lowerName) ProductType.SLEEVED_BOOSTER else ProductType.BOOSTER_PACK
             "pokémon display" ->
                 if ("booster bundle" in lowerName) ProductType.BOOSTER_BUNDLE else ProductType.BOOSTER_BOX
-            "magic display", "one piece booster boxes", "lorcana booster boxes" -> ProductType.BOOSTER_BOX
+            "magic display", "one piece booster boxes", "lorcana booster boxes", "riftbound display" -> ProductType.BOOSTER_BOX
             "pokémon elite trainer boxes" -> ProductType.ELITE_TRAINER_BOX
             "magic fatpack" -> ProductType.BOOSTER_BUNDLE
-            "pokémon box set", "lorcana box set", "lorcana gift set" -> ProductType.COLLECTION_BOX
+            "pokémon box set", "lorcana box set", "lorcana gift set", "riftbound riftbound box sets" -> ProductType.COLLECTION_BOX
             "pokémon tins" -> ProductType.TIN
             "pokémon blisters" -> ProductType.BLISTER
             "pokémon theme decks", "pokémon trainer kits", "magic intropack", "magic starter deck",
-            "magic tournamentpack", "one piece preconstructed decks", "lorcana starter decks" -> ProductType.STARTER_DECK
+            "magic tournamentpack", "one piece preconstructed decks", "lorcana starter decks",
+            "riftbound champion decks" -> ProductType.STARTER_DECK
             else -> null
         }
     }
@@ -88,6 +90,9 @@ object CardmarketProductMapper {
     fun soldInEurope(name: String, type: ProductType): Boolean {
         val words = " ${CatalogText.nameSearch(name)} "
         if (NOT_IN_EUROPE.any { " $it " in words }) return false
+        // The import makes every product English. Riftbound's list names French editions, such as
+        // "Origins Booster (French)", next to the English ones.
+        if (OTHER_LANGUAGES.any { " $it " in words }) return false
         // A display of bundles or blisters is a carton of another product. A booster display is a booster box.
         if (words.trimEnd().endsWith(" display") && type != ProductType.BOOSTER_BOX) return false
         return true
@@ -139,6 +144,9 @@ object CardmarketProductMapper {
             .maxByOrNull { (setName) -> setName.length }
             ?.second
     }
+
+    /** Editions in another language than English, in `nameSearch` form. */
+    private val OTHER_LANGUAGES = listOf("french", "german", "italian", "spanish", "portuguese")
 
     private val HALF_BOOSTER_BOX = Regex("""\bBooster Box \(18 Boosters\)""", RegexOption.IGNORE_CASE)
 

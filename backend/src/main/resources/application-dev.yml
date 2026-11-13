@@ -22,4 +22,5 @@ app:
   catalog:
     # The in-memory database starts empty anyway. Start a sync from the admin page when you need one.
     sync-cron: "-"
+    release-suggestion-cron: "-"
     import-pokedex-on-start: false

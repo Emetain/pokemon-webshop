@@ -79,7 +79,8 @@ class DropController(
         @CurrentUser viewer: User?,
         request: HttpServletRequest,
         @RequestParam(required = false) country: String?,
-    ): DropCartDto = dropShopOrchestrator.cart(slug, viewer, request, country)
+        @RequestParam(required = false) discountCode: String?,
+    ): DropCartDto = dropShopOrchestrator.cart(slug, viewer, request, country, discountCode?.take(MAX_DISCOUNT_CODE))
 
     @PutMapping("/{slug}/cart/{dropProductId}")
     @RateLimited("drop-cart")
@@ -101,4 +102,8 @@ class DropController(
         request: HttpServletRequest,
         @Valid @RequestBody body: StartDropCheckoutRequest,
     ): CheckoutStartDto = dropShopOrchestrator.checkout(slug, viewer, request, body)
+
+    private companion object {
+        const val MAX_DISCOUNT_CODE = 60
+    }
 }

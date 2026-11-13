@@ -4,7 +4,7 @@ The skeleton from the setup prompt is already in this repository (Kotlin + Sprin
 
 ## What we are building
 
-A Dutch trading card game webshop that focuses on Pokémon, but also sells Disney Lorcana, Magic: The Gathering and One Piece Card Game products. Next to the shop, customers get a free collection tracker: they can mark which cards they own for every set of all four games, see how far along they are per set, and see what their collection is worth based on market prices. Pokémon collectors also get a Pokédex collection: one slot per Pokémon, filled when they own at least one card of it.
+A Dutch trading card game webshop that focuses on Pokémon, but also sells Disney Lorcana, Magic: The Gathering, One Piece Card Game and (since phase 8) Riftbound products. Next to the shop, customers get a free collection tracker: they can mark which cards they own for every set of all five games, see how far along they are per set, and see what their collection is worth based on market prices. Pokémon collectors also get a Pokédex collection: one slot per Pokémon, filled when they own at least one card of it.
 
 The shop owner manages products, stock, orders and drops in an admin area.
 
@@ -64,6 +64,9 @@ These decisions came up while building and apply to every later phase. The phase
 - **Before going live:** the owner does a legal check and has asked to be reminded. See phase 9.
 - **Going live is its own phase:** added by the owner on 2026-11-10. Phase 10 opens the shop under its own domain with live credentials, after the legal check.
 - **Online preview first:** added by the owner on 2026-11-10, so a friend can help with missing images. Phase 7 puts the shop online as a closed preview on the owner's own server, with automatic deploys on every push to `main`. The phases after it moved one number up: the phase docs up to `phase-06.md` still use the old numbers, where phase 7 means Extras (now 8), phase 8 Polish and hardening (now 9) and phase 9 Go live (now 10).
+- **Never show how many are left:** the owner's rule from 2026-11-13. Customers never see how many of a product are left or how many are in a drop: not on a page, not in an API reply, not in an error message. "Laatste stuks" and "Bijna uitverkocht" are fine, numbers aren't. The server still refuses more than the stock. Mystery boxes show their chances only. Admin pages may show stock.
+- **Drop prices only once it's your turn:** the price of a product in a drop shows when the customer is through the queue and can buy, not before, and not on the product page.
+- **Customer service:** added by the owner on 2026-11-13, in phase 8. The contact page leads through the FAQ and an AI chatbot to a ticket. See phase 8.
 - **The server and its deploys:** since phase 7 the shop runs on the owner's VPS. GitHub Actions deploys every push to `main` with `deploy/server/deploy.sh`, through an SSH key that may only run that script. The server's settings and secrets are in `/opt/poketopia/.env`, never in the repo. Migrations must keep the previous version working (add first, remove in a later release), because a rollback can't undo them. Details in `docs/phases/phase-07.md`.
 
 ---
@@ -304,38 +307,93 @@ Done when:
 
 Goal: the features that make the big Dutch TCG shops feel complete.
 
+On 2026-11-12 the owner kept discount codes, the pre-order page, the release calendar, hero slides written by AI, news, the newsletter, reviews, info pages and the cookie notice, and left out bundles, case deals and quantity discounts, and the buylist. They added Riftbound as a fifth game and mystery boxes, and on 2026-11-13 the pictures from TCGplayer, release calendar suggestions and customer service.
+
+- **Riftbound** (added): the League of Legends TCG as a full fifth game, with catalog, collection and shop. Card data, pictures and prices from TCGplayer through tcgcsv.com.
+- **Mystery boxes** (added): the owner packs a batch by hand and enters it in admin. The product page shows the chance of every kind of box, from the boxes that are left, never how many. At payment the server draws a random remaining box from the oldest batch, so the chances stay true, and the packing list says which box to send.
+
 - **Discount codes:** percentage or fixed amount, minimum order amount, valid dates, max uses, once per customer, optionally only for certain games or product types, never on drop prices unless enabled.
-- **Bundles:** "stel je eigen bundel samen", for example a sealed product plus a matching acrylic display case with a discount on the case. Admin defines which products can be combined and the discount.
-- **Case deals and quantity discounts:** a tiered price per product (for example 6+ boosters cheaper per piece).
+- **Bundles** (left out by the owner): "stel je eigen bundel samen", for example a sealed product plus a matching acrylic display case with a discount on the case. Admin defines which products can be combined and the discount.
+- **Case deals and quantity discounts** (left out by the owner): a tiered price per product (for example 6+ boosters cheaper per piece).
 - **Pre-order page:** all pre-orders with release dates on a timeline.
 - **Release calendar:** upcoming sets per game, managed in admin, with links to the pre-orders. An upcoming release can get its own slide in the home hero carousel with one click.
 - **Hero slides written by AI:** on the admin page for hero slides, the admin writes a prompt (for example "pre-order Destined Rivals, release 30 mei") and the backend asks OpenAI for a title, text and button label, and optionally an image. The owner has an OpenAI API key: read it from `OPENAI_API_KEY` on the backend only, never in a `VITE_` variable. Read OpenAI's current API docs, terms and pricing first, pick a current model, and set a monthly cost limit with a clear message when it's reached. The result is a draft that the admin edits and approves: nothing goes live without that. Store generated images through `MediaStorage`. Without a key the button is hidden and everything else works. Generated images must not show Pokémon or other characters, logos or card art, because those belong to the games' owners: add that to the prompt and to the legal check.
 - **News:** simple articles (title, image, text, date, game tag) managed in admin, shown on `/nieuws` and on the home page.
 - **Newsletter signup** stored in the database with double opt-in by email, and an admin export.
-- **Kaarten verkopen (buylist request):** a form where customers list cards they want to sell (they can pick cards from the catalog or from their own collection), with condition and photos. The admin sees requests, gives an offer, and changes the status. No automatic payouts.
+- **Kaarten verkopen (buylist request)** (left out by the owner): a form where customers list cards they want to sell (they can pick cards from the catalog or from their own collection), with condition and photos. The admin sees requests, gives an offer, and changes the status. No automatic payouts.
 - **Reviews:** customers who bought a product can leave a star rating and short review; admin approves them before they appear.
-- **Info pages** with editable content in admin: verzending en levertijd, retourneren (14 dagen bedenktijd, with the note that opened sealed products can't be returned), algemene voorwaarden, privacybeleid, FAQ, contact form (mails to the shop address), over ons. Mark the legal pages clearly as drafts that must be checked before going live.
+- **Info pages** with editable content in admin: verzending en levertijd, retourneren (14 dagen bedenktijd, with the note that opened sealed products can't be returned), algemene voorwaarden, privacybeleid, FAQ, contact, over ons. Mark the legal pages clearly as drafts that must be checked before going live.
+- **Pictures from TCGplayer** (added 2026-11-13): an admin page searches TCGplayer (through tcgcsv.com) for pictures of cards and sealed products that have none. Sure matches get the picture right away, doubtful ones wait for the admin to pick one or none. A found card picture never replaces the source's or an upload, and a sync leaves it alone.
+- **Release calendar suggestions** (added 2026-11-13): no game has a release API, so the calendar's admin page suggests upcoming sets from the card catalog and TCGplayer. The admin adds one (the form opens filled in) or dismisses it.
+- **Customer service** (added 2026-11-13): before a ticket, the contact page offers the FAQ and an AI chatbot. The chatbot answers from the published info pages and shipping rates only, on a small, cheap model (`gpt-6-luna`, the owner didn't want an expensive one), with its own monthly limit. It never mentions stock or prices and points to a ticket for anything about an order. A chat button on every shop page opens it too. A ticket gets a number and a secret link; the shop gets it by mail, the customer gets a confirmation that we'll look at it as soon as possible. Logged-in customers see their tickets in their account. The shop answers on an admin page, and the customer gets every answer by mail. The shared shop mailbox (`SHOP_EMAIL`) waits for the domain of phase 10.
 - **Cookie notice** for functional cookies only. Don't add tracking.
 
 Done when:
-- Each feature works from both the customer side and the admin side, and discount codes calculate correctly in combination with bundles, tiered prices and shipping (unit tests for every combination).
+- Each feature works from both the customer side and the admin side, and discount codes calculate correctly in combination with shipping and drops (unit tests for every combination).
 
 ## Phase 9: Polish and hardening
 
-Goal: ready to show, ready to deploy.
+Goal: ready to show, ready to deploy. This phase runs in three separate sessions:
+9a (audit, Fable 5.2), 9b (fixes, Opus), 9c (final review, Fable 5.2).
 
-- Go through every page at 360px, 768px and 1280px and fix layout issues. Check keyboard navigation, focus styles, alt texts and colour contrast.
-- Add loading, empty and error states everywhere they are missing.
-- SEO: page titles and meta descriptions per page, Open Graph images for products and drops, readable slugs, a `sitemap.xml` and `robots.txt`. Keep the public collection pages out of the sitemap and mark them `noindex`.
-- Performance: pagination everywhere lists can grow, database indexes for all filters, lazy-loaded images, route-level code splitting.
-- Security review: authorization on every admin and account endpoint (add tests), input validation, file upload checks (type and size), no secrets in the repo, security headers.
-- Start the app with the `prod` profile against the Docker Postgres and check that all Flyway migrations run and Hibernate validation passes.
-- Update the root `README.md`: what the app does, how to run it, environment variables, how to sync card data, how to test payments with the Stripe CLI, and the phase overview with links to `docs/phases/`.
-- Production basics left open by earlier phases: SMTP username and password settings and the `npm audit` issue in dev tooling. Phase 7 already brings the first admin, Swagger closed in `prod`, `FORWARD_HEADERS_STRATEGY=native` and the 2 GB heap.
-- **Go-live reminder:** before anything goes live, remind the owner to do the legal check. They asked for this reminder. It covers the Wizards Fan Content Policy, Ravensburger's Community Code and Lorcast's "prohibited from charging" notice for a commercial shop, reusing TCGplayer prices from Lorcast and the OPTCG API, Cardmarket and ECB data, the PokéAPI data, pictures uploaded at `/admin/afbeeldingen`, a product list from Cardmarket or TCGplayer, the Poketopia logo (`docs/Poketopia-logo.png`, on the site since 2026-11-10: it shows Poké Balls, a building like a Pokémon Center and yellow-on-blue lettering in the style of the Pokémon logo, all of which The Pokémon Company protects), the public collection pages and saved value history in the privacy policy, images and text generated by OpenAI for hero slides and what OpenAI's terms say about using them, and the draft legal pages. Also the KVK number that iDEAL requires on the website, Stripe in the privacy policy, the 14-day withdrawal right in the terms the checkout links to, and the switch from iDEAL to Wero that Stripe asks for during 2026 and 2027. Also bring up the One Piece images: they load from one person's server and carry a "SAMPLE" watermark. And who can see customer data: the owner's friend has full admin since phase 7, so the privacy policy names everyone with admin access. And the shop name Poketopia: Pokétopia is also the island in the Nintendo game Pokémon Battle Revolution, and "Poké" names belong to The Pokémon Company's trademarks, so check the name before registering a domain or a company name with it. And the drop data in the privacy policy: reminder signups, the waiting room (account or visitor cookie, when someone joined and was last seen) and the email and address keys drop orders keep for the limits. Full notes are in `docs/phases/phase-02.md`, `docs/phases/phase-03.md`, `docs/phases/phase-05.md` and `docs/phases/phase-06.md`.
+### Phase 9a: Audit (read-only)
+
+Do not change any code in this sub-phase. Only read, run the app and tests, and write
+`docs/phases/phase-09-audit.md`.
+
+Go through the whole repo (all games: Pokémon, Lorcana, MTG, One Piece and Riftbound) and check:
+
+- **Layout and accessibility:** every page at 360px, 768px and 1280px; keyboard navigation,
+  focus styles, alt texts, colour contrast.
+- **States:** pages or components missing loading, empty or error states.
+- **SEO:** page titles and meta descriptions, Open Graph images for products and drops,
+  slugs, `sitemap.xml`, `robots.txt`, public collection pages kept out of the sitemap and `noindex`.
+- **Performance:** lists without pagination, filters without database indexes, images not
+  lazy-loaded, missing route-level code splitting, N+1 queries.
+- **Security:** authorization on every admin and account endpoint, input validation, file
+  upload checks (type and size), secrets in the repo or git history, security headers,
+  race conditions in drops and stock, Stripe webhook verification.
+- **Production:** does the `prod` profile start against the Docker Postgres, do all Flyway
+  migrations run, does Hibernate validation pass. SMTP username/password settings, `npm audit`.
+- **Anything else** you think is a risk before going live, even if it's not on this list.
+
+Write each finding as: what is wrong, where (file and line), why it matters, and a suggested fix.
+Group them as **Critical** (must fix before going live), **Should fix** and **Nice to have**.
+End with a short checklist the next session can work through in order.
+
+### Phase 9b: Fixes
+
+Work through `docs/phases/phase-09-audit.md` from top to bottom. Tick off each item in the file
+when it's done. If you disagree with a finding, write why next to it instead of skipping it silently.
+
+Also in this sub-phase:
+- Add tests for authorization on every admin and account endpoint.
+- Update the root `README.md`: what the app does, how to run it, environment variables, how to
+  sync card data (all five games), how to test payments with the Stripe CLI, and the phase
+  overview with links to `docs/phases/`.
+
+Phase 7 already brings the first admin, Swagger closed in `prod`, `FORWARD_HEADERS_STRATEGY=native`
+and the 2 GB heap. Don't redo those.
 
 Done when:
+- Every Critical and Should fix item is fixed or has a written reason why not.
 - All tests pass, the production build works, and the `prod` profile starts cleanly on an empty database.
+
+### Phase 9c: Final review (read-only)
+
+Don't change code. Review the work from 9b against `docs/phases/phase-09-audit.md`: is every item
+really fixed, did the fixes introduce new problems, and is anything still missing? Add the
+result as a "Final review" section at the bottom of the audit file.
+
+Then give the **go-live reminder.** Before anything goes live, remind the owner to do the legal check.
+They asked for this reminder. [paste your full legal paragraph here unchanged, plus:]
+Also Riot Games' rules for fan and commercial use of Riftbound, and the source of the Riftbound
+card data and images. And from phase 8: TCGplayer's data and pictures, used for Riftbound and by the
+picture search for cards and sealed products of every game (and tcgcsv.com's "careful if you seek to
+profit"); mystery boxes and the Dutch gambling law (Kansspelwet); the newsletter, reviews and tickets in
+the privacy policy, and how long tickets are kept; OpenAI's terms for the generated hero slides and for
+the chatbot (customer messages go to OpenAI: a processor agreement, and saying that it is AI); and the
+draft legal pages, in particular the returns clause on opened sealed products.
 
 ## Phase 10: Go live
 
@@ -369,7 +427,7 @@ Configuration:
 - The owner's admin account, created the way phase 7 added. No demo accounts or demo data.
 
 Filling the shop:
-- Run the card sync for all four games and the product list import on the server, then set prices, stock and shipping rates in admin. Copying the local database instead saves the long Pokémon sync, but Hibernate made that schema, not Flyway: only do it after checking it against the migrations and removing test orders and test accounts.
+- Run the card sync for all five games and the product list import on the server, then set prices, stock and shipping rates in admin. Copying the local database instead saves the long Pokémon sync, but Hibernate made that schema, not Flyway: only do it after checking it against the migrations and removing test orders and test accounts.
 
 Backups and monitoring:
 - A daily `pg_dump` and a copy of the media folder, stored somewhere other than the server and kept for at least 30 days.
@@ -388,4 +446,4 @@ Done when:
 
 ## Out of scope
 
-Don't build these unless I ask: livestreams or "rip & ship", card scanning with the camera, a real Cardmarket API integration (it is closed to new applications), automatic shipping labels, other games than the four above, and translations other than Dutch.
+Don't build these unless I ask: livestreams or "rip & ship", card scanning with the camera, a real Cardmarket API integration (it is closed to new applications), automatic shipping labels, other games than the five above (Riftbound came in phase 8), and translations other than Dutch.

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { LogOut, Package, Pencil, Plus, Trash2 } from 'lucide-vue-next'
+import { LifeBuoy, LogOut, Package, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import AddressForm from '../components/account/AddressForm.vue'
 import BinderSettings from '../components/account/BinderSettings.vue'
 import CollectionShare from '../components/account/CollectionShare.vue'
@@ -141,6 +141,10 @@ onMounted(loadAddresses)
         <router-link class="btn btn-primary" to="/account/bestellingen">
           <Package :size="18" aria-hidden="true" />
           {{ t('orders.list.title') }}
+        </router-link>
+        <router-link class="btn btn-secondary" to="/account/tickets">
+          <LifeBuoy :size="18" aria-hidden="true" />
+          {{ t('support.mine.title') }}
         </router-link>
         <router-link v-if="session.isAdmin.value" class="btn btn-secondary" to="/admin">
           {{ t('account.toAdmin') }}

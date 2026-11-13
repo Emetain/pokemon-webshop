@@ -15,8 +15,9 @@ import { t } from '../../utils/i18n'
 
 /**
  * The page of one drop: banner, countdown, products, and the waiting room. It asks the shop for two things: the drop
- * itself with its stock counters, and where this visitor is in line. Both ask again by themselves, faster while the
- * drop is live and when the shop says the visitor's turn is close.
+ * itself, and where this visitor is in line. Both ask again by themselves, faster while the drop is live and when the
+ * shop says the visitor's turn is close. The drop never says how many there are, and has no prices: those come with
+ * the drop cart, once it is this visitor's turn.
  */
 const props = defineProps({
   slug: { type: String, required: true },
@@ -41,6 +42,7 @@ const waitingRoomMinutes = computed(() =>
   drop.value ? Math.round((Date.parse(drop.value.startsAt) - Date.parse(drop.value.waitingRoomOpensAt)) / 60000) : 30,
 )
 const limitOf = (product) => cart.value?.limits.find((limit) => limit.dropProductId === product.id)
+const priceOf = (product) => cart.value?.prices.find((price) => price.dropProductId === product.id) ?? null
 
 let detailTimer = null
 let queueTimer = null
@@ -57,7 +59,7 @@ async function loadDrop() {
   scheduleDrop()
 }
 
-/** Stock counters every 5 seconds while live, the start every 30 seconds before it. Nothing after the end. */
+/** Sold out or not every 5 seconds while live, the start every 30 seconds before it. Nothing after the end. */
 function scheduleDrop() {
   clearTimeout(detailTimer)
   if (stopped || notFound.value || drop.value?.status === 'ENDED') return
@@ -126,8 +128,14 @@ async function change(product, quantity) {
   }
 }
 
-/** At zero the shop starts the drop within a second. Ask both a moment later, with a little spread. */
+/**
+ * At zero the shop starts the drop within a second. Ask both a moment later, with a little spread. The countdown at
+ * the top and the one in the waiting room reach zero at the same tick: only the first one counts.
+ */
+let startedAt = 0
 function onStarted() {
+  if (Date.now() - startedAt < 10_000) return
+  startedAt = Date.now()
   const delay = 800 + Math.random() * 1500
   setTimeout(() => {
     loadDrop()
@@ -196,7 +204,6 @@ onBeforeUnmount(() => {
             class="hero-countdown"
             boxes
             :target="drop.startsAt"
-            :server-time="drop.serverTime"
             @done="onStarted"
           />
           <p v-if="drop.requiresAccount && drop.status !== 'ENDED'" class="note">{{ t('drops.page.accountRequired') }}</p>
@@ -232,7 +239,9 @@ onBeforeUnmount(() => {
                 <DropProductCard
                   :product="product"
                   :live="live || drop.status === 'ENDED'"
+                  :ended="drop.status === 'ENDED'"
                   :shopping="shopping"
+                  :price="priceOf(product)"
                   :in-cart="limitOf(product)?.inCart ?? 0"
                   :room="limitOf(product)?.room ?? null"
                   :ordered="limitOf(product)?.ordered ?? 0"

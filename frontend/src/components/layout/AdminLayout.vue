@@ -2,13 +2,20 @@
 import {
   ArrowLeft,
   Boxes,
+  CalendarDays,
   DatabaseZap,
+  FileText,
   FileUp,
   GalleryHorizontal,
   Image,
   LayoutDashboard,
+  LifeBuoy,
+  Mail,
+  Newspaper,
   Package,
   ReceiptText,
+  Star,
+  TicketPercent,
   Truck,
   Zap,
 } from 'lucide-vue-next'
@@ -63,9 +70,37 @@ const onProducts = computed(
           <Zap :size="18" aria-hidden="true" />
           {{ t('admin.drops.nav') }}
         </router-link>
+        <router-link class="sidebar-link" to="/admin/kortingscodes" active-class="is-active">
+          <TicketPercent :size="18" aria-hidden="true" />
+          {{ t('admin.discounts.nav') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/tickets" active-class="is-active">
+          <LifeBuoy :size="18" aria-hidden="true" />
+          {{ t('admin.tickets.nav') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/reviews" active-class="is-active">
+          <Star :size="18" aria-hidden="true" />
+          {{ t('admin.reviews.nav') }}
+        </router-link>
         <router-link class="sidebar-link" to="/admin/hero" active-class="is-active">
           <GalleryHorizontal :size="18" aria-hidden="true" />
           {{ t('admin.slides.nav') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/releasekalender" active-class="is-active">
+          <CalendarDays :size="18" aria-hidden="true" />
+          {{ t('admin.releases.nav') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/nieuws" active-class="is-active">
+          <Newspaper :size="18" aria-hidden="true" />
+          {{ t('admin.news.nav') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/paginas" active-class="is-active">
+          <FileText :size="18" aria-hidden="true" />
+          {{ t('admin.pages.nav') }}
+        </router-link>
+        <router-link class="sidebar-link" to="/admin/nieuwsbrief" active-class="is-active">
+          <Mail :size="18" aria-hidden="true" />
+          {{ t('admin.newsletter.nav') }}
         </router-link>
         <router-link class="sidebar-link" to="/admin/sync" active-class="is-active">
           <DatabaseZap :size="18" aria-hidden="true" />

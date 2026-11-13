@@ -27,6 +27,7 @@ class OrderService(
     private val orderRepository: OrderRepository,
     private val orderPaymentService: OrderPaymentService,
     private val stockService: StockService,
+    private val mysteryBoxService: MysteryBoxService,
     private val gateway: PaymentGateway,
     private val events: ApplicationEventPublisher,
     private val properties: AppProperties,
@@ -164,6 +165,7 @@ class OrderService(
     private fun returnStock(order: Order, note: String, admin: User?) {
         if (order.stockState != OrderStockState.SOLD) return
         for (line in order.lines) stockService.adjust(line.product.id, line.quantity, StockReason.RETURN, note, admin)
+        mysteryBoxService.releaseFor(order)
         order.stockState = OrderStockState.RETURNED
     }
 

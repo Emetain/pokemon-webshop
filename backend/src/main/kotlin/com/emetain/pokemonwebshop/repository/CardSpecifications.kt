@@ -98,9 +98,13 @@ object CardSpecifications {
         builder.exists(entries)
     }
 
-    /** No picture at all: the source has none and the shop didn't upload one. */
+    /** No picture at all: the source has none, the shop didn't upload one and the picture search found none. */
     fun withoutImage() = Specification<Card> { root, _, builder ->
-        builder.and(builder.isNull(root.get<String>("imageSmallUrl")), builder.isNull(root.get<String>("customImageUrl")))
+        builder.and(
+            builder.isNull(root.get<String>("imageSmallUrl")),
+            builder.isNull(root.get<String>("customImageUrl")),
+            builder.isNull(root.get<String>("foundImageSmallUrl")),
+        )
     }
 
     fun withCustomImage() = Specification<Card> { root, _, builder ->

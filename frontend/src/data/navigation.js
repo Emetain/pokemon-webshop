@@ -1,4 +1,4 @@
-import { Anchor, BookOpen, CalendarClock, Flame, Layers, Sparkles, Zap } from 'lucide-vue-next'
+import { Anchor, BookOpen, CalendarClock, Flame, Layers, Sparkles, Swords, Zap } from 'lucide-vue-next'
 import BallMark from '../components/BallMark.vue'
 
 const link = (to, labelKey) => ({ to, labelKey })
@@ -100,6 +100,15 @@ export const mainNav = [
     feature: collectionFeature,
   },
   {
+    key: 'riftbound',
+    to: '/riftbound',
+    labelKey: 'nav.riftbound',
+    game: 'riftbound',
+    icon: Swords,
+    columns: gameColumns('riftbound'),
+    feature: collectionFeature,
+  },
+  {
     key: 'accessories',
     to: '/accessoires',
     labelKey: 'nav.accessories',
@@ -125,7 +134,28 @@ export const mainNav = [
     ],
     feature: collectionFeature,
   },
-  { key: 'pre-order', to: '/pre-order', labelKey: 'nav.preOrder', icon: CalendarClock },
+  {
+    key: 'pre-order',
+    to: '/pre-order',
+    labelKey: 'nav.preOrder',
+    icon: CalendarClock,
+    columns: [
+      {
+        titleKey: 'nav.groups.upcoming',
+        links: [
+          link('/pre-order', 'nav.preOrderLinks.all'),
+          link('/releasekalender', 'nav.preOrderLinks.calendar'),
+          link('/nieuws', 'nav.preOrderLinks.news'),
+        ],
+      },
+    ],
+    feature: {
+      to: '/releasekalender',
+      titleKey: 'nav.feature.calendar.title',
+      textKey: 'nav.feature.calendar.text',
+      actionKey: 'nav.feature.calendar.action',
+    },
+  },
   { key: 'drops', to: '/drops', labelKey: 'nav.drops', icon: Zap },
   {
     key: 'collection',
@@ -148,6 +178,7 @@ export const mainNav = [
           link('/kaarten/lorcana', 'nav.lorcana'),
           link('/kaarten/magic', 'nav.magic'),
           link('/kaarten/one-piece', 'nav.onePiece'),
+          link('/kaarten/riftbound', 'nav.riftbound'),
         ],
       },
     ],
@@ -160,8 +191,18 @@ export const mainNav = [
   },
 ]
 
-const REAL_PAGES = ['/kaarten/', '/collectie', '/verlanglijst', '/accessoires', '/pre-order', '/drops']
-const GAME_PAGES = ['/pokemon', '/lorcana', '/magic', '/one-piece']
+const REAL_PAGES = [
+  '/kaarten/',
+  '/collectie',
+  '/verlanglijst',
+  '/accessoires',
+  '/pre-order',
+  '/drops',
+  '/releasekalender',
+  '/nieuws',
+  '/info/',
+]
+const GAME_PAGES = ['/pokemon', '/lorcana', '/magic', '/one-piece', '/riftbound']
 
 const hasRealPage = (to) =>
   REAL_PAGES.some((path) => to.startsWith(path)) ||
@@ -217,6 +258,8 @@ export const footerInfoLinks = [
 ]
 
 export const footerShopLinks = [
+  { to: '/nieuws', labelKey: 'footer.news' },
+  { to: '/releasekalender', labelKey: 'footer.calendar' },
   { to: '/info/over-ons', labelKey: 'footer.about' },
   { to: '/info/algemene-voorwaarden', labelKey: 'footer.terms' },
   { to: '/info/privacybeleid', labelKey: 'footer.privacy' },

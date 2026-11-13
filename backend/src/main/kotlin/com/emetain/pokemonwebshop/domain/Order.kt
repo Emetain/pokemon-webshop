@@ -16,6 +16,7 @@ import jakarta.persistence.OneToMany
 import jakarta.persistence.OrderBy
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import org.hibernate.annotations.ColumnDefault
 import java.time.Instant
 
 /**
@@ -40,6 +41,7 @@ import java.time.Instant
         Index(name = "idx_orders_email", columnList = "email"),
         Index(name = "idx_orders_drop_id", columnList = "drop_id"),
         Index(name = "idx_orders_drop_entry_id", columnList = "drop_entry_id"),
+        Index(name = "idx_orders_discount_code_id", columnList = "discount_code_id"),
     ],
 )
 class Order(
@@ -74,6 +76,7 @@ class Order(
     @Column(nullable = false, length = 2)
     val country: String,
 
+    /** The products, before the discount. */
     @Column(nullable = false)
     val subtotalCents: Long,
 
@@ -180,6 +183,22 @@ class Order(
     /** For drop limits: country, postcode and house number written one way. See `DropRules.addressKey`. */
     @Column(length = 200)
     val addressKey: String? = null,
+
+    /** The discount code the customer used. [discountCodeText] keeps the code as it was typed in admin. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "discount_code_id")
+    val discountCode: DiscountCode? = null,
+
+    @Column(name = "discount_code", length = 40)
+    val discountCodeText: String? = null,
+
+    /**
+     * What the discount code took off the products. Already taken off [totalCents]. The default lets Hibernate add
+     * the column to a local database that has orders already.
+     */
+    @ColumnDefault("0")
+    @Column(nullable = false)
+    val discountCents: Long = 0,
 
     @OneToMany(mappedBy = "order", cascade = [CascadeType.ALL], orphanRemoval = true)
     @OrderBy("id ASC")

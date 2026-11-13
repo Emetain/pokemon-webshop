@@ -41,7 +41,9 @@ data class CheckoutParty(
 }
 
 /** A product going into an order, at the price it is sold for. */
-data class CheckoutLine(val product: Product, val quantity: Int, val unitPriceCents: Long)
+data class CheckoutLine(val product: Product, val quantity: Int, val unitPriceCents: Long) {
+    val discountLine: DiscountLine get() = DiscountLine(unitPriceCents, quantity, product.game, product.type)
+}
 
 /** Turns a cart or a drop cart into an order that holds its stock, and lets go of that stock when the order isn't paid. */
 @Service
@@ -54,6 +56,7 @@ class CheckoutService(
     private val stockService: StockService,
     private val dropStockService: DropStockService,
     private val tokenService: TokenService,
+    private val discountCodeService: DiscountCodeService,
     private val properties: AppProperties,
     private val clock: Clock,
 ) {
@@ -76,14 +79,21 @@ class CheckoutService(
             val product = item.product
             val available = product.stock.available
             if (product.status != ProductStatus.ACTIVE || !ProductRules.canBuy(product)) throw cartChanged("${product.name} is uitverkocht.")
-            if (item.quantity > available) throw cartChanged("Van ${product.name} zijn er nog maar $available.")
+            if (item.quantity > available) throw cartChanged("Van ${product.name} hebben we niet genoeg meer voor dit aantal.")
         }
         val lines = cart.items.map { CheckoutLine(it.product, it.quantity, ProductRules.shownPriceCents(it.product)!!) }
-        val order = newOrder(party, lines, viewer, request, properties.checkout.reservationTtl, cartId = cart.id)
+        val discount = discount(request, lines, viewer, party, drop = false)
+        val order = newOrder(party, lines, viewer, request, properties.checkout.reservationTtl, cartId = cart.id, discount = discount)
         for (line in order.lines) stockService.reserve(line.product.id, line.quantity, "Bestelling ${order.number}")
         saveAddressIfAsked(viewer, request, party)
         return order
     }
+
+    /** The discount code of the checkout, locked until the order is saved. Null without a code. */
+    fun discount(request: StartCheckoutRequest, lines: List<CheckoutLine>, viewer: User?, party: CheckoutParty, drop: Boolean): AppliedDiscount? =
+        request.discountCode?.takeIf { it.isNotBlank() }?.let {
+            discountCodeService.applyLocked(it, lines.map(CheckoutLine::discountLine), viewer, party.email, drop)
+        }
 
     /** Checks who orders and where it goes, before anything is reserved. */
     fun party(viewer: User?, request: StartCheckoutRequest): CheckoutParty {
@@ -108,9 +118,11 @@ class CheckoutService(
         cartId: Long? = null,
         drop: Drop? = null,
         dropEntryId: Long? = null,
+        discount: AppliedDiscount? = null,
     ): Order {
         val priced = lines.map { PricedLine(it.unitPriceCents, it.quantity) }
-        val totals = OrderMath.totals(priced, ShippingPrice(party.rate.priceCents, party.rate.freeFromCents))
+        val shipping = ShippingPrice(party.rate.priceCents, party.rate.freeFromCents)
+        val totals = OrderMath.totals(priced, shipping, discount?.amountCents ?: 0)
         val mixed = lines.any { it.product.preOrder } && lines.any { !it.product.preOrder }
         val address = party.address
         val now = clock.instant()
@@ -140,6 +152,9 @@ class CheckoutService(
             dropEntryId = dropEntryId,
             emailKey = drop?.let { party.emailKey },
             addressKey = drop?.let { party.addressKey },
+            discountCode = discount?.code,
+            discountCodeText = discount?.code?.code,
+            discountCents = totals.discountCents,
         )
         lines.zip(priced).forEach { (line, price) ->
             val product = line.product
@@ -160,7 +175,9 @@ class CheckoutService(
                 shipsFrom = if (product.preOrder) product.shipsFrom ?: product.releaseDate else null,
             )
         }
-        val text = if (drop != null) "Afgerekend in drop ${drop.name}, wacht op de betaling" else "Afgerekend, wacht op de betaling"
+        val where = if (drop != null) "Afgerekend in drop ${drop.name}" else "Afgerekend"
+        val code = discount?.let { " met kortingscode ${it.code.code} (−${Money.format(totals.discountCents)})" }.orEmpty()
+        val text = "$where$code, wacht op de betaling"
         order.history += OrderStatusChange(order, OrderStatus.PENDING_PAYMENT, now, text)
         return orderRepository.save(order)
     }

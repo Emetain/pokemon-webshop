@@ -43,6 +43,9 @@ const shipmentText = computed(() => {
             <span v-if="line.preOrder" class="pre-order">
               {{ line.shipsFrom ? t('orders.detail.expected', { date: formatDate(line.shipsFrom) }) : t('shop.badges.preOrder') }}
             </span>
+            <span v-if="line.mysteryBoxes?.length" class="pre-order">
+              {{ t(admin ? 'orders.detail.mysteryAdmin' : 'orders.detail.mysteryRevealed', { names: line.mysteryBoxes.join(', ') }) }}
+            </span>
           </div>
           <span class="amount">{{ formatMoney(line.lineTotalCents, 'EUR') }}</span>
         </li>
@@ -55,6 +58,8 @@ const shipmentText = computed(() => {
         :vat-cents="order.vatCents"
         :country="order.address.country"
         :refunded-cents="order.refundedCents"
+        :discount-cents="order.discountCents"
+        :discount-code="order.discountCode"
       />
     </section>
 

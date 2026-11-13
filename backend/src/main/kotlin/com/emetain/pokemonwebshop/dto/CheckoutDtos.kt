@@ -40,6 +40,10 @@ data class StartCheckoutRequest(
     val shipmentPreference: ShipmentPreference? = null,
 
     val acceptTerms: Boolean = false,
+
+    /** A discount code. The order fails with `discount_invalid` when it doesn't apply, so the price never surprises. */
+    @field:Size(max = 60, message = "Deze kortingscode is te lang.")
+    val discountCode: String? = null,
 )
 
 data class CheckoutStartDto(

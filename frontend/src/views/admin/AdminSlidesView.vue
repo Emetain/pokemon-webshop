@@ -1,6 +1,6 @@
 <script setup>
 import { reactive, ref, useId } from 'vue'
-import { ArrowDown, ArrowUp, Plus, Upload } from 'lucide-vue-next'
+import { ArrowDown, ArrowUp, Plus, Sparkles, Upload } from 'lucide-vue-next'
 import FormMessage from '../../components/FormMessage.vue'
 import { GAMES } from '../../data/games'
 import { adminShopApi } from '../../services/api'
@@ -126,7 +126,45 @@ function stateOf(slide) {
 
 const gameOf = (slug) => GAMES.find((game) => game.slug === slug)
 
+/** Slides written by AI: only shown when the backend has an OpenAI key. */
+const ai = ref(null)
+const aiOpen = ref(false)
+const aiPrompt = ref('')
+const aiImage = ref(false)
+const aiBusy = ref(false)
+const aiError = ref('')
+
+async function loadAi() {
+  try {
+    ai.value = await adminShopApi.aiStatus()
+  } catch {
+    ai.value = null
+  }
+}
+
+async function writeWithAi() {
+  aiBusy.value = true
+  aiError.value = ''
+  message.value = ''
+  try {
+    const slide = await adminShopApi.aiSlide({ prompt: aiPrompt.value, withImage: aiImage.value })
+    await Promise.all([load(), loadAi()])
+    aiOpen.value = false
+    aiPrompt.value = ''
+    startEdit(slide)
+    message.value = t('admin.slides.ai.done')
+  } catch (exception) {
+    aiError.value = exception.message
+    await loadAi()
+  } finally {
+    aiBusy.value = false
+  }
+}
+
+const dollars = (value) => '$' + Number(value).toFixed(2).replace('.', ',')
+
 load()
+loadAi()
 </script>
 
 <template>
@@ -135,11 +173,51 @@ load()
       <h1>{{ t('admin.slides.title') }}</h1>
       <p class="admin-intro">{{ t('admin.slides.intro') }}</p>
     </div>
-    <button class="btn btn-primary btn-small" type="button" @click="startNew">
-      <Plus :size="18" aria-hidden="true" />
-      {{ t('admin.slides.add') }}
-    </button>
+    <div class="head-actions">
+      <button v-if="ai?.available" class="btn btn-secondary btn-small" type="button" @click="aiOpen = !aiOpen">
+        <Sparkles :size="18" aria-hidden="true" />
+        {{ t('admin.slides.ai.open') }}
+      </button>
+      <button class="btn btn-primary btn-small" type="button" @click="startNew">
+        <Plus :size="18" aria-hidden="true" />
+        {{ t('admin.slides.add') }}
+      </button>
+    </div>
   </div>
+
+  <form v-if="aiOpen && ai?.available" class="admin-panel ai" @submit.prevent="writeWithAi">
+    <h2>{{ t('admin.slides.ai.title') }}</h2>
+    <p class="admin-intro">{{ t('admin.slides.ai.intro') }}</p>
+    <div class="admin-fields">
+      <div class="admin-field wide">
+        <label class="admin-label" :for="field('prompt')">{{ t('admin.slides.ai.prompt') }}</label>
+        <textarea
+          :id="field('prompt')"
+          v-model="aiPrompt"
+          class="admin-input short"
+          maxlength="500"
+          required
+          :placeholder="t('admin.slides.ai.placeholder')"
+        ></textarea>
+      </div>
+      <label class="admin-check">
+        <input v-model="aiImage" type="checkbox" />
+        {{ t('admin.slides.ai.withImage') }}
+      </label>
+    </div>
+    <p class="admin-hint">{{ t('admin.slides.ai.imageRules') }}</p>
+    <p class="admin-hint">
+      {{ t('admin.slides.ai.budget', { spent: dollars(ai.spentUsd), limit: dollars(ai.limitUsd), text: ai.textModel, image: ai.imageModel }) }}
+    </p>
+    <FormMessage v-if="aiError" class="message">{{ aiError }}</FormMessage>
+    <div class="admin-actions">
+      <button class="btn btn-primary btn-small" type="submit" :disabled="aiBusy || aiPrompt.trim().length < 5">
+        <Sparkles :size="18" aria-hidden="true" />
+        {{ aiBusy ? t('admin.slides.ai.busy') : t('admin.slides.ai.write') }}
+      </button>
+      <button class="link-button" type="button" @click="aiOpen = false">{{ t('admin.slides.cancel') }}</button>
+    </div>
+  </form>
 
   <FormMessage v-if="message" type="success" class="message">{{ message }}</FormMessage>
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
@@ -205,7 +283,10 @@ load()
         <img v-if="slide.imageUrl" :src="slide.imageUrl" alt="" loading="lazy" decoding="async" />
       </span>
       <div class="slide-text">
-        <p class="slide-title">{{ slide.title }}</p>
+        <p class="slide-title">
+          {{ slide.title }}
+          <span v-if="slide.aiGenerated" class="ai-badge"><Sparkles :size="12" aria-hidden="true" />{{ t('admin.slides.ai.badge') }}</span>
+        </p>
         <p v-if="slide.text" class="admin-hint">{{ slide.text }}</p>
         <p class="admin-hint">
           <span class="state" :class="stateOf(slide).kind">{{ stateOf(slide).text }}</span>
@@ -263,6 +344,30 @@ load()
 
 .message {
   margin-top: var(--space-3);
+}
+
+.head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.ai {
+  border-color: var(--color-brand);
+}
+
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-round);
+  background: var(--color-tint);
+  color: var(--color-brand);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  vertical-align: middle;
 }
 
 .admin-panel {

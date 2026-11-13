@@ -52,11 +52,11 @@ class ProductRulesTest {
 
     @Test
     fun `last few shows from the threshold down to one`() {
-        assertEquals(2, ProductRules.lastFew(2, 2))
-        assertEquals(1, ProductRules.lastFew(1, 2))
-        assertNull(ProductRules.lastFew(3, 2))
-        assertNull(ProductRules.lastFew(0, 2))
-        assertNull(ProductRules.lastFew(1, 0))
+        assertTrue(ProductRules.lastFew(2, 2))
+        assertTrue(ProductRules.lastFew(1, 2))
+        assertFalse(ProductRules.lastFew(3, 2))
+        assertFalse(ProductRules.lastFew(0, 2))
+        assertFalse(ProductRules.lastFew(1, 0))
     }
 }
 

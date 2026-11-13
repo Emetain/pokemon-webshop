@@ -19,12 +19,7 @@ const badges = computed(() => {
       label: t('shop.badges.sale'),
     })
   }
-  if (product.lastFew) {
-    list.push({
-      kind: 'last-few',
-      text: product.lastFew === 1 ? t('shop.badges.lastOne') : t('shop.badges.lastFew', { count: product.lastFew }),
-    })
-  }
+  if (product.lastFew) list.push({ kind: 'last-few', text: t('shop.badges.lastFew') })
   return list
 })
 </script>

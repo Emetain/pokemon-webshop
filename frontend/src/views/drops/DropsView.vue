@@ -45,7 +45,7 @@ onBeforeUnmount(() => clearInterval(timer))
         <h2 id="drops-live" class="section-title live-title">{{ t('drops.live') }}</h2>
         <ul class="grid">
           <li v-for="drop in drops.live" :key="drop.slug">
-            <DropCard :drop="drop" :server-time="drops.serverTime" />
+            <DropCard :drop="drop" />
           </li>
         </ul>
       </section>
@@ -54,7 +54,7 @@ onBeforeUnmount(() => clearInterval(timer))
         <h2 id="drops-upcoming" class="section-title">{{ t('drops.upcoming') }}</h2>
         <ul v-if="drops.upcoming.length" class="grid">
           <li v-for="drop in drops.upcoming" :key="drop.slug">
-            <DropCard :drop="drop" :server-time="drops.serverTime" @started="load" />
+            <DropCard :drop="drop" @started="load" />
           </li>
         </ul>
         <p v-else-if="!drops.live.length" class="empty">{{ t('drops.empty') }}</p>

@@ -5,6 +5,9 @@ import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CardImage from '../../components/catalog/CardImage.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
 import FormMessage from '../../components/FormMessage.vue'
+import MysteryBoxOdds from '../../components/shop/MysteryBoxOdds.vue'
+import ProductReviews from '../../components/reviews/ProductReviews.vue'
+import StarRating from '../../components/reviews/StarRating.vue'
 import PriceTag from '../../components/shop/PriceTag.vue'
 import ProductBadges from '../../components/shop/ProductBadges.vue'
 import ProductImage from '../../components/shop/ProductImage.vue'
@@ -93,7 +96,7 @@ const stockLine = computed(() => {
       text: p.shipsFrom ? t('shop.stock.preOrder', { date: formatDate(p.shipsFrom) }) : t('shop.stock.preOrderNoDate'),
     }
   }
-  if (p.canBuy && p.lastFew) return { kind: 'last-few', text: t('shop.stock.lastFew', { count: p.lastFew }) }
+  if (p.canBuy && p.lastFew) return { kind: 'last-few', text: t('shop.stock.lastFew') }
   if (p.canBuy) return { kind: 'in-stock', text: t('shop.stock.inStock') }
   return { kind: 'sold-out', text: t('shop.stock.soldOut') }
 })
@@ -206,6 +209,10 @@ watch(() => props.slug, load, { immediate: true })
       <section class="buy">
         <ProductBadges :product="product" />
         <h1 class="name">{{ product.name }}</h1>
+        <a v-if="detail.reviewCount" class="rating-link" href="#reviews">
+          <StarRating :rating="detail.averageRating" />
+          {{ t(detail.reviewCount === 1 ? 'reviews.countOne' : 'reviews.count', { count: detail.reviewCount }) }}
+        </a>
         <PriceTag :product="product" large />
 
         <p class="stock" :class="stockLine.kind">
@@ -277,6 +284,8 @@ watch(() => props.slug, load, { immediate: true })
     </div>
 
     <div class="more">
+      <MysteryBoxOdds v-if="detail.mysteryBox" class="mystery" :box="detail.mysteryBox" />
+
       <section v-if="detail.description" class="description">
         <h2>{{ t('shop.product.description') }}</h2>
         <p class="description-text">{{ detail.description }}</p>
@@ -310,6 +319,8 @@ watch(() => props.slug, load, { immediate: true })
         </div>
       </section>
     </div>
+
+    <ProductReviews class="reviews" :slug="product.slug" />
 
     <ProductRow
       v-if="detail.otherOffers.length"
@@ -598,5 +609,22 @@ watch(() => props.slug, load, { immediate: true })
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
     align-items: start;
   }
+}
+
+.rating-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+}
+
+.mystery {
+  grid-column: 1 / -1;
+}
+
+.reviews {
+  margin-top: var(--space-7);
 }
 </style>

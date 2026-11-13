@@ -106,7 +106,11 @@ class ShopSetIntegrationTest : ShopTestSupport() {
         inSet(first, "$word First pack", type = "BOOSTER_PACK").also { adjustStock(it["id"].asLong(), 2) }
         inSet(second, "$word Second box").also { adjustStock(it["id"].asLong(), 2) }
 
-        val row = mockMvc.perform(get("/v1/products/bestsellers?limit=2")).andExpect(status().isOk).json()
-        assertEquals(listOf("$word First box", "$word Second box"), row.map { it["name"].asText() })
+        // Other tests sell products and make sets too, and the database is shared: look at this test's products in a
+        // long row. The second product of a set comes after one of every other set, so it may fall off the end.
+        val row = mockMvc.perform(get("/v1/products/bestsellers?limit=24")).andExpect(status().isOk).json()
+        val ours = row.map { it["name"].asText() }.filter { it.startsWith(word) }
+        assertEquals(listOf("$word First box", "$word Second box"), ours.take(2))
+        assertEquals(listOf("$word First box", "$word Second box", "$word First pack").take(ours.size), ours)
     }
 }

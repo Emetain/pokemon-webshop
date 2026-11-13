@@ -10,6 +10,9 @@ defineProps({
   vatCents: { type: Number, required: true },
   country: { type: String, default: null },
   refundedCents: { type: Number, default: 0 },
+  /** What a discount code took off the products, and the code. */
+  discountCents: { type: Number, default: 0 },
+  discountCode: { type: String, default: null },
 })
 </script>
 
@@ -18,6 +21,10 @@ defineProps({
     <div class="row">
       <dt>{{ t('cart.subtotal') }}</dt>
       <dd>{{ formatMoney(subtotalCents, 'EUR') }}</dd>
+    </div>
+    <div v-if="discountCents > 0" class="row discount">
+      <dt>{{ discountCode ? t('cart.discountWithCode', { code: discountCode }) : t('cart.discount') }}</dt>
+      <dd>−{{ formatMoney(discountCents, 'EUR') }}</dd>
     </div>
     <div v-if="shippingCents !== null" class="row">
       <dt>{{ country ? t('cart.shippingTo', { country: t(`countries.${country}`) }) : t('cart.shipping') }}</dt>
@@ -57,7 +64,8 @@ defineProps({
   white-space: nowrap;
 }
 
-.free {
+.free,
+.discount dd {
   color: var(--color-success);
 }
 

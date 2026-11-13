@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ChevronLeft, Lock } from 'lucide-vue-next'
+import { ChevronLeft, Lock, TicketPercent, X } from 'lucide-vue-next'
 import CartTotals from '../../components/cart/CartTotals.vue'
 import CountrySelect from '../../components/account/CountrySelect.vue'
 import FormField from '../../components/FormField.vue'
@@ -10,6 +10,7 @@ import ProductImage from '../../components/shop/ProductImage.vue'
 import { accountApi, cartApi, checkoutApi, dropApi } from '../../services/api'
 import { useCart } from '../../stores/cart'
 import { useRegion } from '../../stores/region'
+import { useServerClock } from '../../stores/serverClock'
 import { useSession } from '../../stores/session'
 import { formatDate, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
@@ -52,6 +53,23 @@ const backLink = computed(() => (props.dropSlug ? `/drops/${props.dropSlug}` : '
 /** The cart priced for the country of the chosen address, which can differ from the region setting. */
 const quote = ref(null)
 
+/** The discount code: what is typed, and what was applied. The quote shows what it takes off, or why it can't. */
+const codeInput = ref('')
+const discountCode = ref('')
+const codeOpen = ref(false)
+const discount = computed(() => quote.value?.discount ?? null)
+
+function applyCode() {
+  discountCode.value = codeInput.value.trim()
+  loadQuote()
+}
+
+function removeCode() {
+  codeInput.value = ''
+  discountCode.value = ''
+  loadQuote()
+}
+
 const country = computed(() => {
   if (chosenAddress.value === 'new') return address.country
   return addresses.value.find((saved) => saved.id === chosenAddress.value)?.country ?? address.country
@@ -71,13 +89,13 @@ async function loadQuote() {
   const request = ++latestQuote
   try {
     if (props.dropSlug) {
-      const result = await dropApi.cart(props.dropSlug, country.value)
+      const result = await dropApi.cart(props.dropSlug, country.value, discountCode.value || undefined)
       if (request === latestQuote) {
         dropCart.value = result
         quote.value = result.cart
       }
     } else {
-      const result = await cartApi.get(country.value)
+      const result = await cartApi.get(country.value, discountCode.value || undefined)
       if (request === latestQuote) quote.value = result
     }
   } catch (exception) {
@@ -87,30 +105,26 @@ async function loadQuote() {
   }
 }
 
-/** The time left to start the payment of a drop, against the server's clock. */
-const now = ref(Date.now())
-let clock = null
+/** The time left to start the payment of a drop, on the shop's clock. */
+const { now } = useServerClock()
 const accessLeft = computed(() => {
   const cartOfDrop = dropCart.value
   if (!cartOfDrop?.accessExpiresAt) return null
-  const offset = Date.parse(cartOfDrop.serverTime) - Date.now()
-  return Math.max(0, Date.parse(cartOfDrop.accessExpiresAt) - (now.value + offset))
+  return Math.max(0, Date.parse(cartOfDrop.accessExpiresAt) - now.value)
 })
 const accessText = computed(() => {
   const total = Math.ceil((accessLeft.value ?? 0) / 1000)
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
 })
 
+watch(accessLeft, (left) => {
+  if (left === 0) noAccess.value = true
+})
+
 onMounted(() => {
   if (!props.dropSlug) return
   dropApi.get(props.dropSlug).then((result) => (drop.value = result)).catch(() => {})
-  clock = setInterval(() => {
-    now.value = Date.now()
-    if (accessLeft.value === 0) noAccess.value = true
-  }, 1000)
 })
-
-onBeforeUnmount(() => clearInterval(clock))
 
 onMounted(async () => {
   try {
@@ -148,6 +162,7 @@ async function pay() {
       email: user.value ? null : contact.email,
       shipmentPreference: mixed.value ? shipmentPreference.value : null,
       acceptTerms: true,
+      discountCode: discount.value?.applied ? discount.value.code : null,
     }
     const started = props.dropSlug
       ? await dropApi.checkout(props.dropSlug, { ...body, website: website.value })
@@ -157,6 +172,7 @@ async function pay() {
     error.value = exception.message
     submitting.value = false
     if (exception.code?.startsWith('drop_')) noAccess.value = true
+    if (exception.code === 'discount_invalid') await loadQuote()
     if (exception.code === 'cart_changed') {
       await Promise.all([loadQuote(), props.dropSlug ? Promise.resolve() : cart.load()])
     }
@@ -343,17 +359,51 @@ const loginLink = computed(() => ({ path: '/inloggen', query: { redirect: route.
             <span class="summary-name">
               {{ item.name }}
               <span v-if="item.preOrder" class="pre-order">{{ t('shop.badges.preOrder') }}</span>
-              <span v-if="item.problem" class="warning">{{ t(`cart.problems.${item.problem}`, { available: item.available }) }}</span>
+              <span v-if="item.problem" class="warning">{{ t(`cart.problems.${item.problem}`) }}</span>
             </span>
             <span class="summary-amount">{{ item.lineTotalCents !== null ? formatMoney(item.lineTotalCents, 'EUR') : '' }}</span>
           </li>
         </ul>
+        <div class="discount">
+          <button v-if="!codeOpen && !discount" class="link-button code-toggle" type="button" @click="codeOpen = true">
+            <TicketPercent :size="16" aria-hidden="true" />
+            {{ t('checkout.discount.add') }}
+          </button>
+          <div v-else-if="!discount?.applied" class="code-form">
+            <label class="code-label" for="checkout-code">{{ t('checkout.discount.label') }}</label>
+            <div class="code-row">
+              <input
+                id="checkout-code"
+                v-model="codeInput"
+                class="code-input"
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                maxlength="40"
+                @keydown.enter.prevent="applyCode"
+              />
+              <button class="btn btn-secondary btn-small" type="button" :disabled="!codeInput.trim()" @click="applyCode">
+                {{ t('checkout.discount.apply') }}
+              </button>
+            </div>
+            <p v-if="discount?.message" class="code-problem" role="alert">{{ discount.message }}</p>
+          </div>
+          <p v-else class="code-applied" role="status">
+            <TicketPercent :size="16" aria-hidden="true" />
+            <span>{{ t('checkout.discount.applied', { code: discount.code }) }}</span>
+            <button class="icon-link" type="button" :aria-label="t('checkout.discount.remove')" @click="removeCode">
+              <X :size="16" aria-hidden="true" />
+            </button>
+          </p>
+        </div>
         <CartTotals
           :subtotal-cents="quote.subtotalCents"
           :shipping-cents="quote.shipping?.priceCents ?? null"
           :total-cents="quote.totalCents"
           :vat-cents="quote.vatCents"
           :country="quote.shipping?.country"
+          :discount-cents="quote.discountCents"
+          :discount-code="discount?.applied ? discount.code : null"
         />
       </aside>
     </form>
@@ -664,5 +714,73 @@ const loginLink = computed(() => ({ path: '/inloggen', query: { redirect: route.
     top: 9rem;
     order: 0;
   }
+}
+
+.discount {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.code-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.code-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.code-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.code-input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-target);
+  padding-inline: var(--space-3);
+  border: 1.5px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+}
+
+.code-problem {
+  margin-top: var(--space-2);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.code-applied {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-success);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+
+.icon-link:hover {
+  color: var(--color-danger);
 }
 </style>

@@ -7,37 +7,31 @@ import { formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
 /**
- * A product in a drop: price, limit and what is left. Someone who got through the waiting room gets a counter to
- * put it in the drop cart, up to what is left and what the limits allow.
+ * A product in a drop: its limit, and whether it sold out. Never how many there are. The price only shows once it is
+ * this person's turn: then they get a counter to put it in the drop cart, as far as the limits allow. Asking for more
+ * than is left gets a message from the shop, without the number.
  */
 const props = defineProps({
   product: { type: Object, required: true },
   /** The drop is live and it is this person's turn. */
   shopping: { type: Boolean, default: false },
+  /** From the drop cart, only while shopping: `priceCents` and `regularPriceCents`. */
+  price: { type: Object, default: null },
   inCart: { type: Number, default: 0 },
   /** The most this product can have in the cart within the limits. Null: no limit. */
   room: { type: Number, default: null },
   ordered: { type: Number, default: 0 },
   busy: { type: Boolean, default: false },
+  /** Live or ended: shows whether it sold out. */
   live: { type: Boolean, default: false },
+  ended: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['change'])
 
 const accent = computed(() => (props.product.game ? findGame(props.product.game)?.accent : null))
-const max = computed(() => Math.min(props.room ?? 99, props.product.available))
-const share = computed(() =>
-  props.product.allocated > 0 ? Math.round((props.product.available / props.product.allocated) * 100) : 0,
-)
-
-const stockText = computed(() => {
-  const product = props.product
-  if (product.soldOut) return t('drops.product.soldOut')
-  if (product.available === 0) return t('drops.product.allReserved')
-  return product.available === 1 ? t('drops.product.oneLeft') : t('drops.product.left', { count: product.available })
-})
-
-const low = computed(() => !props.product.soldOut && props.product.available <= Math.max(2, props.product.allocated / 5))
+const max = computed(() => (props.product.allReserved ? 0 : (props.room ?? 99)))
+const showPrice = computed(() => props.shopping && props.price?.priceCents != null)
 </script>
 
 <template>
@@ -58,21 +52,22 @@ const low = computed(() => !props.product.soldOut && props.product.available <= 
         <template v-else>{{ product.name }}</template>
       </h3>
 
-      <p class="price">
-        <strong>{{ product.priceCents != null ? formatMoney(product.priceCents, 'EUR') : '' }}</strong>
-        <s v-if="product.regularPriceCents" class="regular">{{ t('drops.product.regular', { price: formatMoney(product.regularPriceCents, 'EUR') }) }}</s>
-      </p>
-      <p class="vat">{{ t('shop.inclVat') }}</p>
+      <template v-if="showPrice">
+        <p class="price">
+          <strong>{{ formatMoney(price.priceCents, 'EUR') }}</strong>
+          <s v-if="price.regularPriceCents" class="regular">{{ t('drops.product.regular', { price: formatMoney(price.regularPriceCents, 'EUR') }) }}</s>
+        </p>
+        <p class="vat">{{ t('shop.inclVat') }}</p>
+      </template>
+      <p v-else-if="!shopping && !ended && !product.soldOut" class="price-later">{{ t('drops.product.priceLater') }}</p>
 
       <p v-if="product.maxPerCustomer" class="limit">{{ t('drops.product.limit', { count: product.maxPerCustomer }) }}</p>
       <p v-if="ordered > 0" class="limit">{{ t('drops.product.ordered', { count: ordered }) }}</p>
 
-      <div v-if="live || product.soldOut" class="stock" :class="{ low, out: product.available === 0 }">
-        <div class="bar" aria-hidden="true"><span :style="{ width: `${share}%` }"></span></div>
-        <p class="stock-text" aria-live="polite">{{ stockText }}</p>
-        <p v-if="!product.soldOut && product.available === 0" class="hint">{{ t('drops.product.allReservedHint') }}</p>
+      <div v-if="(live && product.allReserved) || product.soldOut" class="stock" aria-live="polite">
+        <p class="stock-text">{{ product.soldOut ? t('drops.product.soldOut') : t('drops.product.allReserved') }}</p>
+        <p v-if="!product.soldOut" class="hint">{{ t('drops.product.allReservedHint') }}</p>
       </div>
-      <p v-else class="allocated">{{ t('drops.product.allocated', { count: product.allocated }) }}</p>
 
       <div v-if="shopping && !product.soldOut" class="stepper">
         <button
@@ -153,7 +148,6 @@ const low = computed(() => !props.product.soldOut && props.product.available <= 
 
 .vat,
 .limit,
-.allocated,
 .hint {
   color: var(--color-ink-soft);
   font-size: var(--text-xs);
@@ -163,41 +157,20 @@ const low = computed(() => !props.product.soldOut && props.product.available <= 
   font-weight: 650;
 }
 
+.price-later {
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
 .stock {
   margin-top: var(--space-1);
 }
 
-.bar {
-  height: 0.375rem;
-  overflow: hidden;
-  border-radius: var(--radius-round);
-  background: var(--color-muted-soft);
-}
-
-.bar span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--color-brand);
-  transition: width 0.4s;
-}
-
-.low .bar span {
-  background: var(--color-warning);
-}
-
 .stock-text {
-  margin-top: var(--space-1);
+  color: var(--color-sale);
   font-size: var(--text-sm);
   font-weight: 700;
-}
-
-.low .stock-text {
-  color: var(--color-warning);
-}
-
-.out .stock-text {
-  color: var(--color-sale);
 }
 
 .stepper {
@@ -245,12 +218,6 @@ const low = computed(() => !props.product.soldOut && props.product.available <= 
 @media (min-width: 480px) {
   .drop-product {
     grid-template-columns: 8.5rem minmax(0, 1fr);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bar span {
-    transition: none;
   }
 }
 </style>

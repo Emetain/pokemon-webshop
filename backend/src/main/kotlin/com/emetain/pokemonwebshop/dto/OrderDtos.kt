@@ -23,9 +23,11 @@ data class OrderLineDto(
     val lineTotalCents: Long,
     val preOrder: Boolean,
     val shipsFrom: LocalDate?,
+    /** For a mystery box: which box each one is. The customer only sees this once the order has shipped. */
+    val mysteryBoxes: List<String> = emptyList(),
 ) {
     companion object {
-        fun from(line: OrderLine) = OrderLineDto(
+        fun from(line: OrderLine, mysteryBoxes: List<String> = emptyList()) = OrderLineDto(
             productId = line.product.id,
             slug = line.productSlug,
             name = line.productName,
@@ -37,6 +39,7 @@ data class OrderLineDto(
             lineTotalCents = line.lineTotalCents,
             preOrder = line.preOrder,
             shipsFrom = line.shipsFrom,
+            mysteryBoxes = mysteryBoxes,
         )
     }
 }
@@ -65,6 +68,9 @@ data class OrderDto(
     val address: OrderAddressDto,
     val lines: List<OrderLineDto>,
     val subtotalCents: Long,
+    /** What a discount code took off the products, already taken off [totalCents]. */
+    val discountCents: Long,
+    val discountCode: String?,
     val shippingCents: Long,
     val totalCents: Long,
     val vatCents: Long,
@@ -86,8 +92,11 @@ data class OrderDto(
     val canCreateAccount: Boolean,
 ) {
     companion object {
-        /** Call this inside a transaction: it reads the lines and the history. */
-        fun from(order: Order, canCreateAccount: Boolean = false): OrderDto {
+        /**
+         * Call this inside a transaction: it reads the lines and the history. [mysteryBoxes] holds per order line
+         * the boxes it got.
+         */
+        fun from(order: Order, canCreateAccount: Boolean = false, mysteryBoxes: Map<Long, List<String>> = emptyMap()): OrderDto {
             val steps = order.history
                 .fold(mutableListOf<OrderStepDto>()) { steps, change ->
                     if (steps.lastOrNull()?.status != change.status) steps += OrderStepDto(change.status, change.createdAt)
@@ -103,8 +112,10 @@ data class OrderDto(
                 cancelledAt = order.cancelledAt,
                 email = order.email,
                 address = OrderAddressDto(order.customerName, order.street, order.houseNumber, order.postcode, order.city, order.country),
-                lines = order.lines.map(OrderLineDto::from),
+                lines = order.lines.map { OrderLineDto.from(it, mysteryBoxes[it.id].orEmpty()) },
                 subtotalCents = order.subtotalCents,
+                discountCents = order.discountCents,
+                discountCode = order.discountCodeText,
                 shippingCents = order.shippingCents,
                 totalCents = order.totalCents,
                 vatCents = order.vatCents,

@@ -27,6 +27,7 @@ import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.test.context.TestPropertySource
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -41,6 +42,11 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+/**
+ * A mock bean gives this class its own Spring context, so it gets its own database too. On the shared one, its
+ * create-drop would reset the id sequences under the other context, which then hands out ids twice.
+ */
+@TestPropertySource(properties = ["spring.datasource.url=jdbc:h2:mem:catalog-sync;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=20000"])
 class CatalogSyncIntegrationTest : IntegrationTest() {
 
     @MockBean
@@ -262,7 +268,7 @@ class CatalogSyncIntegrationTest : IntegrationTest() {
 
         mockMvc.perform(get("/v1/admin/catalog/sync").cookie(session))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.length()").value(4))
+            .andExpect(jsonPath("$.length()").value(Game.entries.size))
             .andExpect(jsonPath("$[?(@.game == 'one-piece')].lastRun.status").value("COMPLETED"))
             .andExpect(jsonPath("$[?(@.game == 'one-piece')].setCount").isNotEmpty)
         assertEquals(SyncStatus.COMPLETED, run.status)

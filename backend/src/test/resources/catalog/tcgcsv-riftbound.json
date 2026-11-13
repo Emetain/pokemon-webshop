@@ -1,0 +1,168 @@
+{
+ "groups": [
+  {
+   "groupId": 24901,
+   "name": "Gift of the Rift Bundles",
+   "abbreviation": "GRFT",
+   "isSupplemental": false,
+   "publishedOn": "2026-12-04T00:00:00"
+  },
+  {
+   "groupId": 24439,
+   "name": "Origins: Proving Grounds",
+   "abbreviation": "OGS",
+   "isSupplemental": false,
+   "publishedOn": "2025-10-31T00:00:00"
+  }
+ ],
+ "products": {
+  "24439": [
+   {
+    "productId": 635460,
+    "name": "Origins - Proving Grounds Box Set",
+    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/635460_200w.jpg",
+    "extendedData": []
+   },
+   {
+    "productId": 653136,
+    "name": "Annie, Fiery",
+    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/653136_200w.jpg",
+    "extendedData": [
+     {
+      "name": "Rarity",
+      "displayName": "Rarity",
+      "value": "Epic"
+     },
+     {
+      "name": "Number",
+      "displayName": "Number",
+      "value": "001/024"
+     },
+     {
+      "name": "Description",
+      "displayName": "Description",
+      "value": "Your spells and abilities deal 1 Bonus Damage.<br>\r\n<em>(Eac"
+     },
+     {
+      "name": "Energy Cost",
+      "displayName": "Energy Cost",
+      "value": "5"
+     },
+     {
+      "name": "Power Cost",
+      "displayName": "Power Cost",
+      "value": "1"
+     },
+     {
+      "name": "Might",
+      "displayName": "Might",
+      "value": "4"
+     },
+     {
+      "name": "Card Type",
+      "displayName": "Card Type",
+      "value": "Champion Unit"
+     },
+     {
+      "name": "Tag",
+      "displayName": "Tag",
+      "value": "Annie"
+     },
+     {
+      "name": "Domain",
+      "displayName": "Domain",
+      "value": "Fury"
+     },
+     {
+      "name": "Flavor Text",
+      "displayName": "Flavor Text",
+      "value": "<em>\"I never play with matches.\"</em>"
+     }
+    ]
+   },
+   {
+    "productId": 653137,
+    "name": "Firestorm",
+    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/653137_200w.jpg",
+    "extendedData": [
+     {
+      "name": "Rarity",
+      "displayName": "Rarity",
+      "value": "Uncommon"
+     },
+     {
+      "name": "Number",
+      "displayName": "Number",
+      "value": "002/024"
+     },
+     {
+      "name": "Description",
+      "displayName": "Description",
+      "value": "Deal 3 to all enemy units at a battlefield."
+     },
+     {
+      "name": "Energy Cost",
+      "displayName": "Energy Cost",
+      "value": "6"
+     },
+     {
+      "name": "Power Cost",
+      "displayName": "Power Cost",
+      "value": "1"
+     },
+     {
+      "name": "Might",
+      "displayName": "Might",
+      "value": "0"
+     },
+     {
+      "name": "Card Type",
+      "displayName": "Card Type",
+      "value": "Spell"
+     },
+     {
+      "name": "Domain",
+      "displayName": "Domain",
+      "value": "Fury"
+     },
+     {
+      "name": "Flavor Text",
+      "displayName": "Flavor Text",
+      "value": "<em>\"Eeny, meeny, miny, burn!\" -Annie</em>"
+     }
+    ]
+   }
+  ],
+  "24901": [
+   {
+    "productId": 714486,
+    "name": "Gift of the Rift Bundle",
+    "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/714486_200w.jpg",
+    "extendedData": []
+   }
+  ]
+ },
+ "prices": {
+  "24439": [
+   {
+    "productId": 653136,
+    "lowPrice": 3.85,
+    "midPrice": 4.4,
+    "highPrice": 10.0,
+    "marketPrice": 4.26,
+    "directLowPrice": null,
+    "subTypeName": "Normal"
+   },
+   {
+    "productId": 653137,
+    "lowPrice": 0.14,
+    "midPrice": 0.42,
+    "highPrice": 3.74,
+    "marketPrice": 0.35,
+    "directLowPrice": null,
+    "subTypeName": "Normal"
+   }
+  ],
+  "24901": []
+ }
+}

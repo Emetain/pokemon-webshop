@@ -51,7 +51,8 @@ class FakePaymentGateway : PaymentGateway {
                 sessionId in expired -> SessionStatus.EXPIRED
                 else -> SessionStatus.OPEN
             },
-            amountTotalCents = request.lines.sumOf { it.unitAmountCents * it.quantity } + request.shippingCents,
+            amountTotalCents = request.lines.sumOf { it.unitAmountCents * it.quantity } - (request.discount?.amountCents ?: 0) +
+                request.shippingCents,
             currency = "eur",
             paymentIntentId = "pi_$sessionId",
             paymentMethod = request.paymentMethods.first(),

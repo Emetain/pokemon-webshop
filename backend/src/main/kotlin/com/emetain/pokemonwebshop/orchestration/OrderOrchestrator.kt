@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.orchestration
 
+import com.emetain.pokemonwebshop.service.MysteryBoxService
 import com.emetain.pokemonwebshop.domain.Order
 import com.emetain.pokemonwebshop.domain.OrderStatus
 import com.emetain.pokemonwebshop.domain.Role
@@ -40,13 +41,14 @@ class OrderOrchestrator(
     private val cartService: CartService,
     private val cartCookieService: CartCookieService,
     private val orderService: OrderService,
+    private val mysteryBoxService: MysteryBoxService,
     private val transactions: TransactionTemplate,
     private val clock: Clock,
 ) {
 
     fun view(number: String, token: String?, viewer: User?): OrderDto = transactions.execute {
         val order = accessible(number, token, viewer)
-        OrderDto.from(order, canCreateAccount(order))
+        OrderDto.from(order, canCreateAccount(order), revealedBoxes(order))
     }!!
 
     /** From the page Stripe sends a customer to after "terug": the stock goes back right away. */
@@ -67,8 +69,12 @@ class OrderOrchestrator(
         val order = orderRepository.findByNumber(OrderNumbers.normalize(number))
             ?.takeIf { it.user?.id == user.id && it.paidAt != null }
             ?: throw notFound()
-        return OrderDto.from(order)
+        return OrderDto.from(order, mysteryBoxes = revealedBoxes(order))
     }
+
+    /** What is in a mystery box stays a surprise until the parcel is on its way. */
+    private fun revealedBoxes(order: Order): Map<Long, List<String>> =
+        if (order.status in setOf(OrderStatus.SHIPPED, OrderStatus.DELIVERED)) mysteryBoxService.namesByLine(order.id) else emptyMap()
 
     /** A guest who just paid makes an account with the email of the order, and is logged in right away. */
     fun createAccount(number: String, request: GuestAccountRequest, httpRequest: HttpServletRequest): ResponseEntity<UserDto> {

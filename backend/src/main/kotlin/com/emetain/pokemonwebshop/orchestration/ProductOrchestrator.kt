@@ -1,5 +1,8 @@
 package com.emetain.pokemonwebshop.orchestration
 
+import com.emetain.pokemonwebshop.dto.MysteryBoxDto
+import com.emetain.pokemonwebshop.service.ReviewService
+import com.emetain.pokemonwebshop.service.MysteryBoxService
 import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.domain.AccessoryType
 import com.emetain.pokemonwebshop.domain.DropStatus
@@ -27,7 +30,6 @@ import com.emetain.pokemonwebshop.repository.ProductSpecifications
 import com.emetain.pokemonwebshop.service.CardOfferService
 import com.emetain.pokemonwebshop.service.CatalogText
 import com.emetain.pokemonwebshop.service.ProductSlugs
-import com.emetain.pokemonwebshop.service.ProductRules
 import com.emetain.pokemonwebshop.service.ProductWishlistService
 import com.emetain.pokemonwebshop.service.StockAlertService
 import org.springframework.data.domain.Page
@@ -52,6 +54,8 @@ class ProductOrchestrator(
     private val cardOfferService: CardOfferService,
     private val stockAlertService: StockAlertService,
     private val dropProductRepository: DropProductRepository,
+    private val mysteryBoxService: MysteryBoxService,
+    private val reviewService: ReviewService,
     private val properties: AppProperties,
     private val clock: Clock,
 ) {
@@ -131,7 +135,7 @@ class ProductOrchestrator(
         val drop = dropProductRepository.findInDrops(product.id, listOf(DropStatus.LIVE, DropStatus.SCHEDULED))
             .sortedBy { it.drop.status != DropStatus.LIVE }
             .firstOrNull { !it.soldOut }
-            ?.let { ProductDropDto(it.drop.slug, it.drop.name, it.drop.status.name, it.drop.startsAt, it.priceCents ?: ProductRules.shownPriceCents(product)) }
+            ?.let { ProductDropDto(it.drop.slug, it.drop.name, it.drop.status.name, it.drop.startsAt) }
         return ProductDetailDto.from(
             product = product,
             wished = wished?.contains(product.id),
@@ -139,7 +143,14 @@ class ProductOrchestrator(
             otherOffers = otherOffers.map { ProductSummaryDto.from(it, wished?.contains(it.id)) },
             related = related.map { ProductSummaryDto.from(it, wished?.contains(it.id)) },
             drop = drop,
-        )
+        ).let { dto ->
+            val reviews = reviewService.summary(product.id)
+            dto.copy(
+                mysteryBox = if (product.type == ProductType.MYSTERY_BOX) mysteryBoxService.current(product.id)?.let(MysteryBoxDto::from) else null,
+                reviewCount = reviews.count,
+                averageRating = reviews.average,
+            )
+        }
     }
 
     fun signUpForStock(slug: String, email: String) {

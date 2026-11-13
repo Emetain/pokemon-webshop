@@ -1,5 +1,9 @@
 package com.emetain.pokemonwebshop.controller
 
+import com.emetain.pokemonwebshop.security.CurrentUser
+import com.emetain.pokemonwebshop.dto.AiStatusDto
+import com.emetain.pokemonwebshop.dto.AiSlideRequest
+import com.emetain.pokemonwebshop.domain.User
 import com.emetain.pokemonwebshop.dto.AdminHeroSlideDto
 import com.emetain.pokemonwebshop.dto.HeroSlideRequest
 import com.emetain.pokemonwebshop.orchestration.HeroSlideOrchestrator
@@ -27,6 +31,16 @@ class AdminHeroSlideController(
 
     @GetMapping
     fun all(): List<AdminHeroSlideDto> = slideOrchestrator.all()
+
+    /** Whether the AI button shows, and what AI cost this month. */
+    @GetMapping("/ai")
+    fun aiStatus(): AiStatusDto = slideOrchestrator.aiStatus()
+
+    /** Writes a slide from a prompt. It comes back switched off: the admin edits and switches it on. */
+    @PostMapping("/ai")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun aiDraft(@Valid @RequestBody request: AiSlideRequest, @CurrentUser admin: User): AdminHeroSlideDto =
+        slideOrchestrator.aiDraft(request, admin)
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

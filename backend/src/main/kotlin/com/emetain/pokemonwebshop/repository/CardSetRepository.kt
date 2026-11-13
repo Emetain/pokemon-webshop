@@ -17,4 +17,7 @@ interface CardSetRepository : JpaRepository<CardSet, Long> {
     fun findAllNewestFirst(game: Game): List<CardSet>
 
     fun countByGame(game: Game): Long
+
+    /** Sets the card sources already list but that aren't out yet, for the release calendar suggestions. */
+    fun findByReleaseDateAfter(date: java.time.LocalDate): List<CardSet>
 }

@@ -26,7 +26,7 @@ class ApiException(
         fun outOfStock(available: Int) = ApiException(
             HttpStatus.CONFLICT,
             "out_of_stock",
-            if (available <= 0) "Dit product is uitverkocht." else "Er zijn er nog maar $available van dit product.",
+            if (available <= 0) "Dit product is uitverkocht." else "We hebben niet genoeg meer van dit product voor dit aantal.",
         )
 
         fun stockChanged() = ApiException(

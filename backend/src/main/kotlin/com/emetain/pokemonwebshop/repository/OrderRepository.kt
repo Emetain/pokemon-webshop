@@ -111,4 +111,38 @@ interface OrderRepository : JpaRepository<Order, Long>, JpaSpecificationExecutor
         /** Orders that count towards drop limits. Cancelled, refunded and unpaid checkouts that ran out don't. */
         val DROP_LIMIT_STATUSES: Set<OrderStatus> = OrderStatus.SOLD + OrderStatus.PENDING_PAYMENT
     }
+
+    /** Uses of a discount code: every order with it that isn't cancelled, also those waiting for payment. */
+    @Query("select count(o) from Order o where o.discountCode.id = :codeId and o.status <> :cancelled")
+    fun countDiscountUses(codeId: Long, cancelled: OrderStatus = OrderStatus.CANCELLED): Long
+
+    /** Uses of a discount code by one customer: by account, or by email address for a guest. */
+    @Query(
+        """
+        select count(o) from Order o left join o.user u
+        where o.discountCode.id = :codeId and o.status <> :cancelled and (u.id = :userId or lower(o.email) = :email)
+        """,
+    )
+    fun countDiscountUsesBy(codeId: Long, userId: Long, email: String, cancelled: OrderStatus = OrderStatus.CANCELLED): Long
+
+    /** Per code: orders that aren't cancelled, of which paid, and the discount given on the paid ones. */
+    @Query(
+        """
+        select o.discountCode.id, count(o), sum(case when o.paidAt is not null then 1 else 0 end),
+               sum(case when o.paidAt is not null then o.discountCents else 0 end)
+        from Order o where o.discountCode is not null and o.status <> :cancelled group by o.discountCode.id
+        """,
+    )
+    fun discountUsage(cancelled: OrderStatus = OrderStatus.CANCELLED): List<Array<Any>>
+
+    fun existsByDiscountCodeId(codeId: Long): Boolean
+
+    /** Whether a customer bought a product: a paid order of theirs with it that wasn't cancelled. */
+    @Query(
+        """
+        select count(l) > 0 from OrderLine l
+        where l.product.id = :productId and l.order.user.id = :userId and l.order.status in :statuses
+        """,
+    )
+    fun hasBought(productId: Long, userId: Long, statuses: Collection<OrderStatus> = OrderStatus.SOLD): Boolean
 }

@@ -26,8 +26,8 @@ object ProductRules {
     fun canBuy(status: ProductStatus, priceCents: Long?, available: Int): Boolean =
         status == ProductStatus.ACTIVE && priceCents != null && available > 0
 
-    /** "Laatste X": only while it can be bought and the stock is at or below the warning level. */
-    fun lastFew(available: Int, threshold: Int): Int? = available.takeIf { it in 1..threshold }
+    /** "Laatste stuks": while it can be bought and the stock is at or below the warning level. Never the number. */
+    fun lastFew(available: Int, threshold: Int): Boolean = available in 1..threshold
 
     fun canBuy(product: Product): Boolean = canBuy(product.status, product.priceCents, product.stock.available)
 

@@ -11,6 +11,19 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query
 
 interface CardRepository : JpaRepository<Card, Long>, JpaSpecificationExecutor<Card> {
+
+    /** Cards of a game with no picture at all, for the picture search. */
+    @Query(
+        "select c from Card c join fetch c.set where c.game = :game " +
+            "and c.imageSmallUrl is null and c.customImageUrl is null and c.foundImageSmallUrl is null",
+    )
+    fun findWithoutPicture(game: Game): List<Card>
+
+    @Query(
+        "select count(c) from Card c where c.game = :game " +
+            "and c.imageSmallUrl is null and c.customImageUrl is null and c.foundImageSmallUrl is null",
+    )
+    fun countWithoutPicture(game: Game): Long
     fun findAllByGameAndExternalIdIn(game: Game, externalIds: Collection<String>): List<Card>
 
     @EntityGraph(attributePaths = ["set"])
@@ -59,14 +72,14 @@ interface CardRepository : JpaRepository<Card, Long>, JpaSpecificationExecutor<C
 
     @Query(
         "select c from Card c join fetch c.set " +
-            "where c.sortPriceCents is not null and (c.imageSmallUrl is not null or c.customImageUrl is not null) " +
+            "where c.sortPriceCents is not null and (c.imageSmallUrl is not null or c.customImageUrl is not null or c.foundImageSmallUrl is not null) " +
             "order by c.sortPriceCents desc, c.id",
     )
     fun findMostExpensive(pageable: Pageable): List<Card>
 
     @Query(
         "select c from Card c join fetch c.set where c.game = :game " +
-            "and c.sortPriceCents is not null and (c.imageSmallUrl is not null or c.customImageUrl is not null) " +
+            "and c.sortPriceCents is not null and (c.imageSmallUrl is not null or c.customImageUrl is not null or c.foundImageSmallUrl is not null) " +
             "order by c.sortPriceCents desc, c.id",
     )
     fun findMostExpensiveOfGame(game: Game, pageable: Pageable): List<Card>
@@ -80,7 +93,7 @@ interface CardRepository : JpaRepository<Card, Long>, JpaSpecificationExecutor<C
 
     @Query(
         "select new com.emetain.pokemonwebshop.repository.OwnedDexCard(" +
-            "d, c.id, c.game, s.code, coalesce(c.customImageUrl, c.imageSmallUrl), c.sortPriceCents) " +
+            "d, c.id, c.game, s.code, coalesce(c.customImageUrl, c.imageSmallUrl, c.foundImageSmallUrl), c.sortPriceCents) " +
             "from Card c join c.set s join c.dexNumbers d " +
             "where c.id in (select e.card.id from CollectionEntry e where e.user.id = :userId)",
     )

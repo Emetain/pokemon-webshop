@@ -1,11 +1,13 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
+import { sampleServerTime, useServerClock } from '../../stores/serverClock'
 import { t } from '../../utils/i18n'
 
 /**
- * Counts down to the start of a drop. The browser's clock can be minutes off, so the time left is measured against
- * the server's clock: `serverTime` is when the server answered. `boxes` shows big blocks for the drop page, without
- * it the countdown is a short line for the hero. Emits `done` once at zero.
+ * Counts down to the start of a drop, on the shop's clock (see `serverClock`): every countdown on a page shows the
+ * same second. `serverTime` is only needed when the shop's time isn't at the top of a reply, as in the hero slides.
+ * `boxes` shows big
+ * blocks for the drop page, without it the countdown is a short line for the hero. Emits `done` once at zero.
  */
 const props = defineProps({
   target: { type: String, required: true },
@@ -15,25 +17,26 @@ const props = defineProps({
 
 const emit = defineEmits(['done'])
 
-const offset = ref(0)
-const now = ref(Date.now())
-let timer = null
+const { now } = useServerClock()
 let doneSent = false
 
 watch(
   () => props.serverTime,
   (serverTime) => {
-    if (serverTime) offset.value = Date.parse(serverTime) - Date.now()
+    if (serverTime) sampleServerTime(serverTime)
   },
   { immediate: true },
 )
 
 watch(
   () => props.target,
-  () => (doneSent = false),
+  () => {
+    doneSent = false
+    checkDone()
+  },
 )
 
-const remaining = computed(() => Math.max(0, Date.parse(props.target) - (now.value + offset.value)))
+const remaining = computed(() => Math.max(0, Date.parse(props.target) - now.value))
 
 const parts = computed(() => {
   const total = Math.floor(remaining.value / 1000)
@@ -74,20 +77,15 @@ const blocks = computed(() => {
   ]
 })
 
-function tick() {
-  now.value = Date.now()
+function checkDone() {
   if (remaining.value === 0 && !doneSent) {
     doneSent = true
     emit('done')
   }
 }
 
-onMounted(() => {
-  tick()
-  timer = setInterval(tick, 1000)
-})
-
-onBeforeUnmount(() => clearInterval(timer))
+watch(remaining, checkDone)
+onMounted(checkDone)
 </script>
 
 <template>

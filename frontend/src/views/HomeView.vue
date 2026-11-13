@@ -4,9 +4,10 @@ import BallMark from '../components/BallMark.vue'
 import BinderPage from '../components/BinderPage.vue'
 import FormMessage from '../components/FormMessage.vue'
 import HeroCarousel from '../components/shop/HeroCarousel.vue'
+import NewsCard from '../components/content/NewsCard.vue'
 import ProductRow from '../components/shop/ProductRow.vue'
 import { mainNav } from '../data/navigation'
-import { shopApi } from '../services/api'
+import { contentApi, shopApi } from '../services/api'
 import { useSession } from '../stores/session'
 import { t } from '../utils/i18n'
 
@@ -18,16 +19,19 @@ const slides = ref([])
 const newArrivals = ref([])
 const bestsellers = ref([])
 const preOrders = ref([])
+const news = ref([])
 const error = ref('')
 
-/** The games and accessories, with the icon and colour they have in the menu. */
+const NEWS_SIZE = 3
+
+/** The games, with the icon and colour they have in the menu. Accessories are no game: they stay in the menu only. */
 const gameTiles = mainNav
-  .filter((item) => item.game || item.key === 'accessories')
+  .filter((item) => item.game)
   .map((item) => ({
     key: item.key,
     to: item.to,
     label: t(item.labelKey),
-    text: item.game ? t('home.gameCards') : t('home.accessoriesCard'),
+    text: t('home.gameCards'),
     icon: item.icon,
     game: item.game,
   }))
@@ -36,6 +40,7 @@ const gameTiles = mainNav
 shopApi.heroSlides().then((result) => (slides.value = result)).catch(() => {})
 shopApi.newArrivals(ROW_SIZE).then((result) => (newArrivals.value = result)).catch(() => {})
 shopApi.bestsellers(ROW_SIZE).then((result) => (bestsellers.value = result)).catch(() => {})
+contentApi.news({ size: NEWS_SIZE }).then((result) => (news.value = result.articles)).catch(() => {})
 shopApi
   .products({ preOrder: true, sort: 'new', size: ROW_SIZE })
   .then((result) => (preOrders.value = result.results.items))
@@ -114,6 +119,16 @@ function onWished(product, wished) {
       @wished="onWished"
       @error="error = $event"
     />
+
+    <section v-if="news.length" class="news" aria-labelledby="home-news">
+      <div class="news-head">
+        <h2 id="home-news">{{ t('home.news') }}</h2>
+        <router-link class="all" to="/nieuws">{{ t('home.allNews') }}</router-link>
+      </div>
+      <ul class="news-grid">
+        <li v-for="article in news" :key="article.slug"><NewsCard :article="article" /></li>
+      </ul>
+    </section>
   </div>
 </template>
 
@@ -280,5 +295,26 @@ function onWished(product, wished) {
     justify-self: end;
     width: 100%;
   }
+}
+
+.news-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.news-head .all {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: var(--space-5) var(--space-4);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
 }
 </style>

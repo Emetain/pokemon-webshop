@@ -215,7 +215,7 @@ class CollectionIntegrationTest : CollectionTestSupport() {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.copies").value(0))
             .andExpect(jsonPath("$.value.cents").value(0))
-            .andExpect(jsonPath("$.games.length()").value(4))
+            .andExpect(jsonPath("$.games.length()").value(Game.entries.size))
             .andExpect(jsonPath("$.sets.length()").value(0))
             .andExpect(jsonPath("$.mostValuable.length()").value(0))
     }

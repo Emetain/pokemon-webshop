@@ -10,7 +10,6 @@ import { t } from '../../utils/i18n'
 /** A drop in the list on /drops: its banner, name, when, and a countdown while it is upcoming. */
 const props = defineProps({
   drop: { type: Object, required: true },
-  serverTime: { type: String, default: null },
 })
 
 const emit = defineEmits(['started'])
@@ -48,7 +47,7 @@ const products = computed(() =>
         <p class="meta">{{ products }}</p>
         <div v-if="drop.status === 'SCHEDULED'" class="countdown-row">
           <span class="countdown-label">{{ t('drops.countdown.label') }}</span>
-          <DropCountdown :target="drop.startsAt" :server-time="serverTime" @done="emit('started')" />
+          <DropCountdown :target="drop.startsAt" @done="emit('started')" />
         </div>
         <span v-if="!isPast" class="cta">{{ isLive ? t('drops.join') : t('drops.view') }}</span>
       </div>

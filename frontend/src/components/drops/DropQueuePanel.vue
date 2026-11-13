@@ -1,10 +1,11 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Clock, DoorOpen, Hourglass, PartyPopper, ShoppingBag, TimerOff, Users } from 'lucide-vue-next'
 import DropCountdown from './DropCountdown.vue'
 import DropReminderForm from './DropReminderForm.vue'
 import FormMessage from '../FormMessage.vue'
+import { useServerClock } from '../../stores/serverClock'
 import { formatDateTime, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
@@ -58,24 +59,14 @@ const cartText = computed(() =>
   cartCount.value === 1 ? t('drops.queue.oneInCart') : t('drops.queue.cart', { count: cartCount.value }),
 )
 
-/** The time left to shop, against the server's clock. */
-const offset = ref(0)
-const now = ref(Date.now())
-let timer = null
+/** The time left to shop, on the same clock as the countdowns. */
+const { now } = useServerClock()
 let expiredSent = false
-
-watch(
-  () => props.queue?.serverTime,
-  (serverTime) => {
-    if (serverTime) offset.value = Date.parse(serverTime) - Date.now()
-  },
-  { immediate: true },
-)
 
 const accessLeft = computed(() => {
   const until = props.queue?.accessExpiresAt
   if (!until) return 0
-  return Math.max(0, Date.parse(until) - (now.value + offset.value))
+  return Math.max(0, Date.parse(until) - now.value)
 })
 
 const accessText = computed(() => {
@@ -88,17 +79,12 @@ watch(
   () => (expiredSent = false),
 )
 
-onMounted(() => {
-  timer = setInterval(() => {
-    now.value = Date.now()
-    if (state.value === 'ADMITTED' && accessLeft.value === 0 && !expiredSent) {
-      expiredSent = true
-      emit('expired')
-    }
-  }, 1000)
+watch(accessLeft, (left) => {
+  if (state.value === 'ADMITTED' && left === 0 && !expiredSent) {
+    expiredSent = true
+    emit('expired')
+  }
 })
-
-onBeforeUnmount(() => clearInterval(timer))
 
 function join() {
   emit('join', website.value)
@@ -146,7 +132,7 @@ function join() {
       <p class="text">{{ t('drops.queue.waitingText') }}</p>
       <div class="waiting-clock">
         <span class="clock-label">{{ t('drops.countdown.label') }}</span>
-        <DropCountdown :target="drop.startsAt" :server-time="queue.serverTime" @done="emit('started')" />
+        <DropCountdown :target="drop.startsAt" @done="emit('started')" />
       </div>
       <p class="count"><Users :size="16" aria-hidden="true" />{{ waiting }}</p>
     </template>

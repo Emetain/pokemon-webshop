@@ -55,8 +55,8 @@ data class ProductSummaryDto(
     val shownPriceCents: Long?,
     val discountPercent: Int?,
     val canBuy: Boolean,
-    /** Set when only a few are left, for "Laatste X". */
-    val lastFew: Int?,
+    /** Only a few are left, for "Laatste stuks". The shop never shows how many. */
+    val lastFew: Boolean,
     val preOrder: Boolean,
     val releaseDate: LocalDate?,
     val shipsFrom: LocalDate?,
@@ -91,7 +91,7 @@ data class ProductSummaryDto(
                 shownPriceCents = ProductRules.shownPriceCents(product),
                 discountPercent = ProductRules.discountPercent(product.priceCents, product.salePriceCents),
                 canBuy = canBuy,
-                lastFew = if (canBuy) ProductRules.lastFew(available, product.lowStockThreshold) else null,
+                lastFew = canBuy && ProductRules.lastFew(available, product.lowStockThreshold),
                 preOrder = product.preOrder,
                 releaseDate = product.releaseDate,
                 shipsFrom = product.shipsFrom,
@@ -160,10 +160,15 @@ data class ProductDetailDto(
     /** Other singles of the same card, such as other conditions. */
     val otherOffers: List<ProductSummaryDto>,
     val related: List<ProductSummaryDto>,
-    /** The most one customer can put in the cart now: what is left, up to 99. 0 when it can't be bought. */
+    /** The most one customer can put in the cart: 99, or 0 when it can't be bought. Not the stock: the shop never shows that. */
     val maxQuantity: Int,
     /** The upcoming or live drop this product is in, so a product that seems sold out says where it went. */
     val drop: ProductDropDto? = null,
+    /** For a mystery box: the batch boxes come from now, with the chances. */
+    val mysteryBox: MysteryBoxDto? = null,
+    /** Approved reviews: how many and the average number of stars. */
+    val reviewCount: Int = 0,
+    val averageRating: Double? = null,
 ) {
     companion object {
         fun from(
@@ -195,7 +200,7 @@ data class ProductDetailDto(
             cardVariant = product.cardVariant,
             otherOffers = otherOffers,
             related = related,
-            maxQuantity = if (ProductRules.canBuy(product)) CartRules.maxQuantity(product.stock.available) else 0,
+            maxQuantity = if (ProductRules.canBuy(product)) CartRules.MAX_PER_LINE else 0,
             drop = drop,
         )
     }

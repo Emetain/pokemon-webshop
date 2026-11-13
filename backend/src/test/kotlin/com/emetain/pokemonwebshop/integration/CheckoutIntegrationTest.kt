@@ -313,7 +313,8 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val error = checkout(cartCookie).andExpect(status().isConflict).json()
 
         assertEquals("cart_changed", error["error"].asText())
-        assertContains(error["message"].asText(), "nog maar 1")
+        assertContains(error["message"].asText(), "niet genoeg meer")
+        assertFalse(error["message"].asText().contains("nog maar"), "the message never says how many are left")
         assertEquals(0, stock(other)["reserved"].asInt(), "nothing is reserved when one line fails")
         val cart = cart(cartCookie)
         assertEquals("TOO_MANY", cart["items"].first { it["productId"].asLong() == productId }["problem"].asText())
@@ -562,7 +563,8 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val cartCookie = guestCart(productId, 2)
 
         val tooMany = addToCart(productId, 1, cartCookie).andExpect(status().isConflict).json()
-        assertContains(tooMany["message"].asText(), "je hebt er al 2")
+        assertContains(tooMany["message"].asText(), "Je hebt er al 2")
+        assertContains(tooMany["message"].asText(), "niet genoeg meer", message = "never how many are left")
         mockMvc.perform(put("/v1/cart/items/$productId").cookie(cartCookie).json(mapOf("quantity" to 3))).andExpect(status().isConflict)
 
         adjustStock(productId, -2, "CORRECTION").andExpect(status().isOk)

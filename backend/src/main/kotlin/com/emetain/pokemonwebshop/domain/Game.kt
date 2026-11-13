@@ -6,6 +6,7 @@ enum class Game(val slug: String) {
     LORCANA("lorcana"),
     MTG("magic"),
     ONE_PIECE("one-piece"),
+    RIFTBOUND("riftbound"),
     ;
 
     companion object {

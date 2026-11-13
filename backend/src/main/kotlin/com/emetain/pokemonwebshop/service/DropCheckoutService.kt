@@ -63,6 +63,7 @@ class DropCheckoutService(
                 ?: throw cartChanged("${dropProduct.product.name} heeft nog geen prijs.")
             CheckoutLine(dropProduct.product, item.quantity, price)
         }
+        val discount = checkoutService.discount(request, lines, viewer, party, drop = true)
         val order = checkoutService.newOrder(
             party = party,
             lines = lines,
@@ -71,6 +72,7 @@ class DropCheckoutService(
             reservationTtl = properties.drops.reservationTtl,
             drop = drop,
             dropEntryId = entry.id,
+            discount = discount,
         )
         for (item in entry.items) dropStockService.reserve(item.dropProduct, item.quantity)
         checkoutService.saveAddressIfAsked(viewer, request, party)

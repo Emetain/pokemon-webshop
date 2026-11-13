@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { GAMES } from './data/games'
-import { footerInfoLinks, footerShopLinks, navDestinations } from './data/navigation'
+import { navDestinations } from './data/navigation'
 import { useSession } from './stores/session'
 
 const ShopLayout = () => import('./components/layout/ShopLayout.vue')
@@ -44,14 +44,9 @@ function gameShopRoutes() {
 // Leaves room for the sticky header above the element.
 const HASH_SCROLL_OFFSET = 160
 
-/** Menu and footer destinations that have no real page yet. Later phases replace these. */
+/** Menu destinations that have no real page yet. */
 function placeholderPages() {
-  const pages = [
-    ...navDestinations(),
-    ...footerInfoLinks,
-    ...footerShopLinks,
-  ]
-  return pages.map(({ to, labelKey, game }) => placeholder(to.slice(1), labelKey, { game }))
+  return navDestinations().map(({ to, labelKey, game }) => placeholder(to.slice(1), labelKey, { game }))
 }
 
 const router = createRouter({
@@ -78,6 +73,16 @@ const router = createRouter({
           component: () => import('./views/account/OrdersView.vue'),
           props: withQuery('page'),
           meta: { requiresLogin: true },
+        },
+        {
+          path: 'account/tickets',
+          component: () => import('./views/account/TicketsView.vue'),
+          meta: { requiresLogin: true },
+        },
+        {
+          path: 'klantenservice/ticket/:token',
+          component: () => import('./views/support/TicketView.vue'),
+          props: true,
         },
         {
           path: 'account/bestellingen/:number',
@@ -182,7 +187,46 @@ const router = createRouter({
         ...gameShopRoutes(),
         shopRoute('accessoires', { mode: 'accessories' }),
         shopRoute('accessoires/:accessorySlug', { mode: 'accessories' }),
-        shopRoute('pre-order', { mode: 'pre-order' }),
+        {
+          path: 'pre-order',
+          name: 'pre-orders',
+          component: () => import('./views/shop/PreOrderView.vue'),
+          props: withQuery('game'),
+        },
+        {
+          path: 'releasekalender',
+          name: 'release-calendar',
+          component: () => import('./views/shop/ReleaseCalendarView.vue'),
+          props: withQuery('game'),
+        },
+        {
+          path: 'nieuws',
+          name: 'news',
+          component: () => import('./views/content/NewsView.vue'),
+          props: withQuery('game', 'page'),
+        },
+        {
+          path: 'nieuws/:slug',
+          name: 'news-article',
+          component: () => import('./views/content/NewsArticleView.vue'),
+          props: true,
+        },
+        {
+          path: 'info/:slug',
+          name: 'info',
+          component: () => import('./views/content/InfoPageView.vue'),
+          props: true,
+        },
+        {
+          path: 'nieuwsbrief/bevestigen',
+          component: () => import('./views/content/NewsletterLinkView.vue'),
+          props: (route) => ({ mode: 'confirm', ...withQuery('token')(route) }),
+        },
+        {
+          path: 'nieuwsbrief/afmelden',
+          component: () => import('./views/content/NewsletterLinkView.vue'),
+          props: (route) => ({ mode: 'unsubscribe', ...withQuery('token')(route) }),
+        },
         shopRoute('producten', { mode: 'all' }),
         {
           path: 'product/:slug',
@@ -222,6 +266,26 @@ const router = createRouter({
         { path: 'bestellingen/:number', component: () => import('./views/admin/AdminOrderView.vue'), props: true },
         { path: 'verzending', component: () => import('./views/admin/AdminShippingView.vue') },
         { path: 'hero', component: () => import('./views/admin/AdminSlidesView.vue') },
+        { path: 'kortingscodes', component: () => import('./views/admin/AdminDiscountCodesView.vue') },
+        {
+          path: 'tickets',
+          component: () => import('./views/admin/AdminTicketsView.vue'),
+          props: withQuery('status', 'page'),
+        },
+        { path: 'tickets/:number', component: () => import('./views/admin/AdminTicketView.vue'), props: true },
+        {
+          path: 'reviews',
+          component: () => import('./views/admin/AdminReviewsView.vue'),
+          props: withQuery('status', 'page'),
+        },
+        { path: 'releasekalender', component: () => import('./views/admin/AdminReleasesView.vue') },
+        { path: 'nieuws', component: () => import('./views/admin/AdminNewsView.vue') },
+        { path: 'paginas', component: () => import('./views/admin/AdminPagesView.vue') },
+        {
+          path: 'nieuwsbrief',
+          component: () => import('./views/admin/AdminNewsletterView.vue'),
+          props: withQuery('status', 'page'),
+        },
         { path: 'drops', component: () => import('./views/admin/AdminDropsView.vue') },
         { path: 'drops/nieuw', component: () => import('./views/admin/AdminDropEditView.vue') },
         { path: 'drops/:id(\\d+)', component: () => import('./views/admin/AdminDropEditView.vue'), props: true },
@@ -232,6 +296,7 @@ const router = createRouter({
           component: () => import('./views/admin/AdminImagesView.vue'),
           props: withQuery('kind', 'q', 'game', 'set', 'image', 'sort', 'size', 'page'),
         },
+        { path: 'afbeeldingen/zoeken', component: () => import('./views/admin/AdminPictureSearchView.vue') },
       ],
     },
     {

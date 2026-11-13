@@ -12,6 +12,14 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
 
 app:
+  # Fixed here, so a developer's own .env (an empty SHOP_EMAIL, another model) can't change what the tests expect.
+  contact:
+    email: shop@example.com
+  mail:
+    from: noreply@example.com
+  openai:
+    text-model: gpt-6.1-terra
+    chat-model: gpt-6-luna
   auth:
     cookie-secure: true
   rate-limit:
@@ -32,6 +40,7 @@ app:
       MTG: 2000-01-01
       LORCANA: 2000-01-01
       ONE_PIECE: 2000-01-01
+      RIFTBOUND: 2000-01-01
     popular-sets:
       POKEMON: [popular-a, popular-b]
   checkout:

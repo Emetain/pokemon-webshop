@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.orchestration
 
+import com.emetain.pokemonwebshop.service.MysteryBoxService
 import com.emetain.pokemonwebshop.domain.Order
 import com.emetain.pokemonwebshop.domain.OrderStatus
 import com.emetain.pokemonwebshop.domain.User
@@ -40,6 +41,7 @@ class AdminOrderOrchestrator(
     private val shippingRateService: ShippingRateService,
     private val adminProductOrchestrator: AdminProductOrchestrator,
     private val gateway: PaymentGateway,
+    private val mysteryBoxService: MysteryBoxService,
     private val transactions: TransactionTemplate,
     private val clock: Clock,
 ) {
@@ -57,7 +59,10 @@ class AdminOrderOrchestrator(
         return AdminOrderPageDto.from(orderRepository.findAll(Specification.allOf(filters), page))
     }
 
-    fun get(number: String): AdminOrderDto = transactions.execute { AdminOrderDto.from(find(number)) }!!
+    fun get(number: String): AdminOrderDto = transactions.execute {
+        val order = find(number)
+        AdminOrderDto.from(order, mysteryBoxService.namesByLine(order.id))
+    }!!
 
     fun setStatus(number: String, request: OrderStatusRequest, admin: User): AdminOrderDto {
         orderService.setStatus(id(number), request.status, request.note, admin)

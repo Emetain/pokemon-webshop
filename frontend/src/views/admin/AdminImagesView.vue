@@ -233,6 +233,7 @@ watch([() => props.kind, setGame], loadSets, { immediate: true })
   <h1>{{ t('admin.images.title') }}</h1>
   <p class="intro">{{ t('admin.images.intro') }}</p>
   <p class="intro">{{ t('admin.images.rights') }}</p>
+  <router-link class="btn btn-primary btn-small search-link" to="/admin/afbeeldingen/zoeken">{{ t('admin.pictures.link') }}</router-link>
 
   <div class="kinds" role="group" :aria-label="t('admin.images.kind')">
     <button class="kind" type="button" :aria-pressed="!showingSets" @click="switchTo('cards')">
@@ -406,6 +407,10 @@ watch([() => props.kind, setGame], loadSets, { immediate: true })
   max-width: 60ch;
   margin-top: var(--space-1);
   color: var(--color-ink-soft);
+}
+
+.search-link {
+  margin-top: var(--space-3);
 }
 
 .kinds {

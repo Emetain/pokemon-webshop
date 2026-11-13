@@ -22,7 +22,7 @@ const accent = computed(() => (props.item.game ? findGame(props.item.game)?.acce
 const link = computed(() => ({ name: 'product', params: { slug: props.item.slug } }))
 
 const problem = computed(() =>
-  props.item.problem ? t(`cart.problems.${props.item.problem}`, { available: props.item.available }) : '',
+  props.item.problem ? t(`cart.problems.${props.item.problem}`) : '',
 )
 
 async function change(call) {

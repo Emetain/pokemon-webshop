@@ -76,6 +76,16 @@ class Card(
     @Column(length = 500)
     var customImageUrl: String? = null,
 
+    /**
+     * A picture the picture search found at TCGplayer, for a card the source has none for. It comes last: the
+     * source's own picture wins once there is one. A sync never touches it.
+     */
+    @Column(length = 500)
+    var foundImageSmallUrl: String? = null,
+
+    @Column(length = 500)
+    var foundImageLargeUrl: String? = null,
+
     @ElementCollection
     @CollectionTable(
         name = "card_variants",
@@ -115,7 +125,9 @@ class Card(
     @SequenceGenerator(name = "cards_seq", sequenceName = "cards_seq", allocationSize = 500)
     val id: Long = 0,
 ) {
-    val shownImageSmallUrl: String? get() = customImageUrl ?: imageSmallUrl
+    val shownImageSmallUrl: String? get() = customImageUrl ?: imageSmallUrl ?: foundImageSmallUrl
 
-    val shownImageLargeUrl: String? get() = customImageUrl ?: imageLargeUrl
+    val shownImageLargeUrl: String? get() = customImageUrl ?: imageLargeUrl ?: foundImageLargeUrl
+
+    val hasPicture: Boolean get() = shownImageSmallUrl != null
 }

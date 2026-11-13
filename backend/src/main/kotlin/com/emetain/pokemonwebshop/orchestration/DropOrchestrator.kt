@@ -23,7 +23,6 @@ import com.emetain.pokemonwebshop.service.DropQueueService
 import com.emetain.pokemonwebshop.service.DropReminderService
 import com.emetain.pokemonwebshop.service.DropRules
 import com.emetain.pokemonwebshop.service.DropVisitor
-import com.emetain.pokemonwebshop.service.ProductRules
 import com.emetain.pokemonwebshop.service.QueueResult
 import com.emetain.pokemonwebshop.service.RateLimitService
 import jakarta.servlet.http.HttpServletRequest
@@ -213,8 +212,6 @@ class DropOrchestrator(
 
     private fun product(dropProduct: DropProduct): DropProductDto {
         val product = dropProduct.product
-        val shopPrice = ProductRules.shownPriceCents(product)
-        val price = dropProduct.priceCents ?: shopPrice
         val ownImage = product.images.firstOrNull()
         val cardImage = product.card?.shownImageSmallUrl
         return DropProductDto(
@@ -227,13 +224,9 @@ class DropOrchestrator(
             imageUrl = ownImage ?: cardImage,
             imageIsCard = ownImage == null && cardImage != null,
             setLogoUrl = product.cardSet?.shownLogoUrl,
-            priceCents = price,
-            regularPriceCents = shopPrice?.takeIf { price != null && it > price },
             maxPerCustomer = dropProduct.maxPerCustomer,
-            allocated = dropProduct.allocated,
-            available = dropProduct.available.coerceAtLeast(0),
-            reserved = dropProduct.reserved,
             soldOut = dropProduct.soldOut,
+            allReserved = !dropProduct.soldOut && dropProduct.available <= 0,
             preOrder = product.preOrder,
             shipsFrom = if (product.preOrder) product.shipsFrom ?: product.releaseDate else null,
         )

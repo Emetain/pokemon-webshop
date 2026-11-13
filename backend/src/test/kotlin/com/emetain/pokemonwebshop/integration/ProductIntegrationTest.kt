@@ -119,7 +119,8 @@ class ProductIntegrationTest : ShopTestSupport() {
         adjustStock(product["id"].asLong(), 3).andExpect(status().isOk)
         mockMvc.perform(get("/v1/products/$slug"))
             .andExpect(jsonPath("$.product.canBuy").value(true))
-            .andExpect(jsonPath("$.product.lastFew").doesNotExist())
+            .andExpect(jsonPath("$.product.lastFew").value(false))
+            .andExpect(jsonPath("$.maxQuantity").value(99))
     }
 
     @Test

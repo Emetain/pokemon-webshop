@@ -107,8 +107,8 @@ data class AdminOrderDto(
     val termsAcceptedAt: Instant,
 ) {
     companion object {
-        fun from(order: Order) = AdminOrderDto(
-            order = OrderDto.from(order),
+        fun from(order: Order, mysteryBoxes: Map<Long, List<String>> = emptyMap()) = AdminOrderDto(
+            order = OrderDto.from(order, mysteryBoxes = mysteryBoxes),
             customerName = order.customerName,
             userId = order.user?.id,
             history = order.history.map(AdminOrderEventDto::from),

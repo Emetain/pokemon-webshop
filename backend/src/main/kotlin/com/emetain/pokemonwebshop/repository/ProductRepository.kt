@@ -55,6 +55,16 @@ interface ProductRepository : JpaRepository<Product, Long>, JpaSpecificationExec
     @EntityGraph(attributePaths = ["stock", "cardSet", "card"])
     fun findAllByIdIn(ids: Collection<Long>): List<Product>
 
+    /** Sealed products of a game that have no picture, for the picture search. Singles show their card's picture. */
+    @Query(
+        "select p from Product p join fetch p.cardSet where p.game = :game and p.card is null " +
+            "and p.status <> :archived and p.images is empty",
+    )
+    fun findSealedWithoutPicture(game: Game, archived: ProductStatus = ProductStatus.ARCHIVED): List<Product>
+
+    @Query("select count(p) from Product p where p.game = :game and p.card is null and p.status <> :archived and p.images is empty")
+    fun countSealedWithoutPicture(game: Game, archived: ProductStatus = ProductStatus.ARCHIVED): Long
+
     /** Singles and slabs of these cards that are in the shop and can be bought right now. */
     @EntityGraph(attributePaths = ["stock"])
     @Query(
@@ -87,4 +97,19 @@ interface ProductRepository : JpaRepository<Product, Long>, JpaSpecificationExec
             "and p.status <> :archived",
     )
     fun findTypesInSet(setId: Long, language: ProductLanguage, archived: ProductStatus = ProductStatus.ARCHIVED): List<ProductType>
+
+    /** Every pre-order in the shop, by release date: the pre-order page puts them on a timeline. */
+    @EntityGraph(attributePaths = ["stock", "cardSet", "card"])
+    @Query(
+        """
+        select p from Product p where p.status = :status and p.preOrder = true and (:game is null or p.game = :game)
+        order by case when p.releaseDate is null then 1 else 0 end, p.releaseDate asc, p.name asc
+        """,
+    )
+    fun findPreOrders(game: Game?, pageable: Pageable, status: ProductStatus = ProductStatus.ACTIVE): List<Product>
+
+    /** The pre-orders and other active products of a set, for a release on the calendar without its own list. */
+    @EntityGraph(attributePaths = ["stock", "cardSet", "card"])
+    @Query("select p from Product p where p.cardSet.id = :setId and p.status = :status and p.preOrder = true order by p.name")
+    fun findPreOrdersOfSet(setId: Long, status: ProductStatus = ProductStatus.ACTIVE): List<Product>
 }

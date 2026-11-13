@@ -15,6 +15,7 @@ import com.emetain.pokemonwebshop.service.OrderPaymentService
 import com.emetain.pokemonwebshop.service.PaymentMethods
 import com.emetain.pokemonwebshop.service.ShippingRateService
 import com.emetain.pokemonwebshop.service.payment.CheckoutRequest
+import com.emetain.pokemonwebshop.service.payment.PaymentDiscount
 import com.emetain.pokemonwebshop.service.payment.PaymentGateway
 import com.emetain.pokemonwebshop.service.payment.PaymentLine
 import com.emetain.pokemonwebshop.service.payment.PaymentUnavailableException
@@ -87,6 +88,7 @@ class CheckoutOrchestrator(
             cancelUrl = "${properties.baseUrl}/bestelling/geannuleerd?$query",
             // Stripe's shortest: 30 minutes, plus a minute so a slow clock doesn't make it too short.
             expiresAt = clock.instant().plus(STRIPE_MINIMUM_SESSION),
+            discount = order.discountCents.takeIf { it > 0 }?.let { PaymentDiscount(order.discountCodeText ?: "KORTING", it) },
         )
     }
 

@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.ColumnDefault
 import java.time.Instant
 
 /**
@@ -46,6 +47,11 @@ class HeroSlide(
 
     @Column(nullable = false)
     var active: Boolean = true,
+
+    /** Written by AI from a prompt. It starts switched off: the admin reads, edits and switches it on. */
+    @ColumnDefault("false")
+    @Column(nullable = false)
+    var aiGenerated: Boolean = false,
 
     /** The slide shows from this moment. Null means right away. */
     @Column

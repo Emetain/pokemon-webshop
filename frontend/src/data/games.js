@@ -4,6 +4,7 @@ export const GAMES = [
   { slug: 'lorcana', labelKey: 'nav.lorcana', accent: 'lorcana' },
   { slug: 'magic', labelKey: 'nav.magic', accent: 'mtg' },
   { slug: 'one-piece', labelKey: 'nav.onePiece', accent: 'one-piece' },
+  { slug: 'riftbound', labelKey: 'nav.riftbound', accent: 'riftbound' },
 ]
 
 export const findGame = (slug) => GAMES.find((game) => game.slug === slug)

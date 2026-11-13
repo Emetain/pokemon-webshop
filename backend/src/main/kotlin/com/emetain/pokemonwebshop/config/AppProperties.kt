@@ -19,7 +19,54 @@ data class AppProperties(
     val checkout: Checkout = Checkout(),
     val payments: Payments = Payments(),
     val drops: Drops = Drops(),
+    val contact: Contact = Contact(),
+    val newsletter: Newsletter = Newsletter(),
+    val openai: OpenAi = OpenAi(),
 ) {
+    data class Contact(
+        /** Where the contact form sends its messages. */
+        val email: String = "shop@example.com",
+    )
+
+    data class Newsletter(
+        /** How long the confirmation link works. */
+        val confirmTtl: Duration = Duration.ofDays(7),
+        /** Signups that were never confirmed are removed after this long. */
+        val pendingTtl: Duration = Duration.ofDays(30),
+        val cleanupCron: String = "0 15 4 * * *",
+    )
+
+    /**
+     * OpenAI, for hero slides written from a prompt and the chatbot on the contact page. Without [apiKey] both are
+     * hidden. Prices are in US dollars per million tokens, from OpenAI's pricing page: change them when OpenAI does,
+     * or the monthly limits are off. The chatbot has its own model and limit, so customers can't use up the budget
+     * for hero slides, or the other way around.
+     */
+    data class OpenAi(
+        val apiKey: String = "",
+        val baseUrl: String = "https://api.openai.com/v1",
+        val textModel: String = "gpt-6.1-terra",
+        val imageModel: String = "gpt-image-2.6-flare",
+        val imageSize: String = "1536x1024",
+        val imageQuality: String = "medium",
+        /** What the shop may spend per calendar month, in US dollars. */
+        val monthlyLimitUsd: java.math.BigDecimal = java.math.BigDecimal("5"),
+        val textInputPerMillion: java.math.BigDecimal = java.math.BigDecimal("1.00"),
+        val textOutputPerMillion: java.math.BigDecimal = java.math.BigDecimal("5.00"),
+        val imageTextInputPerMillion: java.math.BigDecimal = java.math.BigDecimal("5.00"),
+        val imageOutputPerMillion: java.math.BigDecimal = java.math.BigDecimal("30.00"),
+        /** What an image costs at most, counted before the call, so the last image of a month can't go over. */
+        val imageEstimateUsd: java.math.BigDecimal = java.math.BigDecimal("0.25"),
+        val timeout: Duration = Duration.ofSeconds(120),
+        /** A small, cheap model is plenty for answers from the FAQ. */
+        val chatModel: String = "gpt-6-luna",
+        val chatInputPerMillion: java.math.BigDecimal = java.math.BigDecimal("0.10"),
+        val chatOutputPerMillion: java.math.BigDecimal = java.math.BigDecimal("0.50"),
+        val chatMonthlyLimitUsd: java.math.BigDecimal = java.math.BigDecimal("3"),
+    ) {
+        val configured: Boolean get() = apiKey.isNotBlank()
+    }
+
     data class Mail(
         val from: String,
     )
@@ -55,6 +102,8 @@ data class AppProperties(
         val scryfall: CatalogSource,
         val lorcast: CatalogSource,
         val optcg: CatalogSource,
+        /** TCGplayer's catalog through tcgcsv.com, for Riftbound. */
+        val tcgcsv: CatalogSource,
         val ecb: CatalogSource,
         val pokeapi: CatalogSource,
         val importPokedexOnStart: Boolean,

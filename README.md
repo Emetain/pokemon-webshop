@@ -57,7 +57,7 @@ Keep API keys on the backend. Anything in a `VITE_` variable ends up in the brow
 
 ## Card data
 
-The card catalog comes from four public APIs that need no key. Their base URLs are in `.env.example`.
+The card catalog comes from five public sources that need no key. Their base URLs are in `.env.example`.
 
 | Game | Source | Prices |
 |------|--------|--------|
@@ -65,10 +65,13 @@ The card catalog comes from four public APIs that need no key. Their base URLs a
 | Magic: The Gathering | [Scryfall](https://scryfall.com/docs/api) | Cardmarket, EUR |
 | Disney Lorcana | [Lorcast](https://lorcast.com) | TCGplayer, USD |
 | One Piece Card Game | [OPTCG API](https://optcgapi.com) | TCGplayer, USD |
+| Riftbound | TCGplayer, through [tcgcsv.com](https://tcgcsv.com) | TCGplayer, USD |
 
 The Pokédex comes from [PokéAPI](https://pokeapi.co). The backend imports new species right after startup and at every Pokémon sync. The first import takes about 14 minutes in the background, and later runs make one request. The `dev` profile only does this during a Pokémon sync.
 
 An admin can replace the picture of a card or set at `/admin/afbeeldingen`. Uploads go to `MEDIA_DIRECTORY` (`data/media` by default), and a sync leaves them alone.
+
+Cards and sealed products without a picture can get one from TCGplayer at `/admin/afbeeldingen/zoeken`: one search per game. Sure matches get their picture right away; doubtful ones show up to four candidates, and the admin picks one or none. A found picture comes after the source's own and after an upload, and a sync leaves it alone. Products in another language are skipped.
 
 Every sync also fetches the [ECB reference rate](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html). Customers choose EUR or USD in their profile, and card prices are converted for display only. Shop prices stay in EUR.
 
@@ -104,6 +107,23 @@ Ways to fill the shop:
 - **CSV**: download all products with stock, change them in Excel and read the file back in. Excel's Dutch semicolons and decimal commas work.
 
 Stock only changes through `StockService`, which writes every change to the stock log. The hero on the home page is a carousel: the first slide is the hero with the binder, the others are managed at `/admin/hero`.
+
+Customers never see how many of a product are left: not on a page, not in an API reply and not in an error message. Only "Laatste stuks", "Bijna uitverkocht" and "Uitverkocht".
+
+More for the shop, all in admin:
+
+- **Discount codes** at `/admin/kortingscodes`: a percentage or an amount, with optional dates, a minimum order, a maximum number of uses, once per customer, and limits to games or product types. They never apply to shipping, and to drops only when switched on.
+- **Mystery boxes**: a product of type mystery box gets batches of boxes the owner packed, with what each kind contains and is worth. The product page shows the chance per kind, from the boxes that are left. At payment the shop draws a random box from the oldest batch, and the packing list says which one to send.
+- **Reviews** from customers who bought the product, shown after an admin approves them at `/admin/reviews`.
+- **Release calendar** at `/admin/releasekalender`, shown on `/releasekalender`, with pre-orders on `/pre-order`. The admin page suggests upcoming sets that the card catalog and TCGplayer already know, refreshed at `RELEASE_SUGGESTION_CRON` (04:45 by default).
+- **News** at `/admin/nieuws`, the **newsletter** with double opt-in and an export at `/admin/nieuwsbrief`, and **info pages** (shipping, returns, terms, privacy, FAQ, contact, about) at `/admin/paginas`. The legal pages start as drafts.
+- **Hero slides written by AI**: with `OPENAI_API_KEY` set, `/admin/hero` writes a slide from a prompt, optionally with a picture. It stays switched off until an admin approves it, and stops at `OPENAI_MONTHLY_LIMIT_USD` per month.
+
+## Customer service
+
+The contact page (`/info/contact`) leads through the FAQ and a chatbot to a ticket. The chatbot also opens from the chat button on every shop page. It answers only from the published info pages and shipping costs, never mentions stock or prices, and points to a ticket for questions about an order. It runs on `OPENAI_CHAT_MODEL` (`gpt-6-luna`) and stops at `OPENAI_CHAT_MONTHLY_LIMIT_USD` per month. Without `OPENAI_API_KEY` the page goes straight to a ticket.
+
+A ticket gets a number and a secret link for the customer. New tickets and replies are mailed to `SHOP_EMAIL` (empty: `MAIL_FROM`); the customer gets a confirmation and every answer. Answer them at `/admin/tickets`. Customers with an account see their tickets under "Mijn tickets".
 
 ## Orders and payments
 

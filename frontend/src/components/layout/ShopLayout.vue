@@ -1,6 +1,8 @@
 <script setup>
 import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
+import CookieNotice from './CookieNotice.vue'
+import ChatWidget from '../support/ChatWidget.vue'
 import { t } from '../../utils/i18n'
 </script>
 
@@ -12,6 +14,8 @@ import { t } from '../../utils/i18n'
       <router-view />
     </main>
     <AppFooter />
+    <ChatWidget />
+    <CookieNotice />
   </div>
 </template>
 

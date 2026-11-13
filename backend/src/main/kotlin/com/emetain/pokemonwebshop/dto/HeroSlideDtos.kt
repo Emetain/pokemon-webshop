@@ -66,6 +66,8 @@ data class AdminHeroSlideDto(
     val endsAt: Instant?,
     val position: Int,
     val showing: Boolean,
+    /** Written by AI. It started switched off, for the admin to read and edit. */
+    val aiGenerated: Boolean = false,
 ) {
     companion object {
         fun from(slide: HeroSlide, now: Instant) = AdminHeroSlideDto(
@@ -81,6 +83,7 @@ data class AdminHeroSlideDto(
             endsAt = slide.endsAt,
             position = slide.position,
             showing = slide.showsAt(now),
+            aiGenerated = slide.aiGenerated,
         )
     }
 }
@@ -99,4 +102,21 @@ data class HeroSlideRequest(
     val active: Boolean = true,
     val startsAt: Instant? = null,
     val endsAt: Instant? = null,
+)
+
+/** A prompt for a slide written by AI, such as "pre-order Destined Rivals, release 30 mei". */
+data class AiSlideRequest(
+    @field:Size(max = 500, message = "Houd de opdracht onder de 500 tekens.")
+    val prompt: String = "",
+    /** Also make a background picture. Costs more than the text. */
+    val withImage: Boolean = false,
+)
+
+/** Whether AI can write slides, and what it cost this month, in US dollars. */
+data class AiStatusDto(
+    val available: Boolean,
+    val spentUsd: java.math.BigDecimal,
+    val limitUsd: java.math.BigDecimal,
+    val textModel: String,
+    val imageModel: String,
 )

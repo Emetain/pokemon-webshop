@@ -1,5 +1,14 @@
 package com.emetain.pokemonwebshop.config
 
+import com.emetain.pokemonwebshop.service.ReleaseService
+import com.emetain.pokemonwebshop.service.NewsService
+import com.emetain.pokemonwebshop.service.MysteryBoxService
+import com.emetain.pokemonwebshop.service.DiscountCodeService
+import com.emetain.pokemonwebshop.dto.SetReleaseRequest
+import com.emetain.pokemonwebshop.dto.NewsArticleRequest
+import com.emetain.pokemonwebshop.dto.MysteryPrizeRequest
+import com.emetain.pokemonwebshop.dto.MysteryBoxBatchRequest
+import com.emetain.pokemonwebshop.dto.DiscountCodeRequest
 import com.emetain.pokemonwebshop.domain.AccessoryType
 import com.emetain.pokemonwebshop.domain.Carrier
 import com.emetain.pokemonwebshop.domain.Game
@@ -57,6 +66,10 @@ class DevDataSeeder(
     private val stockService: StockService,
     private val heroSlideService: HeroSlideService,
     private val dropService: DropService,
+    private val mysteryBoxService: MysteryBoxService,
+    private val discountCodeService: DiscountCodeService,
+    private val releaseService: ReleaseService,
+    private val newsService: NewsService,
     private val orderRepository: OrderRepository,
     private val tokenService: TokenService,
     private val transactions: TransactionTemplate,
@@ -73,6 +86,7 @@ class DevDataSeeder(
             seedSlides()
             transactions.executeWithoutResult { seedOrders(customer) }
             seedDrop(admin)
+            seedExtras(admin)
         }
 
         log.info("Demo admin login: {} / {}", ADMIN_EMAIL, ADMIN_PASSWORD)
@@ -98,13 +112,16 @@ class DevDataSeeder(
             Demo("Pokémon Mini Tin", Game.POKEMON, ProductType.TIN, 1295, stock = 1),
             Demo("Charizard ex Premium Collection", Game.POKEMON, ProductType.COLLECTION_BOX, 3995),
             Demo("Pokémon bulk: 100 kaarten", Game.POKEMON, ProductType.BULK, 995, stock = 15, language = null),
-            Demo("Poketopia Mystery Box", Game.POKEMON, ProductType.MYSTERY_BOX, 4995, stock = 5, language = null),
+            // Its stock comes from the batch in seedExtras.
+            Demo("Poketopia Mystery Box", Game.POKEMON, ProductType.MYSTERY_BOX, 4995, language = null),
             Demo("Archazia's Island Booster Box", Game.LORCANA, ProductType.BOOSTER_BOX, 13495, stock = 4),
             Demo("Fabled Starter Deck", Game.LORCANA, ProductType.STARTER_DECK, 1695, stock = 8),
             Demo("Foundations Play Booster Box", Game.MTG, ProductType.BOOSTER_BOX, 14995, stock = 5),
             Demo("Duskmourn Collector Booster", Game.MTG, ProductType.BOOSTER_PACK, 2995, stock = 10),
             Demo("Royal Blood Booster Box", Game.ONE_PIECE, ProductType.BOOSTER_BOX, 9995, stock = 2),
             Demo("Starter Deck: Boa Hancock", Game.ONE_PIECE, ProductType.STARTER_DECK, 1495),
+            Demo("Radiance Booster Display", Game.RIFTBOUND, ProductType.BOOSTER_BOX, 10995, stock = 4),
+            Demo("Radiance Booster", Game.RIFTBOUND, ProductType.BOOSTER_PACK, 499, stock = 48),
             Demo("Matte sleeves blauw (100 stuks)", null, ProductType.ACCESSORY, 1195, stock = 30, language = null,
                 accessory = AccessoryType.SLEEVES),
             Demo("Toploaders 35pt (25 stuks)", null, ProductType.ACCESSORY, 449, stock = 50, language = null,
@@ -291,6 +308,46 @@ class DevDataSeeder(
         val language: ProductLanguage? = ProductLanguage.EN,
         val accessory: AccessoryType? = null,
     )
+
+    /** Phase 8: a mystery box batch, a discount code, a release on the calendar and a news article. */
+    private fun seedExtras(admin: User) {
+        val box = productRepository.findAll().first { it.type == ProductType.MYSTERY_BOX }
+        mysteryBoxService.createBatch(
+            box.id,
+            MysteryBoxBatchRequest(
+                name = "Batch 1",
+                prizes = listOf(
+                    MysteryPrizeRequest("Charizard ex Special Illustration Rare", 25000, 1),
+                    MysteryPrizeRequest("Elite Trainer Box naar keuze", 6000, 4),
+                    MysteryPrizeRequest("8 booster packs", 4000, 15),
+                ),
+            ),
+            admin,
+        )
+        discountCodeService.create(DiscountCodeRequest(code = "WELKOM10", kind = "PERCENTAGE", percent = 10, minimumOrderCents = 2500))
+        val today = LocalDate.now(clock.withZone(ZoneId.of("Europe/Amsterdam")))
+        val preOrder = productRepository.findAll().first { it.preOrder }
+        releaseService.create(
+            SetReleaseRequest(
+                game = Game.POKEMON.slug,
+                name = "Delta Reign",
+                releaseDate = today.plusDays(30),
+                description = "De nieuwe uitbreiding, met Elite Trainer Boxen en boosters in pre-order.",
+                productIds = listOf(preOrder.id),
+            ),
+        )
+        releaseService.create(SetReleaseRequest(game = Game.RIFTBOUND.slug, name = "Legacy", releaseDate = today.plusDays(78), tentative = true))
+        newsService.create(
+            NewsArticleRequest(
+                title = "Riftbound nu ook bij Poketopia",
+                summary = "Boosters en displays van League of Legends: Riftbound, en je collectie bijhouden.",
+                body = "Vanaf nu vind je ook **Riftbound** in de shop.\n\n## Wat je kunt verwachten\n- Boosters en displays van de nieuwste sets\n- Alle kaarten in de [kaartencatalogus](/kaarten/riftbound)",
+                game = Game.RIFTBOUND.slug,
+                published = true,
+            ),
+        )
+        log.info("Demo extras: a mystery box batch of 20, code WELKOM10, two releases and a news article")
+    }
 
     private companion object {
         const val ADMIN_EMAIL = "admin@example.com"

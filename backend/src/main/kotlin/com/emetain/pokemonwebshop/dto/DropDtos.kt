@@ -30,6 +30,10 @@ data class DropListDto(
     val serverTime: Instant,
 )
 
+/**
+ * A product on the public drop page. It has no price and no stock numbers: the shop never shows how many there are,
+ * and the price only shows once it is your turn, through [DropCartDto.prices].
+ */
 data class DropProductDto(
     /** The id of the product in the drop. The drop cart uses this one. */
     val id: Long,
@@ -42,17 +46,10 @@ data class DropProductDto(
     val imageUrl: String?,
     val imageIsCard: Boolean,
     val setLogoUrl: String?,
-    /** What it costs in the drop. */
-    val priceCents: Long?,
-    /** The shop price, when the drop price is lower. */
-    val regularPriceCents: Long?,
     val maxPerCustomer: Int?,
-    val allocated: Int,
-    /** What can still go into a checkout: "nog 12 over". */
-    val available: Int,
-    /** Held by checkouts that aren't paid yet. Can come back. */
-    val reserved: Int,
     val soldOut: Boolean,
+    /** Nothing can go into a checkout now, but checkouts that aren't paid yet can still give some back. */
+    val allReserved: Boolean,
     val preOrder: Boolean,
     val shipsFrom: LocalDate?,
 )
@@ -125,9 +122,20 @@ data class DropCartLimitDto(
     val room: Int?,
 )
 
+/** The price of a product in the drop. Only for someone whose turn it is. */
+data class DropPriceDto(
+    val dropProductId: Long,
+    /** What it costs in the drop. */
+    val priceCents: Long?,
+    /** The shop price, when the drop price is lower. */
+    val regularPriceCents: Long?,
+)
+
 data class DropCartDto(
     val cart: CartDto,
     val limits: List<DropCartLimitDto>,
+    /** Every product in the drop. The drop page has no prices, so this is where they come from. */
+    val prices: List<DropPriceDto>,
     val maxPerCustomer: Int?,
     val orderedTotal: Int,
     val accessExpiresAt: Instant?,
@@ -153,16 +161,18 @@ data class StartDropCheckoutRequest(
     val email: String? = null,
     val shipmentPreference: ShipmentPreference? = null,
     val acceptTerms: Boolean = false,
+    @field:Size(max = 60, message = "Deze kortingscode is te lang.")
+    val discountCode: String? = null,
     override val website: String? = null,
 ) : HoneypotRequest {
-    fun toCheckout() = StartCheckoutRequest(addressId, address, saveAddress, name, email, shipmentPreference, acceptTerms)
+    fun toCheckout() =
+        StartCheckoutRequest(addressId, address, saveAddress, name, email, shipmentPreference, acceptTerms, discountCode)
 }
 
-/** A product's place in an upcoming or live drop, for its product page. */
+/** A product's place in an upcoming or live drop, for its product page. Without the drop price: that only shows once it is your turn. */
 data class ProductDropDto(
     val slug: String,
     val name: String,
     val status: String,
     val startsAt: Instant,
-    val priceCents: Long?,
 )

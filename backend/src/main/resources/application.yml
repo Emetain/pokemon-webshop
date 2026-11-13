@@ -94,6 +94,19 @@ app:
         max-attempts: 5
       drop-reminder:
         max-attempts: 10
+      # A person signs up once. More per IP address would only be someone filling in other people's addresses.
+      newsletter:
+        max-attempts: 5
+      # Customer service: a ticket, a reply on it, and questions to the chatbot. Each chatbot answer costs money.
+      ticket:
+        max-attempts: 3
+        window: 10m
+      ticket-reply:
+        max-attempts: 10
+        window: 10m
+      support-chat:
+        max-attempts: 20
+        window: 10m
   media:
     # Where uploaded images are stored.
     directory: ${MEDIA_DIRECTORY:data/media}
@@ -118,6 +131,7 @@ app:
       # Awakening of the New Era (OP-05), the first set of block 2. Block 1 (OP-01 to OP-04, ST-01 to ST-10) left
       # Standard in April 2026.
       ONE_PIECE: 2023-12-08
+      # Riftbound has no rotation yet (checked 2026-11-12): every set since Origins (October 2025) is in print.
     # "Populair" and the bestsellers put the products sold most in this period first, then the popular sets below.
     bestseller-period: 90d
     # The most popular sets per game, most popular first, by set code. "Populair" puts these first after the products
@@ -139,6 +153,9 @@ app:
       # TCGplayer, second and third quarter of 2026: The World's Strongest Warriors, Adventure on Kami's Island,
       # The Time of Battle, then The Azure Sea's Seven and Carrying On His Will.
       ONE_PIECE: [OP-17, OP15-EB04, OP-16, OP14-EB04, OP-13]
+      # No sales ranking found for Riftbound (2026-11-12), so the newest main sets first: Radiance, Vendetta,
+      # Unleashed, Spiritforged, Origins.
+      RIFTBOUND: [RAD, VEN, UNL, SFD, OGN]
   checkout:
     # How long a checkout holds the stock while the customer pays. Stripe keeps its payment page open for at least
     # 30 minutes, so when this runs out the shop closes the Stripe page first and only then releases the stock.
@@ -182,6 +199,42 @@ app:
     waiting-room-opens: 30m
     # When the "herinner mij" mails go out, before the start.
     reminder-before: 15m
+  contact:
+    # Where new tickets and customer replies from /info/contact are mailed. Empty sends them to MAIL_FROM. Locally
+    # Mailpit catches them. Becomes the shared shop mailbox once the shop has its own domain.
+    email: ${SHOP_EMAIL:shop@example.com}
+  newsletter:
+    # How long the link in the confirmation mail works, and when signups that were never confirmed are removed.
+    confirm-ttl: 7d
+    pending-ttl: 30d
+    cleanup-cron: "0 15 4 * * *"
+  # Hero slides written by AI at /admin/hero. Without OPENAI_API_KEY the button is hidden and everything else works.
+  # Models and prices checked on OpenAI's pricing page on 2026-11-12. The shop counts what every call costs from the
+  # tokens OpenAI reports, and stops at the monthly limit. Also set a limit in OpenAI's dashboard.
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    base-url: https://api.openai.com/v1
+    text-model: ${OPENAI_TEXT_MODEL:gpt-6.1-terra}
+    image-model: ${OPENAI_IMAGE_MODEL:gpt-image-2.6-flare}
+    image-size: 1536x1024
+    image-quality: medium
+    monthly-limit-usd: ${OPENAI_MONTHLY_LIMIT_USD:5}
+    # US dollars per million tokens.
+    text-input-per-million: 1.00
+    text-output-per-million: 5.00
+    # The chatbot on the contact page. A small model: at about 4,000 tokens a question, $3 is roughly 5,000
+    # questions. Its own limit, apart from the hero slides. gpt-4o is not cheaper ($2.50 / $10) and OpenAI shuts it
+    # down on 2027-01-14.
+    chat-model: ${OPENAI_CHAT_MODEL:gpt-6-luna}
+    chat-input-per-million: 0.10
+    chat-output-per-million: 0.50
+    chat-monthly-limit-usd: ${OPENAI_CHAT_MONTHLY_LIMIT_USD:3}
+    image-text-input-per-million: 5.00
+    image-output-per-million: 30.00
+    # Counted before an image is made, so the last one of the month can't go over the limit. A medium
+    # 1536x1024 image costs about $0.05.
+    image-estimate-usd: 0.25
+    timeout: 120s
   payments:
     stripe:
       # Test mode locally: sk_test_... from the Stripe dashboard. Empty switches online payment off.
@@ -193,6 +246,8 @@ app:
     import-pokedex-on-start: true
     # When the daily card sync starts, in Dutch time. "-" switches it off.
     sync-cron: ${CATALOG_SYNC_CRON:0 0 3 * * *}
+    # When the release calendar suggestions are refreshed from the card catalog and TCGplayer, after the sync.
+    release-suggestion-cron: ${RELEASE_SUGGESTION_CRON:0 45 4 * * *}
     user-agent: Poketopia/1.0
     rate-limit-delay: 30s
     retry-delay: 2s
@@ -208,6 +263,10 @@ app:
     optcg:
       base-url: ${OPTCG_BASE_URL:https://optcgapi.com/api}
       request-delay: 1s
+    # Riftbound: TCGplayer's catalog and prices, copied once a day by tcgcsv.com. It asks for a pause between calls.
+    tcgcsv:
+      base-url: ${TCGCSV_BASE_URL:https://tcgcsv.com}
+      request-delay: 250ms
     ecb:
       base-url: ${ECB_BASE_URL:https://www.ecb.europa.eu}
       request-delay: 100ms

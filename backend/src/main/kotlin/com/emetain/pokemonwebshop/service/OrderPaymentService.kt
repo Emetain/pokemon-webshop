@@ -40,6 +40,7 @@ class OrderPaymentService(
     private val cartService: CartService,
     private val dropCartService: DropCartService,
     private val gateway: PaymentGateway,
+    private val mysteryBoxService: MysteryBoxService,
     private val events: ApplicationEventPublisher,
     private val transactions: TransactionTemplate,
     private val clock: Clock,
@@ -94,6 +95,7 @@ class OrderPaymentService(
             order.status = OrderStatus.PAID
             order.cancelledAt = null
             order.history += OrderStatusChange(order, OrderStatus.PAID, now, "Betaald${methodText(order.paymentMethod)}")
+            mysteryBoxService.drawFor(order)
             val bought = order.lines.groupBy { it.product.id }.mapValues { (_, lines) -> lines.sumOf { it.quantity } }
             order.cartId?.let { cartService.removeOrdered(it, bought) }
             order.dropEntryId?.let { dropCartService.removeOrdered(it, bought) }

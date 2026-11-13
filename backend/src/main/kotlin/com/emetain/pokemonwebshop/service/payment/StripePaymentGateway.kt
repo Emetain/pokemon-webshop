@@ -6,6 +6,7 @@ import com.stripe.exception.InvalidRequestException
 import com.stripe.exception.StripeException
 import com.stripe.model.checkout.Session
 import com.stripe.net.RequestOptions
+import com.stripe.param.CouponCreateParams
 import com.stripe.param.RefundCreateParams
 import com.stripe.param.checkout.SessionCreateParams
 import com.stripe.param.checkout.SessionRetrieveParams
@@ -76,9 +77,30 @@ class StripePaymentGateway(properties: AppProperties) : PaymentGateway {
                     .build(),
             )
         }
+        request.discount?.let { discount ->
+            val coupon = coupon(request.orderNumber, discount)
+            params.addDiscount(SessionCreateParams.Discount.builder().setCoupon(coupon).build())
+        }
         val options = RequestOptions.builder().setIdempotencyKey("checkout-${request.orderNumber}").build()
         val session = call("create a checkout session") { stripe().checkout().sessions().create(params.build(), options) }
         return CheckoutSession(session.id, session.url, Instant.ofEpochSecond(session.expiresAt))
+    }
+
+    /**
+     * A coupon for this one order: the discount the shop worked out, as a fixed amount, so Stripe's total is exactly
+     * the order's. Stripe takes a coupon off the products, never off shipping, like the shop does.
+     */
+    private fun coupon(orderNumber: String, discount: PaymentDiscount): String {
+        val params = CouponCreateParams.builder()
+            .setAmountOff(discount.amountCents)
+            .setCurrency(CURRENCY)
+            .setDuration(CouponCreateParams.Duration.ONCE)
+            .setMaxRedemptions(1L)
+            .setName("Kortingscode ${discount.code}".take(COUPON_NAME_LENGTH))
+            .putMetadata(ORDER_NUMBER, orderNumber)
+            .build()
+        val options = RequestOptions.builder().setIdempotencyKey("coupon-$orderNumber").build()
+        return call("create a coupon") { stripe().coupons().create(params, options) }.id
     }
 
     override fun retrieve(sessionId: String): SessionState {
@@ -151,5 +173,6 @@ class StripePaymentGateway(properties: AppProperties) : PaymentGateway {
         const val CURRENCY = "eur"
         const val ORDER_NUMBER = "order_number"
         const val NOT_FOUND = 404
+        const val COUPON_NAME_LENGTH = 40
     }
 }
