@@ -65,3 +65,8 @@ allOpen {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// Only the runnable jar: backend/Dockerfile copies build/libs/*.jar to one file.
+tasks.named<Jar>("jar") {
+    enabled = false
+}
