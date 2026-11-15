@@ -112,4 +112,22 @@ class ErrorHandlingIntegrationTest : IntegrationTest() {
         mockMvc.perform(multipart("/v1/admin/products/1/images").file(picture).with(fromRandomIp()))
             .andExpect(status().isUnauthorized)
     }
+
+    @Test
+    fun `a query value of the wrong type gets a dutch answer without internals`() {
+        // Bound to a request object.
+        mockMvc.perform(get("/v1/products?page=abc"))
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error").value("bad_request"))
+            .andExpect(jsonPath("$.message").value("Dit verzoek klopt niet. Controleer de ingevulde gegevens."))
+        // A single request parameter.
+        mockMvc.perform(get("/v1/products/new-arrivals?limit=veel"))
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error").value("bad_request"))
+            .andExpect(jsonPath("$.message").value("Dit verzoek klopt niet. Controleer de ingevulde gegevens."))
+        // A path variable.
+        mockMvc.perform(get("/v1/catalog/cards/abc"))
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error").value("bad_request"))
+    }
 }

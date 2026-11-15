@@ -199,13 +199,17 @@ Must be fixed before going live.
   - Fix: below 900 px, a top bar with a menu button that opens and closes the list, closed after a click on a link,
     with `aria-expanded` and working with the keyboard.
 
-- [ ] **S8. A wrong query value shows Spring's own English error.**
+- [x] **S8. A wrong query value shows Spring's own English error.**
   - Where: `GlobalExceptionHandler.kt:58`. `GET /v1/products?page=abc` answers
     `Failed to convert value of type 'java.lang.String' to required type 'int'; For input string: "abc"`.
   - Why: it shows internals, and it isn't Dutch.
   - Fix: for a field error with the code `typeMismatch`, answer "Dit verzoek klopt niet. Controleer de ingevulde
     gegevens." Handle `MethodArgumentTypeMismatchException` the same way. Add a test in
     `ErrorHandlingIntegrationTest`.
+  - Done (9b): `GlobalExceptionHandler.handleMethodArgumentNotValid` answers a binding failure (a field error of
+    the wrong type, such as `?page=abc` on a request object) with `bad_request` and the Dutch text.
+    `MethodArgumentTypeMismatchException` (a single `@RequestParam` or path variable) already went through
+    `handleExceptionInternal` to the same answer; the test covers all three in `ErrorHandlingIntegrationTest`.
 
 - [ ] **S9. `npm audit` reports 1 high and 1 moderate.**
   - Where: `frontend/package.json` (`vite` ^5.4.2, and `esbuild` through it).

@@ -58,7 +58,12 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         status: HttpStatusCode,
         request: WebRequest,
     ): ResponseEntity<Any>? {
-        val message = ex.bindingResult.fieldErrors.firstOrNull()?.defaultMessage ?: "Controleer de ingevulde gegevens."
+        val error = ex.bindingResult.fieldErrors.firstOrNull()
+        // A value of the wrong type, such as ?page=abc: Spring's own message is English and shows internals.
+        if (error != null && error.isBindingFailure) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(BAD_REQUEST)
+        }
+        val message = error?.defaultMessage ?: "Controleer de ingevulde gegevens."
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse("validation_failed", message))
     }
 
@@ -91,12 +96,16 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         request: WebRequest,
     ): ResponseEntity<Any>? {
         val error = when (statusCode.value()) {
-            400 -> ErrorResponse("bad_request", "Dit verzoek klopt niet. Controleer de ingevulde gegevens.")
+            400 -> BAD_REQUEST
             404 -> ErrorResponse("not_found", "We konden dit niet vinden.")
             405 -> ErrorResponse("method_not_allowed", "Deze actie is hier niet mogelijk.")
             415 -> ErrorResponse("unsupported_media_type", "Dit bestandstype of formaat wordt niet ondersteund.")
             else -> ErrorResponse("request_failed", "Dit verzoek kon niet worden verwerkt.")
         }
         return ResponseEntity.status(statusCode).headers(headers).body(error)
+    }
+
+    private companion object {
+        val BAD_REQUEST = ErrorResponse("bad_request", "Dit verzoek klopt niet. Controleer de ingevulde gegevens.")
     }
 }
