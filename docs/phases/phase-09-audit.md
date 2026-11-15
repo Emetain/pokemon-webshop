@@ -392,12 +392,16 @@ Must be fixed before going live.
 
 ## Nice to have
 
-- [ ] **N1. Started without a profile, the backend runs `dev`.** `application.yml:10` (`profiles.default: dev`): an
+- [x] **N1. Started without a profile, the backend runs `dev`.** `application.yml:10` (`profiles.default: dev`): an
   in-memory database, the H2 console and demo accounts. `deploy/compose.yml` sets `prod`, so this only bites when
   someone starts the jar another way on a server. Fix: refuse to start on `dev` when `APP_BASE_URL` is `https`.
-- [ ] **N2. A deploy cuts off requests that are running.** No `server.shutdown: graceful`. Stripe sends a webhook
+  - Done (9b): `config/DevProfileGuard.kt` (only on `dev`) refuses to start when `APP_BASE_URL` starts with
+    `https://`, with a message to set `SPRING_PROFILES_ACTIVE=prod`. `DevProfileGuardTest`.
+- [x] **N2. A deploy cuts off requests that are running.** No `server.shutdown: graceful`. Stripe sends a webhook
   again, a customer in checkout sees an error. Fix: graceful shutdown with a 20 second timeout (the container gets
   30).
+  - Done (9b): `server.shutdown: graceful` and `spring.lifecycle.timeout-per-shutdown-phase: 20s`. Spring Boot
+    4 already shuts down gracefully by default (since 3.4); this makes it explicit and sets the 20 seconds.
 - [x] **N3. Registering doesn't check that the email address is yours.** Someone can make an account on another
   person's address. That person gets it back with "wachtwoord vergeten", which logs the other out, and no orders or
   tickets are tied to an account by email (checked). Registering also tells whether an address has an account
@@ -405,11 +409,16 @@ Must be fixed before going live.
   - Decided (9b): the owner chose no confirmation mail, and a repeated password instead. That is S14, done.
 - [ ] **N4. No "change password" and no "delete my account" on the account page.** A password can only be changed
   through the reset mail. Deleting can go through a ticket; say so in the privacy policy.
-- [ ] **N5. Foreign keys without an index:** `binder_selections(card_id)`, `card_wishlist_entries(card_id)`,
+- [x] **N5. Foreign keys without an index:** `binder_selections(card_id)`, `card_wishlist_entries(card_id)`,
   `drop_queue_entries(user_id)`, `product_reviews(user_id)`, `set_release_products(product_id)`,
   `set_releases(set_id)`, `mystery_box_prizes(card_id)`, `support_messages(author_id)`, `ai_usage(user_id)`,
   `order_status_changes(admin_user_id)`, `stock_movements(admin_user_id)`. All small tables today. A new migration
   (V13) for the first six is enough; never change an old migration.
+  - Done (9b): `V13__foreign_key_indexes.sql` adds indexes for the first six. It runs on H2 in
+    `FlywayMigrationTest` and `ProdProfileIntegrationTest`, and on Postgres in the final `prod` check. The other five
+    (`mystery_box_prizes`, `support_messages`, `ai_usage`, `order_status_changes`, `stock_movements`) are left, as
+    the item says. The entities don't declare these indexes, so the local `postgres` profile (Hibernate `update`,
+    no Flyway) won't get them; that only matters for speed on a large local database.
 - [ ] **N6. Lists without pages:** admin news, discount codes, drops and release calendar, "Mijn tickets", and the
   public pre-order list. They grow slowly. Page them when one passes a few hundred rows.
 - [ ] **N7. Eight images without `loading="lazy"`.** Most are at the top of the page, where it shouldn't be lazy
@@ -425,8 +434,10 @@ Must be fixed before going live.
   be moved by the action's owner. Pin to commit hashes.
 - [ ] **N11. One broken set symbol:** `https://assets.tcgdex.net/univ/mc/2021swsh/symbol.webp` gives 404 on
   `/kaarten/pokemon`. Check that a broken symbol hides itself instead of showing a broken image.
-- [ ] **N12. Hibernate warns at every start** that `hibernate.dialect` doesn't need to be set
+- [x] **N12. Hibernate warns at every start** that `hibernate.dialect` doesn't need to be set
   (`application-prod.yml:13` and the other profiles). Remove it where Postgres is detected by itself.
+  - Done (9b): `hibernate.dialect` removed from all profiles and the test config (Hibernate 7 detects
+    PostgreSQL and H2 by itself). No HHH90000025 in the test run.
 
 ## For the owner, not for 9b
 
