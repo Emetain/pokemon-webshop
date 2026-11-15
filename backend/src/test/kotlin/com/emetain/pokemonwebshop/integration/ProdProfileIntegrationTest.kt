@@ -1,5 +1,7 @@
 package com.emetain.pokemonwebshop.integration
 
+import com.emetain.pokemonwebshop.config.AppProperties
+import com.emetain.pokemonwebshop.config.ShopAccess
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -8,10 +10,12 @@ import org.springframework.http.HttpStatus
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.JavaMailSenderImpl
 import org.springframework.test.context.ActiveProfiles
+import java.io.ByteArrayInputStream
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 
 /**
@@ -46,6 +50,9 @@ class ProdProfileIntegrationTest {
 
     @Autowired
     private lateinit var mailSender: JavaMailSender
+
+    @Autowired
+    private lateinit var appProperties: AppProperties
 
     @LocalServerPort
     private var port = 0
@@ -105,5 +112,37 @@ class ProdProfileIntegrationTest {
         assertEquals("10000", properties.getProperty("mail.smtp.connectiontimeout"))
         assertEquals("10000", properties.getProperty("mail.smtp.timeout"))
         assertEquals("10000", properties.getProperty("mail.smtp.writetimeout"))
+    }
+
+    @Test
+    fun `without SHOP_ACCESS the shop is the closed preview, with the default checkout caps`() {
+        assertEquals(ShopAccess.PREVIEW, appProperties.shopAccess)
+        assertEquals(2, appProperties.checkout.maxOpenPerCustomer)
+        assertEquals(5, appProperties.checkout.maxOpenPerIp)
+    }
+
+    @Test
+    fun `the business details for the footer are public and empty until they are set`() {
+        val response = get("/api/v1/shop/company")
+
+        assertEquals(200, response.statusCode())
+        assertEquals("""{"legalName":null,"address":null,"kvkNumber":null,"vatNumber":null}""", response.body())
+    }
+
+    @Test
+    fun `a chunked form body above tomcat's own limit answers 413 in the error format`() {
+        // Without a Content-Length, so the size filter can't refuse it up front, and as a form, which Tomcat reads
+        // itself instead of through that filter. Its limit is 2 MB.
+        val body = "x=".toByteArray() + ByteArray(3 * 1024 * 1024) { 'a'.code.toByte() }
+        val request = HttpRequest.newBuilder(URI.create("http://localhost:$port/api/v1/auth/login"))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(HttpRequest.BodyPublishers.ofInputStream { ByteArrayInputStream(body) })
+            .build()
+
+        val response = http.send(request, HttpResponse.BodyHandlers.ofString())
+
+        assertEquals(413, response.statusCode())
+        assertContains(response.body(), "\"error\":\"request_too_large\"")
+        assertContains(response.body(), "Dit verzoek is te groot.")
     }
 }

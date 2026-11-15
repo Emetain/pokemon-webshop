@@ -3,6 +3,7 @@ package com.emetain.pokemonwebshop.exception
 import com.emetain.pokemonwebshop.dto.ErrorResponse
 import com.emetain.pokemonwebshop.security.RequestSizeFilter
 import com.emetain.pokemonwebshop.security.RequestTooLargeException
+import org.apache.tomcat.util.http.InvalidParameterException
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.OptimisticLockingFailureException
@@ -43,6 +44,21 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleOptimisticLock(exception: OptimisticLockingFailureException): ResponseEntity<ErrorResponse> {
         val error = ApiException.stockChanged()
         return ResponseEntity.status(error.status).body(ErrorResponse(error.code, error.message))
+    }
+
+    /**
+     * Tomcat refused to read the form parameters of a request, for example a form body above its own limit
+     * (`server.tomcat.max-http-form-post-size`, 2 MB) sent in chunks, so [RequestSizeFilter] couldn't see its size
+     * first. The shop has no forms: this is a client's mistake, so no stack trace.
+     */
+    @ExceptionHandler(InvalidParameterException::class)
+    fun handleInvalidParameters(exception: InvalidParameterException): ResponseEntity<ErrorResponse> {
+        log.info("Refused the parameters of a request ({}): {}", exception.errorCode, exception.message)
+        return if (exception.errorCode == HttpStatus.PAYLOAD_TOO_LARGE.value()) {
+            ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(RequestSizeFilter.tooLarge())
+        } else {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(BAD_REQUEST)
+        }
     }
 
     @ExceptionHandler(Exception::class)
