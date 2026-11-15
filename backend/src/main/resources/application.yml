@@ -1,6 +1,8 @@
 spring:
   application:
     name: pokemon-webshop
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   config:
     # The repo-root .env, whether the app starts from the root or from backend/.
     import:
@@ -46,6 +48,9 @@ spring:
 
 server:
   port: 8080
+  # A deploy or restart lets running requests finish, such as a Stripe webhook or a checkout, for up to 20 seconds.
+  # The container gets 30 (stop_grace_period in deploy/compose.yml).
+  shutdown: graceful
   servlet:
     context-path: /api
   # Set to "native" behind a reverse proxy, otherwise every visitor shares the proxy's IP for rate limiting.

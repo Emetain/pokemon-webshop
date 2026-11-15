@@ -25,7 +25,6 @@ import kotlin.test.assertEquals
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password=",
-        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
         // Nothing may reach the card APIs from a test.
         "app.catalog.import-pokedex-on-start=false",
         "app.catalog.sync-cron=-",

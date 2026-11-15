@@ -7,9 +7,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
 
 app:
   # Fixed here, so a developer's own .env (an empty SHOP_EMAIL, another model) can't change what the tests expect.
