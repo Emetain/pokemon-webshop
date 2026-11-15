@@ -56,6 +56,10 @@ Disallow: /
 				max_size 256KB
 			}
 
+			# Orders, accounts and admin pages carry names and addresses: no browser or proxy may keep them. Only when
+			# the backend sets nothing itself, so uploaded images keep their year-long header.
+			header ?Cache-Control "no-store"
+
 			reverse_proxy backend:8080
 		}
 

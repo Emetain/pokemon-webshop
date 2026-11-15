@@ -230,12 +230,14 @@ Must be fixed before going live.
   - Also do the keyboard walk-through that this audit skipped: main menu, search, cart, checkout, the chat widget
     and the cookie notice. Write what you find below this item.
 
-- [ ] **S11. Personal API answers may be cached.**
+- [x] **S11. Personal API answers may be cached.**
   - Where: `deploy/Caddyfile`, the `handle /api/*` block. The backend sends no `Cache-Control` except for media.
   - Why: order, account and admin answers contain names and addresses. Without a header a browser or a proxy in
     between may keep them.
   - Fix: `Cache-Control: no-store` as the default for `/api/*` in Caddy (`header ?Cache-Control`, so the media
     endpoint keeps its own year-long header).
+  - Done (9b): `header ?Cache-Control "no-store"` in the `handle /api/*` block of `deploy/Caddyfile`, as suggested.
+    Passes `caddy validate`; the behaviour (media keeps its header) is checked with the Caddy test run under S4.
 
 - [x] **S12. Tests for login-only endpoints, to go with the admin ones.**
   - Where: `AdminEndpointsIntegrationTest` covers admin. Nothing does the same for `@RequiresLogin`.
