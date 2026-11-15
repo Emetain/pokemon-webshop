@@ -21,7 +21,7 @@ class LorcastProvider(
         http.getJson("${source.baseUrl}/sets", source.requestDelay).path("results").forEachIndexed { index, set ->
             val cards = http.getJson("${source.baseUrl}/sets/${set.requireText("code")}/cards", source.requestDelay)
             val fetchedAt = clock.instant()
-            onSet(LorcastMapper.set(set, sortOrder = index, cards.map { LorcastMapper.card(it, fetchedAt) }))
+            onSet(LorcastMapper.set(set, sortOrder = index, cards.values().map { LorcastMapper.card(it, fetchedAt) }))
         }
     }
 }

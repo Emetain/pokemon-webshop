@@ -2,7 +2,7 @@ package com.emetain.pokemonwebshop.security
 
 import com.emetain.pokemonwebshop.exception.GlobalExceptionHandler
 import com.emetain.pokemonwebshop.service.testProperties
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import jakarta.servlet.FilterChain
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

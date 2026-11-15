@@ -29,8 +29,8 @@ class ShopSetIntegrationTest : ShopTestSupport() {
 
     private fun series(): List<Pair<String, Int>> =
         mockMvc.perform(get("/v1/shop/pokemon/series")).andExpect(status().isOk).json()
-            .filter { it["name"].asText().startsWith(word) }
-            .map { it["name"].asText() to it["productCount"].asInt() }
+            .filter { it["name"].asString().startsWith(word) }
+            .map { it["name"].asString() to it["productCount"].asInt() }
 
     @Test
     fun `the settings name games by their enum and read dates and set codes`() {
@@ -57,7 +57,7 @@ class ShopSetIntegrationTest : ShopTestSupport() {
         mockMvc.perform(get("/v1/shop/pokemon/series/${ProductSlugs.of("$word Gone")}")).andExpect(status().isNotFound)
 
         // Not in lists, but a link or a wishlist still leads to it.
-        mockMvc.perform(get("/v1/products/${hidden["slug"].asText()}")).andExpect(status().isOk)
+        mockMvc.perform(get("/v1/products/${hidden["slug"].asString()}")).andExpect(status().isOk)
         assertFalse(cardSetRepository.findByGameAndCode(Game.POKEMON, oldSoldOut)!!.inPrint)
         assertTrue(cardSetRepository.findByGameAndCode(Game.POKEMON, inPrint)!!.inPrint)
     }
@@ -109,7 +109,7 @@ class ShopSetIntegrationTest : ShopTestSupport() {
         // Other tests sell products and make sets too, and the database is shared: look at this test's products in a
         // long row. The second product of a set comes after one of every other set, so it may fall off the end.
         val row = mockMvc.perform(get("/v1/products/bestsellers?limit=24")).andExpect(status().isOk).json()
-        val ours = row.map { it["name"].asText() }.filter { it.startsWith(word) }
+        val ours = row.values().map { it["name"].asString() }.filter { it.startsWith(word) }
         assertEquals(listOf("$word First box", "$word Second box"), ours.take(2))
         assertEquals(listOf("$word First box", "$word Second box", "$word First pack").take(ours.size), ours)
     }

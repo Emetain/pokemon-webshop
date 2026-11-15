@@ -70,7 +70,7 @@ class CollectionIntegrationTest : CollectionTestSupport() {
         mockMvc.perform(get("/v1/catalog/pokemon/sets/$code/cards?$query").cookie(session)).andExpect(status().isOk)
 
     private fun ResultActions.names(): List<String> =
-        objectMapper.readTree(andReturn().response.contentAsString)["items"].map { it["name"].asText() }
+        objectMapper.readTree(andReturn().response.contentAsString)["items"].values().map { it["name"].asString() }
 
     @Test
     fun `everything about a collection needs a login`() {

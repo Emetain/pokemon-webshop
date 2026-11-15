@@ -65,7 +65,7 @@ class ProductImportIntegrationTest : ShopTestSupport() {
 
         val shop = shop("game=pokemon&set=$code")["results"]
         assertEquals(3, shop["totalItems"].asInt())
-        assertTrue(shop["items"].all { !it["canBuy"].asBoolean() && it["setCode"].asText() == code && it["language"].asText() == "EN" })
+        assertTrue(shop["items"].all { !it["canBuy"].asBoolean() && it["setCode"].asString() == code && it["language"].asString() == "EN" })
     }
 
     @Test
@@ -105,7 +105,7 @@ class ProductImportIntegrationTest : ShopTestSupport() {
 
         val item = shop("set=$code&game=pokemon")["results"]["items"].single()
         assertTrue(item["preOrder"].asBoolean())
-        assertEquals(item["releaseDate"].asText(), item["shipsFrom"].asText())
+        assertEquals(item["releaseDate"].asString(), item["shipsFrom"].asString())
     }
 
     @Test
@@ -183,7 +183,7 @@ class ProductImportIntegrationTest : ShopTestSupport() {
         )
         assertEquals(1, result["created"].asInt())
         assertEquals(1, result["stockChanges"].asInt())
-        assertEquals(listOf(3, 4), result["errors"].map { it["line"].asInt() })
+        assertEquals(listOf(3, 4), result["errors"].values().map { it["line"].asInt() })
 
         val tin = shop("")["results"]["items"].single()
         assertEquals(1295, tin["priceCents"].asInt())

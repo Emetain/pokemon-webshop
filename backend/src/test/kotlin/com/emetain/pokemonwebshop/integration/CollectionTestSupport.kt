@@ -39,5 +39,5 @@ abstract class CollectionTestSupport : IntegrationTest() {
         ).andExpect(status().isCreated)
 
     protected fun ResultActions.entryId(variant: String): Long =
-        objectMapper.readTree(andReturn().response.contentAsString)["entries"].first { it["variant"].asText() == variant }["id"].asLong()
+        objectMapper.readTree(andReturn().response.contentAsString)["entries"].first { it["variant"].asString() == variant }["id"].asLong()
 }

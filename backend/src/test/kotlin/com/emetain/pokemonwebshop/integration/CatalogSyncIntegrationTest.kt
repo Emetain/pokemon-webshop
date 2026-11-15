@@ -28,7 +28,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.TestPropertySource
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -49,13 +49,13 @@ import kotlin.test.assertTrue
 @TestPropertySource(properties = ["spring.datasource.url=jdbc:h2:mem:catalog-sync;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=20000"])
 class CatalogSyncIntegrationTest : IntegrationTest() {
 
-    @MockBean
+    @MockitoBean
     private lateinit var providers: CardDataProviders
 
-    @MockBean
+    @MockitoBean
     private lateinit var exchangeRateService: ExchangeRateService
 
-    @MockBean
+    @MockitoBean
     private lateinit var pokedexImportService: PokedexImportService
 
     @Autowired

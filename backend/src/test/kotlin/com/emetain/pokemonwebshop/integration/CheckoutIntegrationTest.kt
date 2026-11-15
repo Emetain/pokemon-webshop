@@ -6,7 +6,7 @@ import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.repository.OrderRepository
 import com.emetain.pokemonwebshop.service.CheckoutJobs
 import com.emetain.pokemonwebshop.service.payment.ExpireResult
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import jakarta.mail.Message
 import jakarta.mail.internet.MimeMessage
 import jakarta.servlet.http.Cookie
@@ -132,12 +132,12 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         assertEquals(2, cart["itemCount"].asInt())
         assertEquals(19990, cart["subtotalCents"].asLong())
         assertEquals(0, cart["shipping"]["priceCents"].asLong(), "free from €75 in the Netherlands")
-        assertEquals(listOf("ideal", "card"), cart["paymentMethods"].map { it.asText() })
+        assertEquals(listOf("ideal", "card"), cart["paymentMethods"].values().map { it.asString() })
 
         val started = checkout(cartCookie).andExpect(status().isCreated).json()
-        val number = started["orderNumber"].asText()
-        val token = started["accessToken"].asText()
-        assertTrue(started["redirectUrl"].asText().startsWith("https://checkout.stripe.test/"))
+        val number = started["orderNumber"].asString()
+        val token = started["accessToken"].asString()
+        assertTrue(started["redirectUrl"].asString().startsWith("https://checkout.stripe.test/"))
         assertEquals(2, stock(productId)["reserved"].asInt(), "checkout reserves the stock")
         assertEquals(OrderStatus.PENDING_PAYMENT, order(number).status)
 
@@ -148,7 +148,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
 
         // The success page before the webhook: still waiting, and nothing changes by looking.
         val before = mockMvc.perform(get("/v1/orders/$number?token=$token")).andExpect(status().isOk).json()
-        assertEquals("PENDING_PAYMENT", before["status"].asText())
+        assertEquals("PENDING_PAYMENT", before["status"].asString())
 
         pay(number).andExpect(status().isOk)
 
@@ -172,15 +172,15 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val productId = stocked(quantity = 4)["id"].asLong()
         val cartCookie = guestCart(productId, 1)
         val started = checkout(cartCookie).andExpect(status().isCreated).json()
-        val number = started["orderNumber"].asText()
-        val token = started["accessToken"].asText()
+        val number = started["orderNumber"].asString()
+        val token = started["accessToken"].asString()
 
         pay(number).andExpect(status().isOk)
         webhook("checkout.session.completed", FakePaymentGateway.sessionId(number)).andExpect(status().isOk)
         webhook("checkout.session.async_payment_succeeded", FakePaymentGateway.sessionId(number)).andExpect(status().isOk)
         repeat(3) {
             val view = mockMvc.perform(get("/v1/orders/$number?token=$token")).andExpect(status().isOk).json()
-            assertEquals("PAID", view["status"].asText())
+            assertEquals("PAID", view["status"].asString())
         }
 
         assertEquals(3, stock(productId)["onHand"].asInt())
@@ -194,7 +194,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     @Test
     fun `two deliveries of the same event at the same moment sell the stock once`() {
         val productId = stocked(quantity = 3)["id"].asLong()
-        val number = checkout(guestCart(productId, 2)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(guestCart(productId, 2)).andExpect(status().isCreated).json()["orderNumber"].asString()
         val sessionId = FakePaymentGateway.sessionId(number)
         gateway.paid += sessionId
 
@@ -219,7 +219,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     @Test
     fun `a webhook without Stripe's signature changes nothing`() {
         val productId = stocked(quantity = 2)["id"].asLong()
-        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asString()
         val sessionId = FakePaymentGateway.sessionId(number)
         gateway.paid += sessionId
 
@@ -237,7 +237,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     @Test
     fun `a session that isn't paid doesn't make the order paid, whatever the event says`() {
         val productId = stocked(quantity = 2)["id"].asLong()
-        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asString()
 
         webhook("checkout.session.completed", FakePaymentGateway.sessionId(number)).andExpect(status().isOk)
 
@@ -248,7 +248,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     @Test
     fun `an abandoned checkout gives its stock back once the reservation runs out`() {
         val productId = stocked(quantity = 1)["id"].asLong()
-        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asString()
         assertEquals(0, stock(productId)["available"].asInt())
 
         jobs.releaseExpiredReservations()
@@ -269,7 +269,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     @Test
     fun `a checkout paid just before the reservation ran out keeps its stock`() {
         val productId = stocked(quantity = 1)["id"].asLong()
-        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asString()
         gateway.expireResults[FakePaymentGateway.sessionId(number)] = ExpireResult.COMPLETE
 
         expireReservation(number)
@@ -286,13 +286,13 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     fun `going back from the payment page gives the stock back right away`() {
         val productId = stocked(quantity = 1)["id"].asLong()
         val started = checkout(guestCart(productId)).andExpect(status().isCreated).json()
-        val number = started["orderNumber"].asText()
+        val number = started["orderNumber"].asString()
 
         mockMvc.perform(post("/v1/orders/$number/cancel").json(mapOf("token" to "wrong"))).andExpect(status().isNotFound)
-        val view = mockMvc.perform(post("/v1/orders/$number/cancel").json(mapOf("token" to started["accessToken"].asText())))
+        val view = mockMvc.perform(post("/v1/orders/$number/cancel").json(mapOf("token" to started["accessToken"].asString())))
             .andExpect(status().isOk).json()
 
-        assertEquals("CANCELLED", view["status"].asText())
+        assertEquals("CANCELLED", view["status"].asString())
         assertEquals(1, stock(productId)["available"].asInt())
     }
 
@@ -300,9 +300,9 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     fun `checking out again replaces the earlier attempt instead of blocking your own stock`() {
         val productId = stocked(quantity = 1)["id"].asLong()
         val cartCookie = guestCart(productId)
-        val first = checkout(cartCookie).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val first = checkout(cartCookie).andExpect(status().isCreated).json()["orderNumber"].asString()
 
-        val second = checkout(cartCookie).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val second = checkout(cartCookie).andExpect(status().isCreated).json()["orderNumber"].asString()
 
         assertEquals(OrderStatus.CANCELLED, order(first).status)
         assertEquals(OrderStatus.PENDING_PAYMENT, order(second).status)
@@ -319,10 +319,10 @@ class CheckoutIntegrationTest : ShopTestSupport() {
 
         val error = checkout(cartCookie).andExpect(status().isConflict).json()
 
-        assertEquals("cart_changed", error["error"].asText())
-        assertContains(error["message"].asText(), "niet genoeg voor dit aantal")
-        assertContains(error["message"].asText(), "Verlaag het aantal")
-        assertFalse(error["message"].asText().contains(Regex("\\d")), "the message never says how many are left")
+        assertEquals("cart_changed", error["error"].asString())
+        assertContains(error["message"].asString(), "niet genoeg voor dit aantal")
+        assertContains(error["message"].asString(), "Verlaag het aantal")
+        assertFalse(error["message"].asString().contains(Regex("\\d")), "the message never says how many are left")
         assertEquals(0, stock(other)["reserved"].asInt(), "nothing is reserved when one line fails")
         val line = cart(cartCookie)["items"].first { it["productId"].asLong() == productId }
         assertTrue(line["problem"].isNull, "the cart doesn't compare with the stock either")
@@ -359,10 +359,10 @@ class CheckoutIntegrationTest : ShopTestSupport() {
 
         val cart = cart(cartCookie, country = "BE")
         assertEquals(895, cart["shipping"]["priceCents"].asLong())
-        assertEquals(listOf("bancontact", "card"), cart["paymentMethods"].map { it.asText() })
+        assertEquals(listOf("bancontact", "card"), cart["paymentMethods"].values().map { it.asString() })
 
         val number = checkout(cartCookie, extra = mapOf("address" to address + mapOf("country" to "BE", "postcode" to "2000")))
-            .andExpect(status().isCreated).json()["orderNumber"].asText()
+            .andExpect(status().isCreated).json()["orderNumber"].asString()
         val order = order(number)
         assertEquals(1895, order.totalCents)
         assertEquals(listOf("bancontact", "card"), gateway.sessions.getValue(FakePaymentGateway.sessionId(number)).paymentMethods)
@@ -397,7 +397,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         addToCart(productId, 1, session = session).andExpect(status().isOk)
 
         val number = checkout(session = session, extra = mapOf("name" to "Iemand Anders", "email" to "ander@example.com", "saveAddress" to true))
-            .andExpect(status().isCreated).json()["orderNumber"].asText()
+            .andExpect(status().isCreated).json()["orderNumber"].asString()
         val order = order(number)
         assertEquals("Brock Harrison", order.customerName)
         assertEquals(email, order.email)
@@ -408,9 +408,9 @@ class CheckoutIntegrationTest : ShopTestSupport() {
 
         pay(number).andExpect(status().isOk)
         val paidList = mockMvc.perform(get("/v1/account/orders").cookie(session)).andExpect(status().isOk).json()
-        assertEquals(number, paidList["items"].single()["number"].asText())
+        assertEquals(number, paidList["items"].single()["number"].asString())
         val detail = mockMvc.perform(get("/v1/account/orders/$number").cookie(session)).andExpect(status().isOk).json()
-        assertEquals(listOf("PENDING_PAYMENT", "PAID"), detail["timeline"].map { it["status"].asText() })
+        assertEquals(listOf("PENDING_PAYMENT", "PAID"), detail["timeline"].values().map { it["status"].asString() })
         assertEquals(1, mockMvc.perform(get("/v1/account/addresses").cookie(session)).andReturn().let {
             objectMapper.readTree(it.response.contentAsString).size()
         })
@@ -421,7 +421,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val productId = stocked(quantity = 5)["id"].asLong()
         val owner = loggedInUser()
         addToCart(productId, 1, session = owner).andExpect(status().isOk)
-        val number = checkout(session = owner).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(session = owner).andExpect(status().isCreated).json()["orderNumber"].asString()
         pay(number).andExpect(status().isOk)
         val stranger = loggedInUser()
 
@@ -436,7 +436,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     fun `nobody else can see an order, not even with the number`() {
         val productId = stocked(quantity = 5)["id"].asLong()
         val started = checkout(guestCart(productId)).andExpect(status().isCreated).json()
-        val number = started["orderNumber"].asText()
+        val number = started["orderNumber"].asString()
         val stranger = loggedInUser()
 
         mockMvc.perform(get("/v1/orders/$number")).andExpect(status().isNotFound)
@@ -451,8 +451,8 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val productId = stocked(quantity = 5)["id"].asLong()
         val email = "nieuw-${word.lowercase()}@example.com"
         val started = checkout(guestCart(productId), extra = mapOf("email" to email)).andExpect(status().isCreated).json()
-        val number = started["orderNumber"].asText()
-        val token = started["accessToken"].asText()
+        val number = started["orderNumber"].asString()
+        val token = started["accessToken"].asString()
 
         mockMvc.perform(post("/v1/orders/$number/account").with(fromRandomIp()).json(mapOf("token" to token, "password" to "geheim123", "passwordConfirmation" to "geheim123")))
             .andExpect(status().isConflict)
@@ -465,7 +465,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
             .andExpect(status().isCreated).andReturn()
         val session = created.response.getCookie("session")!!
         val orders = mockMvc.perform(get("/v1/account/orders").cookie(session)).andExpect(status().isOk).json()
-        assertEquals(number, orders["items"].single()["number"].asText())
+        assertEquals(number, orders["items"].single()["number"].asString())
         mockMvc.perform(post("/v1/orders/$number/account").with(fromRandomIp()).json(mapOf("token" to token, "password" to "geheim123", "passwordConfirmation" to "geheim123")))
             .andExpect(status().isConflict)
     }
@@ -475,8 +475,8 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val productId = stocked(quantity = 5)["id"].asLong()
         val email = "dubbel-${word.lowercase()}@example.com"
         val started = checkout(guestCart(productId), extra = mapOf("email" to email)).andExpect(status().isCreated).json()
-        val number = started["orderNumber"].asText()
-        val token = started["accessToken"].asText()
+        val number = started["orderNumber"].asString()
+        val token = started["accessToken"].asString()
         pay(number).andExpect(status().isOk)
 
         mockMvc.perform(
@@ -492,7 +492,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     @Test
     fun `the admin ships with track and trace, and the customer gets the link`() {
         val productId = stocked(quantity = 5)["id"].asLong()
-        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asString()
         pay(number).andExpect(status().isOk)
 
         mockMvc.perform(post("/v1/admin/orders/$number/status").cookie(admin).json(mapOf("status" to "DELIVERED")))
@@ -504,21 +504,21 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val shipped = mockMvc.perform(post("/v1/admin/orders/$number/shipment").cookie(admin).json(mapOf("carrier" to "POSTNL", "code" to "3SABC123")))
             .andExpect(status().isOk).json()
 
-        assertEquals("SHIPPED", shipped["order"]["status"].asText())
-        assertEquals("https://jouw.postnl.nl/track-and-trace/3SABC123-NL-1421AB", shipped["order"]["trackingUrl"].asText())
+        assertEquals("SHIPPED", shipped["order"]["status"].asString())
+        assertEquals("https://jouw.postnl.nl/track-and-trace/3SABC123-NL-1421AB", shipped["order"]["trackingUrl"].asString())
         val mail = waitForMail("ash-${word.lowercase()}@example.com", "onderweg")
         assertContains(plainText(mail)!!, "3SABC123")
         assertContains(plainText(mail)!!, "https://jouw.postnl.nl/track-and-trace/3SABC123-NL-1421AB")
 
         val delivered = mockMvc.perform(post("/v1/admin/orders/$number/status").cookie(admin).json(mapOf("status" to "DELIVERED")))
             .andExpect(status().isOk).json()
-        assertNotNull(delivered["order"]["deliveredAt"].textValue())
+        assertNotNull(delivered["order"]["deliveredAt"].stringValue())
     }
 
     @Test
     fun `cancelling a paid order refunds it at Stripe and puts the stock back`() {
         val productId = stocked(quantity = 5)["id"].asLong()
-        val number = checkout(guestCart(productId, 2)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(guestCart(productId, 2)).andExpect(status().isCreated).json()["orderNumber"].asString()
         pay(number).andExpect(status().isOk)
         assertEquals(3, stock(productId)["onHand"].asInt())
 
@@ -531,7 +531,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val cancelled = mockMvc.perform(post("/v1/admin/orders/$number/cancel").cookie(admin).json(mapOf("note" to "Klant vroeg erom")))
             .andExpect(status().isOk).json()
 
-        assertEquals("CANCELLED", cancelled["order"]["status"].asText())
+        assertEquals("CANCELLED", cancelled["order"]["status"].asString())
         assertEquals(19990, cancelled["order"]["refundedCents"].asLong())
         assertEquals(19990, gateway.refunds.single { it.paymentIntentId == "pi_cs_test_$number" }.amountCents)
         assertEquals(5, stock(productId)["onHand"].asInt())
@@ -542,7 +542,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     @Test
     fun `a partial refund after delivery keeps the order, a full one marks it refunded`() {
         val productId = stocked(quantity = 5, priceCents = 5000)["id"].asLong()
-        val number = checkout(guestCart(productId, 2)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(guestCart(productId, 2)).andExpect(status().isCreated).json()["orderNumber"].asString()
         pay(number).andExpect(status().isOk)
         mockMvc.perform(post("/v1/admin/orders/$number/shipment").cookie(admin).json(mapOf("carrier" to "POSTNL", "code" to "3SX")))
             .andExpect(status().isOk)
@@ -551,13 +551,13 @@ class CheckoutIntegrationTest : ShopTestSupport() {
             .andExpect(status().isBadRequest)
         val partial = mockMvc.perform(post("/v1/admin/orders/$number/refund").cookie(admin).json(mapOf("amountCents" to 5000, "restock" to true)))
             .andExpect(status().isOk).json()
-        assertEquals("SHIPPED", partial["order"]["status"].asText())
+        assertEquals("SHIPPED", partial["order"]["status"].asString())
         assertEquals(5000, partial["actions"]["refundableCents"].asLong())
         assertEquals(5, stock(productId)["onHand"].asInt(), "restocked once")
 
         val full = mockMvc.perform(post("/v1/admin/orders/$number/refund").cookie(admin).json(mapOf("restock" to true)))
             .andExpect(status().isOk).json()
-        assertEquals("REFUNDED", full["order"]["status"].asText())
+        assertEquals("REFUNDED", full["order"]["status"].asString())
         assertEquals(10000, full["order"]["refundedCents"].asLong())
         assertEquals(5, stock(productId)["onHand"].asInt(), "stock can only go back once")
     }
@@ -565,14 +565,14 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     @Test
     fun `the admin lists orders by status, and abandoned checkouts only on request`() {
         val productId = stocked(quantity = 5)["id"].asLong()
-        val paidNumber = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val paidNumber = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asString()
         pay(paidNumber).andExpect(status().isOk)
-        val abandoned = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val abandoned = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asString()
         expireReservation(abandoned)
         jobs.releaseExpiredReservations()
 
         fun numbers(query: String) = mockMvc.perform(get("/v1/admin/orders?q=ash-${word.lowercase()}&$query").cookie(admin))
-            .andExpect(status().isOk).json()["items"].map { it["number"].asText() }
+            .andExpect(status().isOk).json()["items"].values().map { it["number"].asString() }
 
         assertEquals(listOf(paidNumber), numbers(""))
         assertEquals(listOf(paidNumber), numbers("status=PAID"))
@@ -588,7 +588,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     fun `the dashboard counts paid revenue minus refunds and the open orders`() {
         val before = mockMvc.perform(get("/v1/admin/dashboard").cookie(admin)).andExpect(status().isOk).json()
         val productId = stocked(quantity = 5, priceCents = 10000)["id"].asLong()
-        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(guestCart(productId)).andExpect(status().isCreated).json()["orderNumber"].asString()
         pay(number).andExpect(status().isOk)
 
         val after = mockMvc.perform(get("/v1/admin/dashboard").cookie(admin)).andExpect(status().isOk).json()
@@ -596,7 +596,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         assertEquals(before["today"]["revenueCents"].asLong() + 10000, after["today"]["revenueCents"].asLong())
         assertEquals(before["month"]["orders"].asLong() + 1, after["month"]["orders"].asLong())
         assertEquals(before["openOrders"].asLong() + 1, after["openOrders"].asLong())
-        assertTrue(after["latestOrders"].any { it["number"].asText() == number })
+        assertTrue(after["latestOrders"].any { it["number"].asString() == number })
     }
 
     @Test
@@ -620,12 +620,12 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     fun `one email address can have at most 2 checkouts waiting for payment`() {
         val carts = (1..3).map { guestCart(stocked(name = "$word Box $it", quantity = 5)["id"].asLong()) }
 
-        val first = checkout(carts[0]).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val first = checkout(carts[0]).andExpect(status().isCreated).json()["orderNumber"].asString()
         checkout(carts[1]).andExpect(status().isCreated)
         val refused = checkout(carts[2]).andExpect(status().isTooManyRequests).json()
 
-        assertEquals("too_many_open_checkouts", refused["error"].asText())
-        assertContains(refused["message"].asText(), "op betaling wachten")
+        assertEquals("too_many_open_checkouts", refused["error"].asString())
+        assertContains(refused["message"].asString(), "op betaling wachten")
         // Gmail dots and +tags are the same person.
         checkout(carts[2], extra = mapOf("email" to "ash-${word.lowercase()}+extra@example.com")).andExpect(status().isTooManyRequests)
 
@@ -672,9 +672,9 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val cartCookie = guestCart(productId, 8)
 
         val tooMany = addToCart(productId, 3, cartCookie).andExpect(status().isConflict).json()
-        assertEquals("too_many", tooMany["error"].asText())
-        assertContains(tooMany["message"].asText(), "maximaal 10 stuks")
-        assertContains(tooMany["message"].asText(), "Je hebt er al 8")
+        assertEquals("too_many", tooMany["error"].asString())
+        assertContains(tooMany["message"].asString(), "maximaal 10 stuks")
+        assertContains(tooMany["message"].asString(), "Je hebt er al 8")
         addToCart(productId, 2, cartCookie).andExpect(status().isOk)
         mockMvc.perform(put("/v1/cart/items/$productId").cookie(cartCookie).json(mapOf("quantity" to 11)))
             .andExpect(status().isBadRequest)
@@ -687,7 +687,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val cartCookie = guestCart(productId, 2)
 
         adjustStock(productId, -2, "CORRECTION").andExpect(status().isOk)
-        assertEquals("SOLD_OUT", cart(cartCookie)["items"].single()["problem"].asText())
+        assertEquals("SOLD_OUT", cart(cartCookie)["items"].single()["problem"].asString())
         addToCart(productId, 1).andExpect(status().isConflict)
         mockMvc.perform(put("/v1/cart/items/$productId").cookie(cartCookie).json(mapOf("quantity" to 3))).andExpect(status().isConflict)
         mockMvc.perform(put("/v1/cart/items/$productId").cookie(cartCookie).json(mapOf("quantity" to 1))).andExpect(status().isOk)
@@ -708,7 +708,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val productId = stocked(quantity = 2, priceCents = 2000)["id"].asLong()
         val cartCookie = guestCart(productId)
         val rates = mockMvc.perform(get("/v1/admin/shipping-rates").cookie(admin)).andExpect(status().isOk).json()
-        val nl = rates.first { it["country"].asText() == "NL" }
+        val nl = rates.first { it["country"].asString() == "NL" }
         try {
             mockMvc.perform(
                 put("/v1/admin/shipping-rates/NL").cookie(admin)
@@ -717,14 +717,14 @@ class CheckoutIntegrationTest : ShopTestSupport() {
 
             val cart = cart(cartCookie)
             assertEquals(0, cart["shipping"]["priceCents"].asLong())
-            assertEquals("Morgen in huis", cart["shipping"]["deliveryTime"].asText())
+            assertEquals("Morgen in huis", cart["shipping"]["deliveryTime"].asString())
         } finally {
             mockMvc.perform(
                 put("/v1/admin/shipping-rates/NL").cookie(admin).json(
                     mapOf(
                         "priceCents" to nl["priceCents"].asLong(),
                         "freeFromCents" to nl["freeFromCents"].asLong(),
-                        "deliveryTime" to nl["deliveryTime"].asText(),
+                        "deliveryTime" to nl["deliveryTime"].asString(),
                         "active" to true,
                     ),
                 ),
@@ -738,7 +738,7 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val seller = stocked(name = "$word Zzz Tin", quantity = 5, type = "TIN")["id"].asLong()
         assertEquals(listOf("$word Aaa Tin", "$word Zzz Tin"), names("sort=name"))
 
-        val number = checkout(guestCart(seller)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(guestCart(seller)).andExpect(status().isCreated).json()["orderNumber"].asString()
         pay(number).andExpect(status().isOk)
 
         assertEquals("$word Zzz Tin", names("sort=popular").first())

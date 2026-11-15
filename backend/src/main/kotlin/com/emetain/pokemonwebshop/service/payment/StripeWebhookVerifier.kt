@@ -2,7 +2,7 @@ package com.emetain.pokemonwebshop.service.payment
 
 import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.exception.ApiException
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.stripe.exception.SignatureVerificationException
 import com.stripe.net.Webhook
 import org.slf4j.LoggerFactory
@@ -38,10 +38,10 @@ class StripeWebhookVerifier(
             throw invalid()
         }
         val event = runCatching { objectMapper.readTree(payload) }.getOrNull() ?: throw invalid()
-        val id = event.path("id").asText()
-        val type = event.path("type").asText()
+        val id = event.path("id").asString()
+        val type = event.path("type").asString()
         if (id.isBlank() || type.isBlank()) throw invalid()
-        val objectId = event.path("data").path("object").path("id").asText().takeIf { it.isNotBlank() }
+        val objectId = event.path("data").path("object").path("id").asString().takeIf { it.isNotBlank() }
         return PaymentEvent(id, type, objectId)
     }
 

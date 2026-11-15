@@ -63,6 +63,9 @@ management:
   endpoint:
     health:
       show-details: never
+      # Spring Boot 4 adds the Kubernetes liveness and readiness groups by default. The deploy only needs the status.
+      probes:
+        enabled: false
   health:
     # Mail going down shouldn't make the shop count as down and roll a deploy back.
     mail:

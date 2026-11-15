@@ -2,7 +2,7 @@ package com.emetain.pokemonwebshop.service.provider
 
 import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.domain.Game
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.URLEncoder
@@ -35,7 +35,7 @@ class TcgdexProvider(
     }
 
     private fun fetchSet(set: JsonNode, sortOrder: Int, failures: FailureStreak): ProviderSet {
-        val ids = set.path("cards").map { it.requireText("id") }
+        val ids = set.path("cards").values().map { it.requireText("id") }
         val cards = ids.mapNotNull { fetchCard(it, failures) }
         return TcgdexMapper.set(set, sortOrder, cards, failedCards = ids.size - cards.size)
     }

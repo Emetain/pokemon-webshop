@@ -4,7 +4,7 @@ import com.emetain.pokemonwebshop.domain.CardVariants
 import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.PriceSource
 import com.emetain.pokemonwebshop.service.CatalogText
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import java.time.ZoneOffset
 
 /**

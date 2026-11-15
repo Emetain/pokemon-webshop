@@ -3,8 +3,8 @@ package com.emetain.pokemonwebshop.integration
 import com.emetain.pokemonwebshop.service.ai.AiClient
 import com.emetain.pokemonwebshop.service.ai.AiImageResult
 import com.emetain.pokemonwebshop.service.ai.AiTextResult
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.node.ObjectNode
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary

@@ -38,7 +38,7 @@ interface OrderRepository : JpaRepository<Order, Long>, JpaSpecificationExecutor
     fun findByStripeSessionId(sessionId: String): Order?
 
     @EntityGraph(attributePaths = ["user"])
-    override fun findAll(spec: Specification<Order>?, pageable: Pageable): Page<Order>
+    override fun findAll(spec: Specification<Order>, pageable: Pageable): Page<Order>
 
     /** Orders a customer sees in the account: only those that were paid, not checkouts that were given up. */
     @Query("select o from Order o where o.user.id = :userId and o.paidAt is not null order by o.createdAt desc, o.id desc")

@@ -1,12 +1,12 @@
 package com.emetain.pokemonwebshop.service.provider
 
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 
 /** The text of a field, or null when it is missing, null or blank. */
 internal fun JsonNode.text(field: String): String? =
-    path(field).takeIf { it.isValueNode && !it.isNull }?.asText()?.takeIf { it.isNotBlank() }
+    path(field).takeIf { it.isValueNode && !it.isNull }?.asString()?.takeIf { it.isNotBlank() }
 
 internal fun JsonNode.requireText(field: String): String =
     requireNotNull(text(field)) { "Field '$field' is missing in $this" }

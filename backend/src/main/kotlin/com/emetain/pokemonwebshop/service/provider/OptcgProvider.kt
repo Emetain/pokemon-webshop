@@ -2,7 +2,7 @@ package com.emetain.pokemonwebshop.service.provider
 
 import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.domain.Game
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import org.springframework.stereotype.Component
 
 /**

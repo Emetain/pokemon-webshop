@@ -10,8 +10,8 @@ import com.emetain.pokemonwebshop.repository.AiUsageRepository
 import com.emetain.pokemonwebshop.repository.HeroSlideRepository
 import com.emetain.pokemonwebshop.service.ImageFormat
 import com.emetain.pokemonwebshop.service.MediaStorage
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.node.ObjectNode
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
@@ -153,8 +153,8 @@ class AiSlideService(
     private fun input(prompt: String): String =
         "Vandaag is het ${LocalDate.now(clock.withZone(ZONE))}.\n\nOpdracht van de winkel:\n$prompt"
 
-    private fun parse(json: com.fasterxml.jackson.databind.JsonNode): SlideDraft {
-        fun field(name: String, max: Int) = json.path(name).asText("").trim().take(max)
+    private fun parse(json: tools.jackson.databind.JsonNode): SlideDraft {
+        fun field(name: String, max: Int) = json.path(name).asString("").trim().take(max)
         val title = field("title", TITLE_LENGTH)
         if (title.isEmpty()) throw ApiException(HttpStatus.BAD_GATEWAY, "ai_failed", "OpenAI gaf geen titel terug. Probeer het opnieuw.")
         val link = field("link", LINK_LENGTH).takeIf { it in LINKS } ?: "/producten"

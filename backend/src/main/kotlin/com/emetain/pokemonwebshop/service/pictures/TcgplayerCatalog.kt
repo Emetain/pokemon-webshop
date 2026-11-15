@@ -3,7 +3,7 @@ package com.emetain.pokemonwebshop.service.pictures
 import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.domain.Game
 import com.emetain.pokemonwebshop.service.provider.CatalogHttpClient
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import org.springframework.stereotype.Component
 import java.time.LocalDate
 
@@ -42,27 +42,27 @@ class TcgcsvCatalog(
     private val source = properties.catalog.tcgcsv
 
     override fun groups(game: Game): List<TcgGroup> =
-        http.getJson("${source.baseUrl}/tcgplayer/${category(game)}/groups", source.requestDelay).path("results").map { group ->
+        http.getJson("${source.baseUrl}/tcgplayer/${category(game)}/groups", source.requestDelay).path("results").values().map { group ->
             TcgGroup(
                 id = group.path("groupId").asLong(),
-                name = group.path("name").asText(),
-                abbreviation = group.path("abbreviation").asText("").ifBlank { null },
-                publishedOn = group.path("publishedOn").asText("").take(DATE_LENGTH)
+                name = group.path("name").asString(),
+                abbreviation = group.path("abbreviation").asString("").ifBlank { null },
+                publishedOn = group.path("publishedOn").asString("").take(DATE_LENGTH)
                     .let { runCatching { LocalDate.parse(it) }.getOrNull() },
             )
         }
 
     override fun products(game: Game, groupId: Long): List<TcgProduct> =
-        http.getJson("${source.baseUrl}/tcgplayer/${category(game)}/$groupId/products", source.requestDelay).path("results").map { product ->
+        http.getJson("${source.baseUrl}/tcgplayer/${category(game)}/$groupId/products", source.requestDelay).path("results").values().map { product ->
             TcgProduct(
                 id = product.path("productId").asLong(),
-                name = product.path("name").asText(),
+                name = product.path("name").asString(),
                 number = number(product),
             )
         }
 
     private fun number(product: JsonNode): String? =
-        product.path("extendedData").firstOrNull { it.path("name").asText() == "Number" }?.path("value")?.asText()?.ifBlank { null }
+        product.path("extendedData").firstOrNull { it.path("name").asString() == "Number" }?.path("value")?.asString()?.ifBlank { null }
 
     private companion object {
         const val DATE_LENGTH = 10

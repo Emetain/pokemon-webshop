@@ -1,6 +1,6 @@
 package com.emetain.pokemonwebshop.service.provider
 
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 
 data class ProviderSpecies(val dexNumber: Int, val name: String, val generation: Int)
 
@@ -8,7 +8,7 @@ object PokeApiMapper {
 
     /** The list only links to each species, with the number at the end of the link. */
     fun speciesNumbers(list: JsonNode): List<Int> =
-        list.path("results").map { numberAtEndOf(it.requireText("url")) }
+        list.path("results").values().map { numberAtEndOf(it.requireText("url")) }
 
     fun species(species: JsonNode): ProviderSpecies {
         // The `name` field is a slug such as `mr-mime`. The display names are per language.

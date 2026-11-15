@@ -2,7 +2,7 @@ package com.emetain.pokemonwebshop.security
 
 import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.dto.ErrorResponse
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ReadListener
 import jakarta.servlet.ServletInputStream

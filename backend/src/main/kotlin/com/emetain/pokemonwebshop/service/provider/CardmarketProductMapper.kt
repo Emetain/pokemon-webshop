@@ -3,7 +3,7 @@ package com.emetain.pokemonwebshop.service.provider
 import com.emetain.pokemonwebshop.domain.Game
 import com.emetain.pokemonwebshop.domain.ProductType
 import com.emetain.pokemonwebshop.service.CatalogText
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 
 /** One sealed product from Cardmarket's public product list. It has no language, release date or image. */
 data class CardmarketProduct(
@@ -47,12 +47,12 @@ object CardmarketProductMapper {
     fun parse(json: JsonNode): List<CardmarketProduct> =
         json.path("products").mapNotNull { node ->
             val id = node.path("idProduct").asLong(0)
-            val name = shopName(node.path("name").asText("").replace("\"\"", "\"").trim())
+            val name = shopName(node.path("name").asString("").replace("\"\"", "\"").trim())
             val expansion = node.path("idExpansion").asLong(0)
             if (id == 0L || name.isEmpty() || expansion == 0L) {
                 null
             } else {
-                CardmarketProduct(id, name, node.path("categoryName").asText(""), expansion)
+                CardmarketProduct(id, name, node.path("categoryName").asString(""), expansion)
             }
         }
 

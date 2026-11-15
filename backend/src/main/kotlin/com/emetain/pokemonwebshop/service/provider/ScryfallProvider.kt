@@ -2,7 +2,7 @@ package com.emetain.pokemonwebshop.service.provider
 
 import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.domain.Game
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import org.springframework.stereotype.Component
 import java.io.InputStream
 import java.time.Instant

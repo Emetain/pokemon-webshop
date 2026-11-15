@@ -1,7 +1,7 @@
 package com.emetain.pokemonwebshop.service.provider
 
 import com.emetain.pokemonwebshop.domain.CardVariants
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import java.time.Instant
 import java.time.format.DateTimeParseException
 
@@ -64,7 +64,7 @@ object TcgdexMapper {
 
     /** Pokémon list their type. Basic energy cards only have it in their name: "Fire Energy". */
     private fun colors(card: JsonNode): Set<String> {
-        val types = card.path("types").map { it.asText() }.toSet()
+        val types = card.path("types").values().map { it.asString() }.toSet()
         if (types.isNotEmpty() || card.text("category") != ENERGY_CATEGORY) return types
         return setOfNotNull(card.text("name")?.removeSuffix(ENERGY_SUFFIX)?.takeIf { it in ENERGY_TYPES })
     }
@@ -109,7 +109,7 @@ object TcgdexMapper {
         val productId = market.text("idProduct")
         return card.path("variants_detailed")
             .filter { entry ->
-                entry.path("stamp").any { it.asText() == FIRST_EDITION_STAMP } && entry.text("size") != JUMBO_SIZE
+                entry.path("stamp").any { it.asString() == FIRST_EDITION_STAMP } && entry.text("size") != JUMBO_SIZE
             }
             .map { it.path("pricing").path("cardmarket") }
             .firstOrNull { it.text("idProduct").let { id -> id != null && id != productId } }

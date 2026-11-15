@@ -7,7 +7,7 @@ import com.emetain.pokemonwebshop.service.pictures.PictureSearchService
 import com.emetain.pokemonwebshop.service.pictures.TcgGroup
 import com.emetain.pokemonwebshop.service.pictures.TcgProduct
 import com.emetain.pokemonwebshop.service.pictures.TcgplayerImages
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -94,10 +94,10 @@ class PictureSearchIntegrationTest : ShopTestSupport() {
         assertEquals(emptyList(), productImages(bundle), "LGS or Retail: the admin decides")
         assertEquals(emptyList(), productImages(japanese), "no English picture for a Japanese product")
 
-        val open = suggestions()["suggestions"].filter { it["setName"].asText() == "$word Sparks" }
-        val energy = open.single { it["kind"].asText() == "CARD" }
-        val bundleSuggestion = open.single { it["kind"].asText() == "PRODUCT" }
-        assertEquals("132", energy["detail"].asText())
+        val open = suggestions()["suggestions"].filter { it["setName"].asString() == "$word Sparks" }
+        val energy = open.single { it["kind"].asString() == "CARD" }
+        val bundleSuggestion = open.single { it["kind"].asString() == "PRODUCT" }
+        assertEquals("132", energy["detail"].asString())
         assertEquals(setOf(tcg.getValue("lgs"), tcg.getValue("retail")), bundleSuggestion["candidates"].take(2).map { it["tcgplayerId"].asLong() }.toSet())
 
         mockMvc.perform(
@@ -112,18 +112,18 @@ class PictureSearchIntegrationTest : ShopTestSupport() {
 
         val again = searchService.run(Game.POKEMON)
         assertNull(again.error)
-        assertTrue(suggestions()["suggestions"].none { it["setName"].asText() == "$word Sparks" }, "nothing new: the rest has a picture or was rejected")
+        assertTrue(suggestions()["suggestions"].none { it["setName"].asString() == "$word Sparks" }, "nothing new: the rest has a picture or was rejected")
         assertEquals(emptyList(), productImages(bundle))
 
         // The catalog shows the found picture, and an upload still goes first.
         val card = mockMvc.perform(get("/v1/catalog/cards/${cards[0]}")).andExpect(status().isOk).json()
-        assertEquals(TcgplayerImages.large(tcg.getValue("masquerain")), card["imageLargeUrl"].asText())
+        assertEquals(TcgplayerImages.large(tcg.getValue("masquerain")), card["imageLargeUrl"].asString())
     }
 
     @Test
     fun `the overview counts what has no picture, and only admins start a search`() {
         val overview = mockMvc.perform(get("/v1/admin/pictures/search").cookie(admin)).andExpect(status().isOk).json()
-        assertEquals(Game.entries.map { it.slug }.toSet(), overview.map { it["game"].asText() }.toSet())
+        assertEquals(Game.entries.map { it.slug }.toSet(), overview.values().map { it["game"].asString() }.toSet())
         mockMvc.perform(post("/v1/admin/pictures/search/pokemon").cookie(loggedInUser())).andExpect(status().isForbidden)
         mockMvc.perform(post("/v1/admin/pictures/search/fortnite").cookie(admin)).andExpect(status().isBadRequest)
     }
@@ -139,19 +139,19 @@ class PictureSearchIntegrationTest : ShopTestSupport() {
         catalog.add(Game.LORCANA, TcgGroup(id(), "$word Old Chapter", null, LocalDate.now().minusDays(10)))
 
         val list = mockMvc.perform(post("/v1/admin/release-suggestions/refresh").cookie(admin)).andExpect(status().isOk).json()
-            .filter { it["name"].asText().startsWith(word) }
-        assertEquals(listOf("$word Realm", "$word Inkdark"), list.map { it["name"].asText() })
+            .filter { it["name"].asString().startsWith(word) }
+        assertEquals(listOf("$word Realm", "$word Inkdark"), list.map { it["name"].asString() })
         val realm = list.first()
-        assertEquals(ReleaseSource.CATALOG.name, realm["source"].asText())
-        assertEquals(code, realm["setCode"].asText())
-        assertEquals(soon.toString(), realm["releaseDate"].asText(), "the catalog's date wins")
+        assertEquals(ReleaseSource.CATALOG.name, realm["source"].asString())
+        assertEquals(code, realm["setCode"].asString())
+        assertEquals(soon.toString(), realm["releaseDate"].asString(), "the catalog's date wins")
 
         mockMvc.perform(post("/v1/admin/release-suggestions/${list[1]["id"].asLong()}/dismiss").cookie(admin)).andExpect(status().isNoContent)
         mockMvc.perform(
             post("/v1/admin/releases").cookie(admin).json(mapOf("game" to Game.MTG.slug, "name" to "$word Realm", "releaseDate" to soon.toString())),
         ).andExpect(status().isCreated)
         mockMvc.perform(post("/v1/admin/release-suggestions/refresh").cookie(admin)).andExpect(status().isOk)
-        val left = mockMvc.perform(get("/v1/admin/release-suggestions").cookie(admin)).json().filter { it["name"].asText().startsWith(word) }
-        assertEquals(emptyList(), left.map { it["name"].asText() }, "one dismissed, one on the calendar")
+        val left = mockMvc.perform(get("/v1/admin/release-suggestions").cookie(admin)).json().filter { it["name"].asString().startsWith(word) }
+        assertEquals(emptyList(), left.map { it["name"].asString() }, "one dismissed, one on the calendar")
     }
 }

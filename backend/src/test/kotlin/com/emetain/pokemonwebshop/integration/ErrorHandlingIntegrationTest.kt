@@ -88,7 +88,7 @@ class ErrorHandlingIntegrationTest : IntegrationTest() {
             post("/v1/auth/login").with(fromRandomIp())
                 .json(mapOf("email" to "ash@example.com", "password" to "fout", "padding" to padding)),
         )
-            .andExpect(status().isPayloadTooLarge)
+            .andExpect(status().isContentTooLarge)
             .andExpect(jsonPath("$.error").value("request_too_large"))
             .andExpect(jsonPath("$.message").value("Dit verzoek is te groot."))
     }

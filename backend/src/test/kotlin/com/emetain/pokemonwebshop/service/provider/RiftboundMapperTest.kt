@@ -17,8 +17,8 @@ class RiftboundMapperTest {
 
     private fun groups(): List<RiftboundGroup> {
         val fixture = fixture("tcgcsv-riftbound.json")
-        return fixture.path("groups").map { group ->
-            val id = group.path("groupId").asText()
+        return fixture.path("groups").values().map { group ->
+            val id = group.path("groupId").asString()
             RiftboundGroup(group, fixture.path("products").path(id).toList(), fixture.path("prices").path(id).toList())
         }
     }

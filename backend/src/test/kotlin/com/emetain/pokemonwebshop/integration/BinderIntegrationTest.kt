@@ -67,7 +67,7 @@ class BinderIntegrationTest : CollectionTestSupport() {
     }
 
     private fun ResultActions.names(): List<String> =
-        objectMapper.readTree(andReturn().response.contentAsString)["slots"].map { it["card"]["name"].asText() }
+        objectMapper.readTree(andReturn().response.contentAsString)["slots"].values().map { it["card"]["name"].asString() }
 
     private fun importBlackLotus() {
         importCards(

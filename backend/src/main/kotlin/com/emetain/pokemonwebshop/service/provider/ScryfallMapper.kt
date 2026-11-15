@@ -1,7 +1,7 @@
 package com.emetain.pokemonwebshop.service.provider
 
 import com.emetain.pokemonwebshop.domain.CardVariants
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import java.time.Instant
 
 /** Maps Scryfall JSON to our model. `prices.eur` and `prices.eur_foil` come from Cardmarket. */
@@ -35,7 +35,7 @@ object ScryfallMapper {
     )
 
     fun card(json: JsonNode, pricesUpdatedAt: Instant): ProviderCard {
-        val variants = json.path("finishes").mapNotNull { VARIANTS_BY_FINISH[it.asText()] }.toSet()
+        val variants = json.path("finishes").mapNotNull { VARIANTS_BY_FINISH[it.asString()] }.toSet()
         // Double-faced cards have their images on the faces. The front is the one to show.
         val images = json.path("image_uris").takeIf { it.isObject }
             ?: json.path("card_faces").path(0).path("image_uris")
@@ -64,7 +64,7 @@ object ScryfallMapper {
     /** Double-faced cards have their colours on the faces, like their images. */
     private fun colors(json: JsonNode): Set<String> {
         val codes = json.path("colors").takeIf { it.isArray } ?: json.path("card_faces").path(0).path("colors")
-        return codes.mapNotNull { COLOR_NAMES[it.asText()] }.toSet().ifEmpty { setOf(COLORLESS) }
+        return codes.mapNotNull { COLOR_NAMES[it.asString()] }.toSet().ifEmpty { setOf(COLORLESS) }
     }
 
     private fun prices(prices: JsonNode, variants: Set<String>, updatedAt: Instant): List<ProviderPrice> =

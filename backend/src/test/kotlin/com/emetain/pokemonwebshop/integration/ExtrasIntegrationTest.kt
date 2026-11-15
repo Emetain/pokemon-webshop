@@ -5,7 +5,7 @@ import com.emetain.pokemonwebshop.domain.OrderStatus
 import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.repository.AiUsageRepository
 import com.emetain.pokemonwebshop.repository.OrderRepository
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import jakarta.mail.Message
 import jakarta.mail.internet.MimeMessage
 import jakarta.servlet.http.Cookie
@@ -115,7 +115,7 @@ class ExtrasIntegrationTest : ShopTestSupport() {
         assertEquals(0, quoted["shipping"]["priceCents"].asLong(), "89,95 after the discount is still over the free shipping threshold")
         assertEquals(8995, quoted["totalCents"].asLong())
 
-        val number = checkout(cart, code = code).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(cart, code = code).andExpect(status().isCreated).json()["orderNumber"].asString()
         val order = requireNotNull(orderRepository.findByNumber(number))
         assertEquals(1000, order.discountCents)
         assertEquals(code, order.discountCodeText)
@@ -141,7 +141,7 @@ class ExtrasIntegrationTest : ShopTestSupport() {
         val quoted = mockMvc.perform(get("/v1/cart?discountCode=$code").cookie(cart)).andExpect(status().isOk).json()
         assertEquals(0, quoted["discountCents"].asLong())
         assertFalse(quoted["discount"]["applied"].asBoolean())
-        assertEquals("Deze kortingscode geldt niet voor de producten in je bestelling.", quoted["discount"]["message"].asText())
+        assertEquals("Deze kortingscode geldt niet voor de producten in je bestelling.", quoted["discount"]["message"].asString())
 
         checkout(cart, code = code).andExpect(status().isConflict).andExpect(jsonPath("$.error").value("discount_invalid"))
         checkout(cart, code = "BESTAATNIET").andExpect(status().isConflict)
@@ -184,18 +184,18 @@ class ExtrasIntegrationTest : ShopTestSupport() {
         ).andExpect(status().isCreated)
         assertEquals(3, mockMvc.perform(get("/v1/admin/products/$boxId").cookie(admin)).json()["stock"]["available"].asInt())
 
-        val page = mockMvc.perform(get("/v1/products/${box["slug"].asText()}")).andExpect(status().isOk).json()["mysteryBox"]
+        val page = mockMvc.perform(get("/v1/products/${box["slug"].asString()}")).andExpect(status().isOk).json()["mysteryBox"]
         // Only chances: never how many boxes there are or are left.
         for (field in listOf("remaining", "boxCount")) assertFalse(page.has(field), "no $field on the product page")
         assertFalse(page["prizes"][0].has("remaining") || page["prizes"][0].has("count"))
-        assertEquals(listOf(33.3, 66.7), page["prizes"].map { it["chance"].asDouble() })
+        assertEquals(listOf(33.3, 66.7), page["prizes"].values().map { it["chance"].asDouble() })
         assertEquals(1500, page["minValueCents"].asLong())
         assertEquals(6000, page["averageValueCents"].asLong())
 
-        val number = checkout(guestCart(boxId, 2)).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(guestCart(boxId, 2)).andExpect(status().isCreated).json()["orderNumber"].asString()
         pay(number)
         val adminOrder = mockMvc.perform(get("/v1/admin/orders/$number").cookie(admin)).andExpect(status().isOk).json()
-        val drawn = adminOrder["order"]["lines"][0]["mysteryBoxes"].map { it.asText() }
+        val drawn = adminOrder["order"]["lines"][0]["mysteryBoxes"].values().map { it.asString() }
         assertEquals(2, drawn.size)
         assertTrue(drawn.all { it in setOf("Grote hit", "Drie boosters") })
         val token = requireNotNull(orderRepository.findByNumber(number)).accessToken
@@ -219,7 +219,7 @@ class ExtrasIntegrationTest : ShopTestSupport() {
     @Test
     fun `only a buyer writes a review, and it shows after approval with the first name only`() {
         val product = stocked(quantity = 5)
-        val slug = product["slug"].asText()
+        val slug = product["slug"].asString()
         val buyerEmail = uniqueEmail()
         userService.register(buyerEmail, password, "Misty Waterflower", Role.CUSTOMER)
         val buyer = login(buyerEmail).sessionCookie()
@@ -230,15 +230,15 @@ class ExtrasIntegrationTest : ShopTestSupport() {
 
         mockMvc.perform(post("/v1/cart/items").cookie(buyer).json(mapOf("productId" to product["id"].asLong(), "quantity" to 1)))
             .andExpect(status().isOk)
-        pay(checkout(session = buyer).andExpect(status().isCreated).json()["orderNumber"].asText())
+        pay(checkout(session = buyer).andExpect(status().isCreated).json()["orderNumber"].asString())
 
         val written = mockMvc.perform(put("/v1/products/$slug/reviews").cookie(buyer).with(fromRandomIp()).json(review))
             .andExpect(status().isOk).json()
-        assertEquals("PENDING", written["own"]["status"].asText())
+        assertEquals("PENDING", written["own"]["status"].asString())
         assertEquals(0, written["count"].asInt(), "not public before approval")
 
         val pending = mockMvc.perform(get("/v1/admin/reviews?status=PENDING").cookie(admin)).json()["reviews"]
-            .first { it["productSlug"].asText() == slug }
+            .first { it["productSlug"].asString() == slug }
         mockMvc.perform(post("/v1/admin/reviews/${pending["id"].asLong()}/approve").cookie(admin)).andExpect(status().isOk)
 
         mockMvc.perform(get("/v1/products/$slug/reviews"))
@@ -298,9 +298,9 @@ class ExtrasIntegrationTest : ShopTestSupport() {
 
         val slide = mockMvc.perform(post("/v1/admin/releases/${release["id"].asLong()}/hero-slide").cookie(admin))
             .andExpect(status().isCreated).json()
-        assertEquals("/releasekalender#release-${release["id"].asLong()}", slide["linkUrl"].asText())
-        assertEquals("pokemon", slide["game"].asText())
-        assertContains(slide["text"].asText(), "30 mei 2099")
+        assertEquals("/releasekalender#release-${release["id"].asLong()}", slide["linkUrl"].asString())
+        assertEquals("pokemon", slide["game"].asString())
+        assertContains(slide["text"].asString(), "30 mei 2099")
     }
 
     @Test
@@ -308,14 +308,14 @@ class ExtrasIntegrationTest : ShopTestSupport() {
         val title = "$word nieuws"
         val article = mockMvc.perform(post("/v1/admin/news").cookie(admin).json(mapOf("title" to title, "body" to "## Kop\nTekst", "published" to false)))
             .andExpect(status().isCreated).json()
-        val slug = article["slug"].asText()
+        val slug = article["slug"].asString()
         mockMvc.perform(get("/v1/news/$slug")).andExpect(status().isNotFound)
         mockMvc.perform(get("/v1/news/$slug").cookie(admin)).andExpect(status().isOk).andExpect(jsonPath("$.published").value(false))
 
         mockMvc.perform(put("/v1/admin/news/${article["id"].asLong()}").cookie(admin).json(mapOf("title" to title, "body" to "Tekst", "published" to true)))
             .andExpect(status().isOk)
         mockMvc.perform(get("/v1/news/$slug")).andExpect(status().isOk)
-        assertTrue(mockMvc.perform(get("/v1/news?size=24")).json()["articles"].any { it["slug"].asText() == slug })
+        assertTrue(mockMvc.perform(get("/v1/news?size=24")).json()["articles"].any { it["slug"].asString() == slug })
 
         val planned = clock.instant().plus(Duration.ofDays(2)).toString()
         mockMvc.perform(put("/v1/admin/news/${article["id"].asLong()}").cookie(admin).json(mapOf("title" to title, "body" to "Tekst", "published" to true, "publishedAt" to planned)))
@@ -332,11 +332,11 @@ class ExtrasIntegrationTest : ShopTestSupport() {
         val slide = mockMvc.perform(
             post("/v1/admin/hero-slides/ai").cookie(admin).json(mapOf("prompt" to "pre-order Destined Rivals, release 30 mei", "withImage" to true)),
         ).andExpect(status().isCreated).json()
-        assertEquals("Destined Rivals in pre-order", slide["title"].asText())
+        assertEquals("Destined Rivals in pre-order", slide["title"].asString())
         assertFalse(slide["active"].asBoolean(), "nothing goes live before the admin approves it")
         assertTrue(slide["aiGenerated"].asBoolean())
-        assertEquals("/pre-order", slide["linkUrl"].asText())
-        assertNotNull(slide["imageUrl"].textValue())
+        assertEquals("/pre-order", slide["linkUrl"].asString())
+        assertNotNull(slide["imageUrl"].stringValue())
         assertContains(fakeAi.imagePrompts.last(), "do not show any Pokémon or other characters")
         assertContains(fakeAi.textInputs.last(), "pre-order Destined Rivals")
         mockMvc.perform(get("/v1/shop/hero-slides"))

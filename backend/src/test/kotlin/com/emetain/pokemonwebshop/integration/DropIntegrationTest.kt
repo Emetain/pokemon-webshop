@@ -34,7 +34,7 @@ class DropIntegrationTest : DropTestSupport() {
         assertEquals(4, stock(productId)["onHand"].asInt(), "6 of 10 went to the drop")
         val movements = mockMvc.perform(get("/v1/admin/products/$productId/stock/movements").cookie(admin)).andExpect(status().isOk).json()
         val allocation = movements["items"].first()
-        assertEquals("DROP_ALLOCATION", allocation["reason"].asText())
+        assertEquals("DROP_ALLOCATION", allocation["reason"].asString())
         assertEquals(-6, allocation["change"].asInt())
 
         mockMvc.perform(get("/v1/drops/${drop.slug}")).andExpect(status().isNotFound)
@@ -42,9 +42,9 @@ class DropIntegrationTest : DropTestSupport() {
 
         mockMvc.perform(post("/v1/admin/drops/${drop.id}/publish").cookie(admin)).andExpect(status().isOk)
         val list = mockMvc.perform(get("/v1/drops")).andExpect(status().isOk).json()
-        assertTrue(list["upcoming"].any { it["slug"].asText() == drop.slug })
+        assertTrue(list["upcoming"].any { it["slug"].asString() == drop.slug })
         val shown = detail(drop)
-        assertEquals("SCHEDULED", shown["status"].asText())
+        assertEquals("SCHEDULED", shown["status"].asString())
         // The drop page never shows how many there are, nor the price before it is your turn.
         for (field in listOf("available", "allocated", "reserved", "priceCents", "regularPriceCents")) {
             assertFalse(shown["products"][0].has(field), "the drop page has no $field")
@@ -93,13 +93,13 @@ class DropIntegrationTest : DropTestSupport() {
         val early = (1..20).map { buyer() }
         for (buyer in early) {
             val joined = join(drop, buyer).andExpect(status().isOk).json()
-            assertEquals("WAITING_ROOM", joined["state"].asText())
+            assertEquals("WAITING_ROOM", joined["state"].asString())
         }
         assertEquals(20, ping(drop, early[0])["waitingCount"].asLong())
 
         setSpeed(drop, 1)
         startNow(drop)
-        assertEquals("LIVE", detail(drop)["status"].asText())
+        assertEquals("LIVE", detail(drop)["status"].asString())
 
         val positions = transactions.execute {
             entryRepository.findAll().filter { it.drop.id == drop.id }.sortedBy { it.id }.map { it.position!! }
@@ -109,7 +109,7 @@ class DropIntegrationTest : DropTestSupport() {
 
         val late = buyer()
         val lateStatus = join(drop, late).andExpect(status().isOk).json()
-        assertEquals("QUEUED", lateStatus["state"].asText())
+        assertEquals("QUEUED", lateStatus["state"].asString())
         val latePosition = transactions.execute { entryRepository.findAll().first { it.drop.id == drop.id && it.user?.email == late.email }.position }
         assertEquals(21L, latePosition, "after the start you join at the back")
     }
@@ -124,7 +124,7 @@ class DropIntegrationTest : DropTestSupport() {
         setSpeed(drop, 60)
         startNow(drop)
 
-        fun admitted() = buyers.count { ping(drop, it)["state"].asText() == "ADMITTED" }
+        fun admitted() = buyers.count { ping(drop, it)["state"].asString() == "ADMITTED" }
         assertEquals(10, admitted(), "the first batch goes through at the start")
         assertTrue(buyers.filter { it.access != null }.size == 10)
 
@@ -148,7 +148,7 @@ class DropIntegrationTest : DropTestSupport() {
         setSpeed(drop, 12) // 2 per batch
         mockMvc.perform(post("/v1/admin/drops/${drop.id}/queue").cookie(admin).json(mapOf("paused" to true))).andExpect(status().isOk)
         startNow(drop)
-        assertTrue(buyers.none { ping(drop, it)["state"].asText() == "ADMITTED" }, "paused: nobody through")
+        assertTrue(buyers.none { ping(drop, it)["state"].asString() == "ADMITTED" }, "paused: nobody through")
         assertTrue(ping(drop, buyers[0])["paused"].asBoolean())
 
         // Everyone but two left the page a while ago.
@@ -156,7 +156,7 @@ class DropIntegrationTest : DropTestSupport() {
         buyers.drop(2).forEach { gone -> changeEntry(gone, drop) { it.lastSeenAt = Instant.now().minus(Duration.ofMinutes(5)) } }
         mockMvc.perform(post("/v1/admin/drops/${drop.id}/queue").cookie(admin).json(mapOf("paused" to false))).andExpect(status().isOk)
         nextBatch(drop)
-        present.forEach { assertEquals("ADMITTED", ping(drop, it)["state"].asText(), "the batch of 2 went to the people still there") }
+        present.forEach { assertEquals("ADMITTED", ping(drop, it)["state"].asString(), "the batch of 2 went to the people still there") }
     }
 
     @Test
@@ -167,12 +167,12 @@ class DropIntegrationTest : DropTestSupport() {
         val buyer = admittedBuyer(drop)
         changeEntry(buyer, drop) { it.accessExpiresAt = Instant.now().minusSeconds(1) }
 
-        assertEquals("EXPIRED", ping(drop, buyer)["state"].asText())
+        assertEquals("EXPIRED", ping(drop, buyer)["state"].asString())
         setQuantity(drop, buyer, drop.dropProductIds[0], 1).andExpect(status().isForbidden)
 
         setSpeed(drop, 1)
         val again = join(drop, buyer).andExpect(status().isOk).json()
-        assertEquals("QUEUED", again["state"].asText())
+        assertEquals("QUEUED", again["state"].asString())
         val entry = transactions.execute { entryRepository.findAll().first { it.drop.id == drop.id && it.user?.email == buyer.email } }!!
         assertEquals(2, entry.joinCount)
         assertNull(entry.accessExpiresAt)
@@ -195,7 +195,7 @@ class DropIntegrationTest : DropTestSupport() {
         assertFalse(cart["cart"]["items"][0].has("available"))
 
         val started = checkout(drop, buyer).andExpect(status().isCreated).json()
-        val number = started["orderNumber"].asText()
+        val number = started["orderNumber"].asString()
         assertEquals(2, dropProduct(drop.id, drop.dropProductIds[0]).reserved)
         assertEquals(3, dropProduct(drop.id, drop.dropProductIds[0]).available)
         val request = gateway.sessions.getValue(FakePaymentGateway.sessionId(number))
@@ -218,7 +218,7 @@ class DropIntegrationTest : DropTestSupport() {
         startNow(drop)
         val buyer = admittedBuyer(drop)
         setQuantity(drop, buyer, drop.dropProductIds[0], 1).andExpect(status().isOk)
-        val number = checkout(drop, buyer).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(drop, buyer).andExpect(status().isCreated).json()["orderNumber"].asString()
         assertEquals(10, Duration.between(Instant.now(), orderRepository.findByNumber(number)!!.reservedUntil).toMinutes() + 1)
 
         transactions.executeWithoutResult { orderRepository.findByNumber(number)!!.reservedUntil = Instant.now().minusSeconds(60) }
@@ -240,8 +240,8 @@ class DropIntegrationTest : DropTestSupport() {
         startNow(drop)
         val buyer = admittedBuyer(drop)
         setQuantity(drop, buyer, drop.dropProductIds[0], 2).andExpect(status().isOk)
-        val first = checkout(drop, buyer).andExpect(status().isCreated).json()["orderNumber"].asText()
-        val second = checkout(drop, buyer).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val first = checkout(drop, buyer).andExpect(status().isCreated).json()["orderNumber"].asString()
+        val second = checkout(drop, buyer).andExpect(status().isCreated).json()["orderNumber"].asString()
 
         assertEquals(OrderStatus.CANCELLED, orderRepository.findByNumber(first)!!.status)
         assertEquals(OrderStatus.PENDING_PAYMENT, orderRepository.findByNumber(second)!!.status)
@@ -259,13 +259,13 @@ class DropIntegrationTest : DropTestSupport() {
         // One checkout still holds stock when the drop ends.
         val holder = admittedBuyer(drop)
         setQuantity(drop, holder, drop.dropProductIds[0], 2).andExpect(status().isOk)
-        val pending = checkout(drop, holder).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val pending = checkout(drop, holder).andExpect(status().isCreated).json()["orderNumber"].asString()
 
         changeDrop(drop.id) { it.endsAt = Instant.now().minusSeconds(1) }
         dropJobs.tick()
         val ended = live(drop.id)
-        assertEquals("ENDED", ended["status"].asText())
-        assertEquals("Eindtijd bereikt", ended["endReason"].asText())
+        assertEquals("ENDED", ended["status"].asString())
+        assertEquals("Eindtijd bereikt", ended["endReason"].asString())
         assertEquals(5, stock(productId)["onHand"].asInt(), "10 allocated, 3 sold, 2 held: 5 back")
         setQuantity(drop, holder, drop.dropProductIds[0], 1).andExpect(status().isConflict)
 
@@ -274,7 +274,7 @@ class DropIntegrationTest : DropTestSupport() {
         checkoutJobs.releaseExpiredReservations()
         assertEquals(7, stock(productId)["onHand"].asInt())
         assertEquals(3, dropProduct(drop.id, drop.dropProductIds[0]).allocated)
-        assertTrue(mockMvc.perform(get("/v1/drops")).andExpect(status().isOk).json()["past"].any { it["slug"].asText() == drop.slug })
+        assertTrue(mockMvc.perform(get("/v1/drops")).andExpect(status().isOk).json()["past"].any { it["slug"].asString() == drop.slug })
     }
 
     @Test
@@ -295,8 +295,8 @@ class DropIntegrationTest : DropTestSupport() {
         assertTrue(detail(soldOutDrop)["soldOut"].asBoolean())
         dropJobs.tick()
         val report = live(soldOutDrop.id)
-        assertEquals("ENDED", report["status"].asText())
-        assertEquals("Uitverkocht", report["endReason"].asText())
+        assertEquals("ENDED", report["status"].asString())
+        assertEquals("Uitverkocht", report["endReason"].asString())
         assertNotNull(report["products"][0]["sellOutSeconds"].takeIf { !it.isNull })
     }
 
@@ -359,22 +359,22 @@ class DropIntegrationTest : DropTestSupport() {
         val drop = createDrop(listOf(product["id"].asLong() to 4), extra = mapOf("showInHero" to true, "description" to "Eerste regel.\nTweede regel."))
         try {
             fun dropSlide() = mockMvc.perform(get("/v1/shop/hero-slides")).andExpect(status().isOk).json()
-                .firstOrNull { it["drop"] != null && !it["drop"].isNull && it["drop"]["slug"].asText() == drop.slug }
+                .firstOrNull { it["drop"] != null && !it["drop"].isNull && it["drop"]["slug"].asString() == drop.slug }
 
             val upcoming = assertNotNull(dropSlide())
-            assertEquals("SCHEDULED", upcoming["drop"]["status"].asText())
-            assertEquals("/drops/${drop.slug}", upcoming["linkUrl"].asText())
-            assertEquals("Eerste regel.", upcoming["text"].asText())
-            assertEquals("pokemon", upcoming["game"].asText())
+            assertEquals("SCHEDULED", upcoming["drop"]["status"].asString())
+            assertEquals("/drops/${drop.slug}", upcoming["linkUrl"].asString())
+            assertEquals("Eerste regel.", upcoming["text"].asString())
+            assertEquals("pokemon", upcoming["game"].asString())
 
             startNow(drop)
-            assertEquals("LIVE", dropSlide()!!["drop"]["status"].asText())
-            assertTrue(mockMvc.perform(get("/v1/drops/live")).andExpect(status().isOk).json().any { it["slug"].asText() == drop.slug })
+            assertEquals("LIVE", dropSlide()!!["drop"]["status"].asString())
+            assertTrue(mockMvc.perform(get("/v1/drops/live")).andExpect(status().isOk).json().any { it["slug"].asString() == drop.slug })
 
             val current = adminDrop(drop.id)
             mockMvc.perform(
                 put("/v1/admin/drops/${drop.id}").cookie(admin).json(
-                    mapOf("name" to current["name"].asText(), "startsAt" to current["startsAt"].asText(), "showInHero" to false),
+                    mapOf("name" to current["name"].asString(), "startsAt" to current["startsAt"].asString(), "showInHero" to false),
                 ),
             ).andExpect(status().isOk)
             assertNull(dropSlide())
@@ -388,7 +388,7 @@ class DropIntegrationTest : DropTestSupport() {
     @Test
     fun `a drop slide is black until the admin picks a colour, and shows the products until there is a banner`() {
         val withPicture = stocked(quantity = 2)
-        val picture = uploadImage(withPicture["id"].asLong()).andExpect(status().isOk).json()["images"][0].asText()
+        val picture = uploadImage(withPicture["id"].asLong()).andExpect(status().isOk).json()["images"][0].asString()
         val withoutPicture = stocked(quantity = 2)
         val drop = createDrop(
             listOf(withoutPicture["id"].asLong() to 1, withPicture["id"].asLong() to 1),
@@ -396,24 +396,24 @@ class DropIntegrationTest : DropTestSupport() {
         )
         try {
             fun dropSlide() = mockMvc.perform(get("/v1/shop/hero-slides")).andExpect(status().isOk).json()
-                .first { it["drop"] != null && !it["drop"].isNull && it["drop"]["slug"].asText() == drop.slug }["drop"]
+                .first { it["drop"] != null && !it["drop"].isNull && it["drop"]["slug"].asString() == drop.slug }["drop"]
             val current = adminDrop(drop.id)
             fun save(vararg fields: Pair<String, Any>) = mockMvc.perform(
                 put("/v1/admin/drops/${drop.id}").cookie(admin)
-                    .json(mapOf("name" to current["name"].asText(), "startsAt" to current["startsAt"].asText(), "showInHero" to true) + fields),
+                    .json(mapOf("name" to current["name"].asString(), "startsAt" to current["startsAt"].asString(), "showInHero" to true) + fields),
             )
 
-            assertEquals("BLACK", current["heroColour"].asText())
-            assertEquals("BLACK", dropSlide()["colour"].asText())
-            assertEquals(listOf(picture), dropSlide()["pictures"].map { it["url"].asText() })
+            assertEquals("BLACK", current["heroColour"].asString())
+            assertEquals("BLACK", dropSlide()["colour"].asString())
+            assertEquals(listOf(picture), dropSlide()["pictures"].values().map { it["url"].asString() })
             assertEquals(false, dropSlide()["pictures"][0]["card"].asBoolean())
 
             save("heroColour" to "YELLOW").andExpect(status().isOk)
-            assertEquals("YELLOW", adminDrop(drop.id)["heroColour"].asText())
-            assertEquals("YELLOW", dropSlide()["colour"].asText())
+            assertEquals("YELLOW", adminDrop(drop.id)["heroColour"].asString())
+            assertEquals("YELLOW", dropSlide()["colour"].asString())
             save("heroColour" to "PURPLE").andExpect(status().isBadRequest)
             save().andExpect(status().isOk)
-            assertEquals("YELLOW", dropSlide()["colour"].asText())
+            assertEquals("YELLOW", dropSlide()["colour"].asString())
 
             mockMvc.perform(
                 multipart("/v1/admin/drops/${drop.id}/banner").file(MockMultipartFile("file", "banner.png", "image/png", png)).cookie(admin),
@@ -432,7 +432,7 @@ class DropIntegrationTest : DropTestSupport() {
         val current = adminDrop(drop.id)
         mockMvc.perform(
             put("/v1/admin/drops/${drop.id}").cookie(admin).json(
-                mapOf("name" to "Nieuw", "startsAt" to current["startsAt"].asText(), "maxPerCustomer" to 5),
+                mapOf("name" to "Nieuw", "startsAt" to current["startsAt"].asString(), "maxPerCustomer" to 5),
             ),
         ).andExpect(status().isBadRequest)
         mockMvc.perform(put("/v1/admin/drops/${drop.id}/products/${drop.dropProductIds[0]}").cookie(admin).json(mapOf("allocated" to 3, "maxPerCustomer" to 3)))

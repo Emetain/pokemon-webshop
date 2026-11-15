@@ -32,7 +32,7 @@ class HeroSlideIntegrationTest : ShopTestSupport() {
     /** The slides from admin. Drops of other tests add slides of their own, which [DropIntegrationTest] covers. */
     private fun showing() = mockMvc.perform(get("/v1/shop/hero-slides")).andExpect(status().isOk).json()
         .filter { it["drop"] == null || it["drop"].isNull }
-        .map { it["title"].asText() }
+        .map { it["title"].asString() }
 
     @Test
     fun `slides show in their order, and only while they are on and within their dates`() {
@@ -67,7 +67,7 @@ class HeroSlideIntegrationTest : ShopTestSupport() {
             .andExpect(jsonPath("$.title").value("Nieuw"))
         val image = mockMvc.perform(
             multipart("/v1/admin/hero-slides/$id/image").file(MockMultipartFile("file", "a.png", "image/png", png)).cookie(admin),
-        ).andExpect(status().isOk).json()["imageUrl"].asText()
+        ).andExpect(status().isOk).json()["imageUrl"].asString()
         mockMvc.perform(get(image.removePrefix("/api"))).andExpect(status().isOk)
 
         mockMvc.perform(delete("/v1/admin/hero-slides/$id").cookie(admin)).andExpect(status().isNoContent)

@@ -2,7 +2,7 @@ package com.emetain.pokemonwebshop.service.provider
 
 import com.emetain.pokemonwebshop.domain.Game
 import com.emetain.pokemonwebshop.domain.ProductType
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource

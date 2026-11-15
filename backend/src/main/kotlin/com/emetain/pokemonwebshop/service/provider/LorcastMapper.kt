@@ -3,7 +3,7 @@ package com.emetain.pokemonwebshop.service.provider
 import com.emetain.pokemonwebshop.domain.CardVariants
 import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.PriceSource
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import java.time.Instant
 
 /**
@@ -39,12 +39,12 @@ object LorcastMapper {
             number = json.requireText("collector_number"),
             name = listOfNotNull(json.requireText("name"), json.text("version")).joinToString(" - "),
             rarity = json.text("rarity")?.replace('_', ' '),
-            cardType = json.path("type").joinToString(" - ") { it.asText() }.ifBlank { null },
-            category = json.path("type").firstOrNull()?.asText(),
+            cardType = json.path("type").joinToString(" - ") { it.asString() }.ifBlank { null },
+            category = json.path("type").firstOrNull()?.asString(),
             imageSmallUrl = images.text("normal"),
             imageLargeUrl = images.text("large"),
             variants = variants(prices),
-            colors = json.path("inks").map { it.asText() }.ifEmpty { listOfNotNull(json.text("ink")) }.toSet(),
+            colors = json.path("inks").values().map { it.asString() }.ifEmpty { listOfNotNull(json.text("ink")) }.toSet(),
             prices = prices(prices, fetchedAt),
         )
     }

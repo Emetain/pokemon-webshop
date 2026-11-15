@@ -22,7 +22,7 @@ class SharedCollectionIntegrationTest : CollectionTestSupport() {
     @Autowired
     private lateinit var exchangeRateRepository: ExchangeRateRepository
 
-    private fun slugOf(body: String): String = objectMapper.readTree(body)["collectionShareSlug"].asText()
+    private fun slugOf(body: String): String = objectMapper.readTree(body)["collectionShareSlug"].asString()
 
     private fun userWithFullName(): jakarta.servlet.http.Cookie {
         val session = loggedInUser()

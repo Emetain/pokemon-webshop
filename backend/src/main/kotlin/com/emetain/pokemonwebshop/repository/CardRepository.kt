@@ -27,7 +27,7 @@ interface CardRepository : JpaRepository<Card, Long>, JpaSpecificationExecutor<C
     fun findAllByGameAndExternalIdIn(game: Game, externalIds: Collection<String>): List<Card>
 
     @EntityGraph(attributePaths = ["set"])
-    override fun findAll(spec: Specification<Card>?, pageable: Pageable): Page<Card>
+    override fun findAll(spec: Specification<Card>, pageable: Pageable): Page<Card>
 
     @Query("select c from Card c join fetch c.set where c.id = :id")
     fun findWithSetById(id: Long): Card?

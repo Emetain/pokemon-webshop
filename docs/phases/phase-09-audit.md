@@ -58,7 +58,7 @@ Listed so 9b doesn't redo it and 9c knows what was already verified.
 
 Must be fixed before going live.
 
-- [ ] **C1. Spring Boot 3.3.2 is more than two years old.**
+- [x] **C1. Spring Boot 3.3.2 is more than two years old.**
   - Where: `backend/build.gradle.kts:5` (`org.springframework.boot` 3.3.2, July 2024), with it Spring Framework,
     Tomcat, Hibernate and Jackson of that time. Also `springdoc` 2.6.0 (line 35) and Kotlin 1.9.25 (lines 2 to 4).
   - Why: the shop is on the internet and takes payments. Two years of security fixes in the web server and framework
@@ -67,6 +67,33 @@ Must be fixed before going live.
     dependency-management plugin and springdoc. Keep `stripe-java` 29.2.0, because it pins the Stripe API version
     the code was written for. Run all tests and the `prod` start on an empty database afterwards. If a move to the
     newest line breaks too much, at least take the last 3.3.x patch and write down what blocked the rest.
+  - Done (9b): Spring Boot **4.1.2**, not a 3.x line. Looked up on 2026-11-15 (Maven Central and the Spring Boot
+    support data): no 3.x line has free support any more; 3.5.x ended on 2026-06-30 (last free patch 3.5.16,
+    2026-06-25) and 3.3.x on 2025-06-30 (3.3.13). The supported lines are 4.0.x (until 2026-12-31) and 4.1.x (until
+    2027-07-31), so only 4.1 solves the "why". With it: Spring Framework 7.0.10, Tomcat 11.0.27, Hibernate 7.4.13,
+    Jackson 3.1.7, Flyway 12.4, Kotlin 2.3.21 (the version Boot 4.1.2 is built with), dependency-management 1.1.7,
+    springdoc 3.2.0 (built against Boot 4.1.2), Gradle wrapper 8.14.7 (Boot 4 needs 8.14 or newer). `stripe-java`
+    stays 29.2.0. What changed in the code:
+    - Starters: `spring-boot-starter-webmvc`, `spring-boot-starter-flyway`, `spring-boot-h2console` (dev only),
+      `spring-boot-starter-webmvc-test`; `jackson-module-kotlin` from `tools.jackson`.
+    - Jackson 3: imports moved to `tools.jackson`, `asText()`/`textValue()` became `asString()`/`stringValue()`.
+      Jackson 3's `JsonNode` has its own `map()` that applies to the node itself and silently shadows Kotlin's list
+      `map`, so every `node.map { }` over children is now `node.values().map { }` (found by the compiler where the
+      types differed and by searching the rest). `CatalogHttpClient` also retries on Jackson's own (now unchecked)
+      read exceptions, which used to be `IOException`s.
+    - Stricter nullability from Spring 7: `findAll(Specification, Pageable)` overrides, and
+      `PasswordEncoder.encode` is now nullable (`requireNotNull`).
+    - Tests: `@MockBean` → `@MockitoBean`, `AutoConfigureMockMvc` moved package, `TestRestTemplate` replaced by the
+      JDK `HttpClient` in `ProdProfileIntegrationTest`.
+    - `management.endpoint.health.probes.enabled: false`: Boot 4 adds liveness/readiness groups to the health answer
+      by default; it stays `{"status":"UP"}`.
+    Checked: 1022 tests, 0 failures before the upgrade on 3.3.2 and again on 4.1.2. The `prod` profile on an empty
+    Postgres 16 database: Flyway applies all 13 migrations, Hibernate validation passes, 0 ERROR lines, health 200
+    in 6.6 s. Against that backend: body limits (also a chunked body, through Jackson 3), the Dutch type-mismatch
+    answer, Swagger and API docs 404, sitemap, robots and link-preview pages; through Caddy (see S4) the same plus
+    `no-store` and the media cache header. On the `dev` profile: Swagger, API docs and the H2 console answer, and the
+    browser checks of S3, S7, S10 and S14 pass against it. Remaining compiler warnings are "unnecessary `!!`" and
+    "condition is always true" where Spring 7 now declares values non-null; no behaviour changes.
 
 - [x] **C2. A request body has no size limit.**
   - Where: no limit in `deploy/Caddyfile` (the `handle /api/*` block), and none in the backend for JSON. Only

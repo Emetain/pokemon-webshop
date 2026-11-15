@@ -3,7 +3,7 @@ package com.emetain.pokemonwebshop.service.provider
 import com.emetain.pokemonwebshop.domain.CardVariants
 import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.PriceSource
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeParseException

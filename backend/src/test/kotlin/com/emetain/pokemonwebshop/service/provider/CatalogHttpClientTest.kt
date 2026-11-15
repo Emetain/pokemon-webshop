@@ -2,7 +2,7 @@ package com.emetain.pokemonwebshop.service.provider
 
 import com.emetain.pokemonwebshop.service.testCatalogProperties
 import com.emetain.pokemonwebshop.service.testProperties
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import org.junit.jupiter.api.AfterEach
@@ -66,7 +66,7 @@ class CatalogHttpClientTest {
 
         val json = client.getJson(url, noPause)
 
-        assertEquals("Pikachu", json.path("name").asText())
+        assertEquals("Pikachu", json.path("name").asString())
         assertEquals("Poketopia/test", headers.single()["User-Agent"])
         assertTrue(headers.single()["Accept"]!!.contains("application/json"))
     }

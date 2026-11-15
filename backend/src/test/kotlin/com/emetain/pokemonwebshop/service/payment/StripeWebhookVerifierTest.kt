@@ -2,7 +2,7 @@ package com.emetain.pokemonwebshop.service.payment
 
 import com.emetain.pokemonwebshop.exception.ApiException
 import com.emetain.pokemonwebshop.service.testProperties
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import com.stripe.net.Webhook
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

@@ -9,8 +9,8 @@ import com.emetain.pokemonwebshop.exception.ApiException
 import com.emetain.pokemonwebshop.repository.AiUsageRepository
 import com.emetain.pokemonwebshop.service.InfoPageService
 import com.emetain.pokemonwebshop.service.ShippingRateService
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.node.ObjectNode
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -90,7 +90,7 @@ class SupportChatService(
         transactions.executeWithoutResult {
             usageRepository.save(AiUsage("CHAT", settings.chatModel.take(MODEL_LENGTH), result.inputTokens, result.outputTokens, cost, clock.instant(), viewer))
         }
-        val answer = result.json.path("answer").asText("").trim().take(MAX_ANSWER)
+        val answer = result.json.path("answer").asString("").trim().take(MAX_ANSWER)
         if (answer.isEmpty()) return ChatAnswerDto(FALLBACK, suggestTicket = true)
         return ChatAnswerDto(answer, result.json.path("suggestTicket").asBoolean(false))
     }

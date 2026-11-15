@@ -32,7 +32,7 @@ class UserServiceTest {
 
     private fun user(password: String = "geheim123") = User(
         email = "ash@example.com",
-        passwordHash = encoder.encode(password),
+        passwordHash = requireNotNull(encoder.encode(password)),
         displayName = "Ash",
         createdAt = Instant.EPOCH,
         id = 7,

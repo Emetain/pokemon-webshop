@@ -22,7 +22,7 @@ class DropConcurrencyIntegrationTest : DropTestSupport() {
         setSpeed(drop, 6000)
         startNow(drop)
         buyers.forEach { buyer ->
-            check(ping(drop, buyer)["state"].asText() == "ADMITTED")
+            check(ping(drop, buyer)["state"].asString() == "ADMITTED")
             setQuantity(drop, buyer, drop.dropProductIds[0], 1).andExpect(status().isOk)
         }
 
@@ -42,7 +42,7 @@ class DropConcurrencyIntegrationTest : DropTestSupport() {
         assertEquals(0, held.available)
 
         // All seven pay, also at the same moment.
-        val numbers = created.map { objectMapper.readTree(it.second)["orderNumber"].asText() }
+        val numbers = created.map { objectMapper.readTree(it.second)["orderNumber"].asString() }
         runAtOnce(numbers.map { number -> { pay(number).andReturn().response.status } })
         val sold = dropProduct(drop.id, drop.dropProductIds[0])
         assertEquals(7, sold.sold)

@@ -39,11 +39,11 @@ class SeoIntegrationTest : DropTestSupport() {
         assertContains(xml, "<loc>http://localhost:5173/pokemon</loc>")
         assertContains(xml, "<loc>http://localhost:5173/pokemon/elite-trainer-boxen</loc>")
         assertContains(xml, "<loc>http://localhost:5173/kaarten/magic</loc>")
-        assertContains(xml, "/product/${active["slug"].asText()}</loc><lastmod>")
-        assertContains(xml, "/nieuws/${article["slug"].asText()}</loc>")
+        assertContains(xml, "/product/${active["slug"].asString()}</loc><lastmod>")
+        assertContains(xml, "/nieuws/${article["slug"].asString()}</loc>")
         assertContains(xml, "/drops/${drop.slug}</loc>")
-        assertFalse(xml.contains("/product/${draft["slug"].asText()}<"))
-        assertFalse(xml.contains("/nieuws/${hidden["slug"].asText()}<"))
+        assertFalse(xml.contains("/product/${draft["slug"].asString()}<"))
+        assertFalse(xml.contains("/nieuws/${hidden["slug"].asString()}<"))
         assertFalse(xml.contains("/drops/${draftDrop.slug}<"))
         assertFalse(xml.contains("/collectie/gedeeld"), "shared collections stay out")
         assertContains(xml, "/info/verzending</loc>")
@@ -69,7 +69,7 @@ class SeoIntegrationTest : DropTestSupport() {
         val product = createProduct(name = "$word \"Box\" <script>", extra = mapOf("description" to "Tien boosters & een promo."))
         uploadImage(product["id"].asLong()).andExpect(status().isOk)
 
-        val html = mockMvc.perform(get("/v1/seo/pages/product/${product["slug"].asText()}").accept(MediaType.ALL))
+        val html = mockMvc.perform(get("/v1/seo/pages/product/${product["slug"].asString()}").accept(MediaType.ALL))
             .andExpect(status().isOk)
             .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
             .andExpect(header().string("Cache-Control", "no-cache"))
@@ -79,7 +79,7 @@ class SeoIntegrationTest : DropTestSupport() {
         assertContains(html, """<meta property="og:title" content="$word &quot;Box&quot; &lt;script&gt;" />""")
         assertContains(html, """<meta name="description" content="Tien boosters &amp; een promo." />""")
         assertContains(html, """<meta property="og:type" content="product" />""")
-        assertContains(html, """<meta property="og:url" content="http://localhost:5173/product/${product["slug"].asText()}" />""")
+        assertContains(html, """<meta property="og:url" content="http://localhost:5173/product/${product["slug"].asString()}" />""")
         assertContains(html, """<meta property="og:image" content="http://localhost:5173/api/v1/media/""")
         assertFalse(html.contains("<script>"), "nothing from the product runs")
         assertFalse(html.contains("Standaard"), "the default title and description are replaced")
@@ -90,7 +90,7 @@ class SeoIntegrationTest : DropTestSupport() {
     fun `an unknown or draft product gets the app with a 404`() {
         val draft = createProduct(name = "$word Concept", status = "DRAFT")
 
-        listOf("bestaat-niet", draft["slug"].asText()).forEach { slug ->
+        listOf("bestaat-niet", draft["slug"].asString()).forEach { slug ->
             val html = mockMvc.perform(get("/v1/seo/pages/product/$slug"))
                 .andExpect(status().isNotFound)
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
@@ -124,10 +124,10 @@ class SeoIntegrationTest : DropTestSupport() {
         val hidden = mockMvc.perform(post("/v1/admin/news").cookie(admin).json(mapOf("title" to "$word stil", "body" to "Tekst", "published" to false)))
             .andExpect(status().isCreated).json()
 
-        val html = body("/v1/seo/pages/nieuws/${article["slug"].asText()}")
+        val html = body("/v1/seo/pages/nieuws/${article["slug"].asString()}")
         assertContains(html, """<meta property="og:type" content="article" />""")
         assertContains(html, """<meta name="description" content="Kort &amp; krachtig" />""")
-        mockMvc.perform(get("/v1/seo/pages/nieuws/${hidden["slug"].asText()}")).andExpect(status().isNotFound)
+        mockMvc.perform(get("/v1/seo/pages/nieuws/${hidden["slug"].asString()}")).andExpect(status().isNotFound)
     }
 
     @Test

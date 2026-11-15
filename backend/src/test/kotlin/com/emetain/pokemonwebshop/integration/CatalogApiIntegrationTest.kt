@@ -168,7 +168,7 @@ class CatalogApiIntegrationTest : IntegrationTest() {
     private fun names(path: String): List<String> {
         val body = fetch(path).andExpect(status().isOk).andReturn().response.contentAsString
         val root = objectMapper.readTree(body)
-        return (root.path("results").takeIf { it.isObject } ?: root).path("items").map { it.path("name").asText() }
+        return (root.path("results").takeIf { it.isObject } ?: root).path("items").values().map { it.path("name").asString() }
     }
 
     @Test
@@ -298,7 +298,7 @@ class CatalogApiIntegrationTest : IntegrationTest() {
 
         val seen = (0..4).map { page ->
             val body = fetch("/one-piece/sets/$sameNumber/cards?size=1&page=$page").andReturn().response.contentAsString
-            objectMapper.readTree(body).path("items").path(0).path("name").asText()
+            objectMapper.readTree(body).path("items").path(0).path("name").asString()
         }
 
         assert(seen.toSet().size == 5) { "Got $seen" }

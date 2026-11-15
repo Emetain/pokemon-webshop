@@ -35,7 +35,7 @@ class UserService(
         return userRepository.save(
             User(
                 email = normalizedEmail,
-                passwordHash = passwordEncoder.encode(password),
+                passwordHash = requireNotNull(passwordEncoder.encode(password)),
                 displayName = displayName.trim(),
                 role = role,
                 createdAt = clock.instant(),
@@ -98,7 +98,7 @@ class UserService(
     fun changePassword(userId: Long, password: String) {
         requireUsablePassword(password)
         val user = userRepository.findById(userId).orElseThrow { ApiException.notAuthenticated() }
-        user.passwordHash = passwordEncoder.encode(password)
+        user.passwordHash = requireNotNull(passwordEncoder.encode(password))
     }
 
     fun requireSupportedCountry(country: String) {

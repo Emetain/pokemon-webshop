@@ -186,7 +186,7 @@ class AdminProductOrchestrator(
             Specification.allOf(
                 listOfNotNull(
                     ProductSpecifications.forCard(cardId),
-                    Specification.not(ProductSpecifications.withStatus(ProductStatus.ARCHIVED)),
+                    Specification.not(requireNotNull(ProductSpecifications.withStatus(ProductStatus.ARCHIVED))),
                 ),
             ),
             PageRequest.of(0, LOW_STOCK_LIMIT),

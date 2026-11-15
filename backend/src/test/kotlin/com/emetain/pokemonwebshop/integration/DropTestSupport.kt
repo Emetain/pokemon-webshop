@@ -8,7 +8,7 @@ import com.emetain.pokemonwebshop.repository.DropRepository
 import com.emetain.pokemonwebshop.repository.OrderRepository
 import com.emetain.pokemonwebshop.service.CheckoutJobs
 import com.emetain.pokemonwebshop.service.DropJobs
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import jakarta.servlet.http.Cookie
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
@@ -91,7 +91,7 @@ abstract class DropTestSupport : ShopTestSupport() {
         }
         if (publish) mockMvc.perform(post("/v1/admin/drops/$id/publish").cookie(admin)).andExpect(status().isOk)
         val drop = adminDrop(id)
-        return TestDrop(id, drop["slug"].asText(), drop["products"].map { it["id"].asLong() }, drop["products"].map { it["productId"].asLong() })
+        return TestDrop(id, drop["slug"].asString(), drop["products"].values().map { it["id"].asLong() }, drop["products"].values().map { it["productId"].asLong() })
     }
 
     protected fun addDropProduct(dropId: Long, productId: Long, allocated: Int, max: Int? = null, priceCents: Long? = null): ResultActions =
@@ -163,7 +163,7 @@ abstract class DropTestSupport : ShopTestSupport() {
         setSpeed(drop, 6000)
         nextBatch(drop)
         val status = ping(drop, buyer)
-        check(status["state"].asText() == "ADMITTED") { "Not through: $status" }
+        check(status["state"].asString() == "ADMITTED") { "Not through: $status" }
         return buyer
     }
 
@@ -193,7 +193,7 @@ abstract class DropTestSupport : ShopTestSupport() {
     /** Puts [quantity] in the drop cart, checks out and pays. Returns the order number. */
     protected fun buy(drop: TestDrop, buyer: Buyer, dropProductId: Long, quantity: Int = 1, extra: Map<String, Any?> = emptyMap()): String {
         setQuantity(drop, buyer, dropProductId, quantity).andExpect(status().isOk)
-        val number = checkout(drop, buyer, extra).andExpect(status().isCreated).json()["orderNumber"].asText()
+        val number = checkout(drop, buyer, extra).andExpect(status().isCreated).json()["orderNumber"].asString()
         pay(number).andExpect(status().isOk)
         return number
     }

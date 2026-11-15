@@ -95,8 +95,8 @@ class DropLimitsIntegrationTest : DropTestSupport() {
         assertTrue(cart["cart"]["items"][0]["problem"].isNull)
 
         val error = checkout(scarce, buyer).andExpect(status().isConflict).json()
-        assertEquals("cart_changed", error["error"].asText())
-        assertFalse(error["message"].asText().contains(Regex("\\d")), "never how many are left")
+        assertEquals("cart_changed", error["error"].asString())
+        assertFalse(error["message"].asString().contains(Regex("\\d")), "never how many are left")
         assertEquals(0, dropProduct(scarce.id, scarce.dropProductIds[0]).reserved)
 
         setQuantity(scarce, buyer, scarce.dropProductIds[0], 1).andExpect(status().isOk)
@@ -112,12 +112,12 @@ class DropLimitsIntegrationTest : DropTestSupport() {
         buy(drop, buyer, drop.dropProductIds[0])
 
         setQuantity(drop, buyer, drop.dropProductIds[0], 1).andExpect(status().isConflict)
-            .andExpect(jsonPath("$.message").value("Je kunt van ${product["name"].asText()} maximaal 1 kopen in deze drop. Je hebt er al 1 besteld."))
+            .andExpect(jsonPath("$.message").value("Je kunt van ${product["name"].asString()} maximaal 1 kopen in deze drop. Je hebt er al 1 besteld."))
 
         changeEntry(buyer, drop) { it.accessExpiresAt = java.time.Instant.now().minusSeconds(1) }
         join(drop, buyer).andExpect(status().isOk)
         nextBatch(drop)
-        assertEquals("ADMITTED", ping(drop, buyer)["state"].asText())
+        assertEquals("ADMITTED", ping(drop, buyer)["state"].asString())
         setQuantity(drop, buyer, drop.dropProductIds[0], 1).andExpect(status().isConflict)
     }
 
@@ -133,7 +133,7 @@ class DropLimitsIntegrationTest : DropTestSupport() {
         val sameAddress = address + mapOf("street" to "dorpsstraat ", "houseNumber" to "12 A", "postcode" to "1421 AB")
         val refused = checkout(drop, second, mapOf("address" to sameAddress)).andExpect(status().isConflict)
             .andExpect(jsonPath("$.error").value("drop_limit")).json()
-        assertContains(refused["message"].asText(), "al 1 besteld")
+        assertContains(refused["message"].asString(), "al 1 besteld")
 
         // Another address in the same street is someone else.
         checkout(drop, second, mapOf("address" to address + mapOf("houseNumber" to "14"))).andExpect(status().isCreated)
@@ -151,7 +151,7 @@ class DropLimitsIntegrationTest : DropTestSupport() {
             val visitor = requireNotNull(joined.getCookie("drop_visitor")) { "No visitor cookie" }
             val guest = Buyer(visitor, "")
             nextBatch(drop)
-            assertEquals("ADMITTED", ping(drop, guest)["state"].asText())
+            assertEquals("ADMITTED", ping(drop, guest)["state"].asString())
             return guest
         }
 

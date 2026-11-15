@@ -2,7 +2,7 @@ package com.emetain.pokemonwebshop.integration
 
 import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.repository.AiUsageRepository
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import jakarta.mail.Message
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
@@ -56,10 +56,10 @@ class SupportIntegrationTest : ShopTestSupport() {
     fun `a guest's ticket is mailed to the shop, and the guest gets a confirmation with the link but not their own text`() {
         val email = "vraag-${word.lowercase()}@example.com"
         val ticket = guestTicket(email)
-        val number = ticket["number"].asText()
+        val number = ticket["number"].asString()
         assertTrue(number.matches(Regex("T-[2-9A-Z]{6}")), number)
-        assertEquals("OPEN", ticket["status"].asText())
-        assertEquals("PT-ABC123", ticket["orderNumber"].asText())
+        assertEquals("OPEN", ticket["status"].asString())
+        assertEquals("PT-ABC123", ticket["orderNumber"].asString())
 
         val toShop = waitForMail("shop@example.com", "Nieuw ticket $number")
         assertEquals(email, (toShop.replyTo.first() as InternetAddress).address)
@@ -70,11 +70,11 @@ class SupportIntegrationTest : ShopTestSupport() {
 
         val confirmation = waitForMail(email, "We hebben je vraag ontvangen (ticket $number)")
         val confirmationText = plainText(confirmation)!!
-        assertContains(confirmationText, "/klantenservice/ticket/${ticket["token"].asText()}")
+        assertContains(confirmationText, "/klantenservice/ticket/${ticket["token"].asString()}")
         assertFalse(confirmationText.contains("Wanneer komt mijn pakket"), "the visitor's own text never goes to the address they typed")
         assertFalse(confirmationText.contains("Levering"), "nor the subject")
 
-        mockMvc.perform(get("/v1/support/tickets/${ticket["token"].asText()}")).andExpect(status().isOk)
+        mockMvc.perform(get("/v1/support/tickets/${ticket["token"].asString()}")).andExpect(status().isOk)
         mockMvc.perform(get("/v1/support/tickets/not-a-real-token")).andExpect(status().isNotFound)
     }
 
@@ -82,33 +82,33 @@ class SupportIntegrationTest : ShopTestSupport() {
     fun `the shop answers in admin, the customer gets it by mail, and writing again opens the ticket again`() {
         val email = "volg-${word.lowercase()}@example.com"
         val ticket = guestTicket(email)
-        val number = ticket["number"].asText()
-        val token = ticket["token"].asText()
+        val number = ticket["number"].asString()
+        val token = ticket["token"].asString()
 
         val listed = mockMvc.perform(get("/v1/admin/tickets?status=OPEN").cookie(admin)).andExpect(status().isOk).json()
-        assertTrue(listed["tickets"].any { it["number"].asText() == number })
+        assertTrue(listed["tickets"].any { it["number"].asString() == number })
         assertTrue(listed["counts"]["OPEN"].asLong() >= 1)
 
         val answered = mockMvc.perform(
             post("/v1/admin/tickets/$number/messages").cookie(admin).json(mapOf("message" to "Hij gaat morgen op de post.")),
         ).andExpect(status().isOk).json()
-        assertEquals("ANSWERED", answered["status"].asText())
-        assertEquals("Testgebruiker", answered["messages"][1]["author"].asText())
+        assertEquals("ANSWERED", answered["status"].asString())
+        assertEquals("Testgebruiker", answered["messages"][1]["author"].asString())
         val answer = waitForMail(email, "Antwoord op je vraag (ticket $number)")
         assertContains(plainText(answer)!!, "Hij gaat morgen op de post.")
         assertEquals("shop@example.com", (answer.replyTo.first() as InternetAddress).address)
 
         val customerView = mockMvc.perform(get("/v1/support/tickets/$token")).json()
-        assertEquals(listOf(false, true), customerView["messages"].map { it["fromShop"].asBoolean() })
+        assertEquals(listOf(false, true), customerView["messages"].values().map { it["fromShop"].asBoolean() })
         assertFalse(customerView["messages"][1].has("author"), "customers see the shop, not which admin answered")
 
         mockMvc.perform(post("/v1/admin/tickets/$number/messages").cookie(admin).json(mapOf("message" to "Fijne dag!", "close" to true)))
             .andExpect(status().isOk)
-        assertEquals("CLOSED", mockMvc.perform(get("/v1/support/tickets/$token")).json()["status"].asText())
+        assertEquals("CLOSED", mockMvc.perform(get("/v1/support/tickets/$token")).json()["status"].asString())
 
         val reopened = mockMvc.perform(post("/v1/support/tickets/$token/messages").with(fromRandomIp()).json(mapOf("message" to "Nog één vraag")))
             .andExpect(status().isOk).json()
-        assertEquals("OPEN", reopened["status"].asText())
+        assertEquals("OPEN", reopened["status"].asString())
         waitForMail("shop@example.com", "Nieuw bericht bij ticket $number")
 
         mockMvc.perform(put("/v1/admin/tickets/$number/status").cookie(admin).json(mapOf("status" to "CLOSED")))
@@ -126,10 +126,10 @@ class SupportIntegrationTest : ShopTestSupport() {
             session,
         ).andExpect(status().isCreated).json()
         waitForMail(email, "We hebben je vraag ontvangen")
-        assertTrue(mailsTo("someone-else@example.com").none { it.subject.contains(ticket["number"].asText()) })
+        assertTrue(mailsTo("someone-else@example.com").none { it.subject.contains(ticket["number"].asString()) })
 
         val mine = mockMvc.perform(get("/v1/account/tickets").cookie(session)).andExpect(status().isOk).json()
-        assertEquals(listOf(ticket["number"].asText()), mine.map { it["number"].asText() })
+        assertEquals(listOf(ticket["number"].asString()), mine.values().map { it["number"].asString() })
         val other = mockMvc.perform(get("/v1/account/tickets").cookie(loggedInUser())).json()
         assertEquals(0, other.size())
         mockMvc.perform(get("/v1/account/tickets")).andExpect(status().isUnauthorized)
@@ -150,7 +150,7 @@ class SupportIntegrationTest : ShopTestSupport() {
             mapOf("role" to "assistant", "text" to "Dat kan ik niet zien. Maak een ticket."),
         )
         val ticket = guestTicket("chat-${word.lowercase()}@example.com", extra = mapOf("chat" to chat))
-        val body = mockMvc.perform(get("/v1/admin/tickets/${ticket["number"].asText()}").cookie(admin)).json()["messages"][0]["body"].asText()
+        val body = mockMvc.perform(get("/v1/admin/tickets/${ticket["number"].asString()}").cookie(admin)).json()["messages"][0]["body"].asString()
         assertContains(body, "--- Gesprek met de assistent ---")
         assertContains(body, "Klant: Waar is mijn pakket?")
         assertContains(body, "Assistent: Dat kan ik niet zien.")
@@ -164,7 +164,7 @@ class SupportIntegrationTest : ShopTestSupport() {
         val answer = mockMvc.perform(
             post("/v1/support/chat").with(fromRandomIp()).json(mapOf("messages" to listOf(mapOf("role" to "user", "text" to "Hoe snel versturen jullie?")))),
         ).andExpect(status().isOk).json()
-        assertEquals("Bestellingen gaan binnen 1 werkdag op de post.", answer["answer"].asText())
+        assertEquals("Bestellingen gaan binnen 1 werkdag op de post.", answer["answer"].asString())
         assertFalse(answer["suggestTicket"].asBoolean())
 
         assertEquals("gpt-6-luna", fakeAi.models.last())

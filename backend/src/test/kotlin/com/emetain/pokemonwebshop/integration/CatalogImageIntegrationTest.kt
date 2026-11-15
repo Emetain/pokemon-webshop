@@ -46,7 +46,7 @@ class CatalogImageIntegrationTest : CollectionTestSupport() {
 
     private fun uploadedUrl(path: String, bytes: ByteArray = png): String {
         val response = upload(admin, path, bytes).andExpect(status().isOk).andReturn().response.contentAsString
-        return objectMapper.readTree(response)["imageUrl"].asText()
+        return objectMapper.readTree(response)["imageUrl"].asString()
     }
 
     /** The context path isn't part of a MockMvc request. */
@@ -92,7 +92,7 @@ class CatalogImageIntegrationTest : CollectionTestSupport() {
                 .cookie(admin),
         ).andExpect(status().isOk).andReturn().response.contentAsString
 
-        val url = objectMapper.readTree(response)["imageUrl"].asText()
+        val url = objectMapper.readTree(response)["imageUrl"].asString()
 
         assertTrue(url.endsWith(".jpg"), url)
         mockMvc.perform(get(mediaPath(url))).andExpect(content().contentType("image/jpeg"))
@@ -174,7 +174,7 @@ class CatalogImageIntegrationTest : CollectionTestSupport() {
             .andExpect(status().isOk)
 
         val body = mockMvc.perform(get("/v1/binder").cookie(admin)).andReturn().response.contentAsString
-        val shown = objectMapper.readTree(body)["slots"].map { it["card"]["imageUrl"].asText() }
+        val shown = objectMapper.readTree(body)["slots"].values().map { it["card"]["imageUrl"].asString() }
         assertTrue(url in shown, shown.toString())
     }
 
@@ -182,7 +182,7 @@ class CatalogImageIntegrationTest : CollectionTestSupport() {
         mockMvc.perform(get("/v1/admin/catalog/images/cards?$query").cookie(admin)).andExpect(status().isOk)
 
     private fun names(query: String): List<String> =
-        objectMapper.readTree(list(query).andReturn().response.contentAsString)["items"].map { it["name"].asText() }
+        objectMapper.readTree(list(query).andReturn().response.contentAsString)["items"].values().map { it["name"].asString() }
 
     @Test
     fun `the list of cards is for admins only`() {

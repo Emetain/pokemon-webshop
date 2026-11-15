@@ -32,7 +32,7 @@ private const val LISTED =
 interface ProductRepository : JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
 
     @EntityGraph(attributePaths = ["stock", "cardSet", "card"])
-    override fun findAll(spec: Specification<Product>?, pageable: Pageable): Page<Product>
+    override fun findAll(spec: Specification<Product>, pageable: Pageable): Page<Product>
 
     @EntityGraph(attributePaths = ["stock", "cardSet", "card", "card.set"])
     fun findBySlug(slug: String): Product?

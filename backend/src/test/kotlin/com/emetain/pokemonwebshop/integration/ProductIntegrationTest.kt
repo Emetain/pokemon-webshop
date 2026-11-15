@@ -47,7 +47,7 @@ class ProductIntegrationTest : ShopTestSupport() {
         )
         for (type in types) {
             val product = createProduct(name = "$word $type", type = type, extra = extras[type].orEmpty() + ("setCode" to setCode))
-            assertEquals(type, product["type"].asText())
+            assertEquals(type, product["type"].asString())
             if (type == "SINGLE" || type == "GRADED_SLAB") assertEquals(cardId, product["card"]["id"].asLong())
         }
         assertEquals(types.size, shop("size=50")["results"]["totalItems"].asInt())
@@ -108,7 +108,7 @@ class ProductIntegrationTest : ShopTestSupport() {
     @Test
     fun `a product without stock is sold out in lists and on its page, but stays in the shop`() {
         val product = createProduct()
-        val slug = product["slug"].asText()
+        val slug = product["slug"].asString()
 
         val listed = shop("")["results"]["items"].single()
         assertFalse(listed["canBuy"].asBoolean())
@@ -140,9 +140,9 @@ class ProductIntegrationTest : ShopTestSupport() {
             .andExpect(jsonPath("$.status").value("ARCHIVED"))
 
         assertEquals(0, shop("")["results"]["totalItems"].asInt())
-        mockMvc.perform(get("/v1/products/${draft["slug"].asText()}")).andExpect(status().isNotFound)
-        mockMvc.perform(get("/v1/products/${draft["slug"].asText()}").cookie(loggedInUser())).andExpect(status().isNotFound)
-        mockMvc.perform(get("/v1/products/${draft["slug"].asText()}").cookie(admin))
+        mockMvc.perform(get("/v1/products/${draft["slug"].asString()}")).andExpect(status().isNotFound)
+        mockMvc.perform(get("/v1/products/${draft["slug"].asString()}").cookie(loggedInUser())).andExpect(status().isNotFound)
+        mockMvc.perform(get("/v1/products/${draft["slug"].asString()}").cookie(admin))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.status").value("DRAFT"))
     }
@@ -204,8 +204,8 @@ class ProductIntegrationTest : ShopTestSupport() {
         createProduct(name = "$word One Piece", game = "one-piece", type = "STARTER_DECK", extra = mapOf("language" to "JP"))
 
         val facets = mockMvc.perform(get("/v1/products?game=one-piece")).andExpect(status().isOk).json()["facets"]
-        assertTrue("STARTER_DECK" in facets["types"].map { it.asText() })
-        assertTrue("JP" in facets["languages"].map { it.asText() })
+        assertTrue("STARTER_DECK" in facets["types"].values().map { it.asString() })
+        assertTrue("JP" in facets["languages"].values().map { it.asString() })
     }
 
     @Test
@@ -230,7 +230,7 @@ class ProductIntegrationTest : ShopTestSupport() {
         )
         stocked("$word Booster", type = "BOOSTER_PACK", extra = mapOf("setCode" to setCode))
 
-        mockMvc.perform(get("/v1/products/${single["slug"].asText()}"))
+        mockMvc.perform(get("/v1/products/${single["slug"].asString()}"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.card.name").value("Charizard"))
             .andExpect(jsonPath("$.card.prices[0].trendCents").value(30000))
@@ -250,10 +250,10 @@ class ProductIntegrationTest : ShopTestSupport() {
         createProduct(name = "$word Mew sold out", type = "SINGLE", priceCents = 100, extra = mapOf("cardId" to mew.id, "condition" to "POOR"))
 
         val cards = mockMvc.perform(get("/v1/catalog/pokemon/sets/$setCode/cards")).andExpect(status().isOk).json()["items"]
-        val mewTile = cards.single { it["name"].asText() == "Mew" }
+        val mewTile = cards.single { it["name"].asString() == "Mew" }
         assertEquals(400, mewTile["forSale"]["shownPriceCents"].asInt())
         assertEquals(2, mewTile["forSale"]["offers"].asInt())
-        assertTrue(cards.single { it["name"].asText() == "Ditto" }["forSale"].isNull)
+        assertTrue(cards.single { it["name"].asString() == "Ditto" }["forSale"].isNull)
 
         mockMvc.perform(get("/v1/catalog/cards/${mew.id}"))
             .andExpect(jsonPath("$.offers", hasSize<Any>(2)))
@@ -289,8 +289,8 @@ class ProductIntegrationTest : ShopTestSupport() {
     @Test
     fun `images can be uploaded, reordered and removed`() {
         val id = createProduct()["id"].asLong()
-        val first = uploadImage(id).andExpect(status().isOk).json()["images"][0].asText()
-        val second = uploadImage(id).andExpect(status().isOk).json()["images"][1].asText()
+        val first = uploadImage(id).andExpect(status().isOk).json()["images"][0].asString()
+        val second = uploadImage(id).andExpect(status().isOk).json()["images"][1].asString()
 
         mockMvc.perform(put("/v1/admin/products/$id/images").cookie(admin).json(mapOf("urls" to listOf(second, first))))
             .andExpect(jsonPath("$.images[0]").value(second))
@@ -308,14 +308,14 @@ class ProductIntegrationTest : ShopTestSupport() {
     @Test
     fun `a duplicate is a draft without stock that shares the images, and removing one keeps the other's file`() {
         val id = createProduct()["id"].asLong()
-        val image = uploadImage(id).andExpect(status().isOk).json()["images"][0].asText()
+        val image = uploadImage(id).andExpect(status().isOk).json()["images"][0].asString()
         adjustStock(id, 5).andExpect(status().isOk)
 
         val copy = mockMvc.perform(post("/v1/admin/products/$id/duplicate").cookie(admin)).andExpect(status().isCreated).json()
-        assertEquals("DRAFT", copy["status"].asText())
+        assertEquals("DRAFT", copy["status"].asString())
         assertEquals(0, copy["stock"]["onHand"].asInt())
-        assertNotEquals(copy["slug"].asText(), createProduct(name = "$word other")["slug"].asText())
-        assertEquals(image, copy["images"][0].asText())
+        assertNotEquals(copy["slug"].asString(), createProduct(name = "$word other")["slug"].asString())
+        assertEquals(image, copy["images"][0].asString())
 
         mockMvc.perform(delete("/v1/admin/products/${copy["id"]}/images/0").cookie(admin)).andExpect(status().isOk)
         mockMvc.perform(get(image.removePrefix("/api"))).andExpect(status().isOk)
@@ -341,7 +341,7 @@ class ProductIntegrationTest : ShopTestSupport() {
     @Test
     fun `people waiting for stock get one mail when it is back`() {
         val product = createProduct()
-        val slug = product["slug"].asText()
+        val slug = product["slug"].asString()
         val email = uniqueEmail()
 
         repeat(2) {
@@ -369,7 +369,7 @@ class ProductIntegrationTest : ShopTestSupport() {
     fun `waiting for a product without a price mails once it gets a price`() {
         val product = createProduct(priceCents = null)
         val email = uniqueEmail()
-        mockMvc.perform(post("/v1/products/${product["slug"].asText()}/stock-alerts").with(fromRandomIp()).json(mapOf("email" to email)))
+        mockMvc.perform(post("/v1/products/${product["slug"].asString()}/stock-alerts").with(fromRandomIp()).json(mapOf("email" to email)))
             .andExpect(status().isNoContent)
         adjustStock(product["id"].asLong(), 2).andExpect(status().isOk)
         Thread.sleep(300)
@@ -388,7 +388,7 @@ class ProductIntegrationTest : ShopTestSupport() {
         adjustStock(older["id"].asLong(), 1).andExpect(status().isOk)
 
         val arrivals = mockMvc.perform(get("/v1/products/new-arrivals?limit=24")).andExpect(status().isOk).json()
-            .map { it["name"].asText() }.filter { it.startsWith(word) }
+            .values().map { it["name"].asString() }.filter { it.startsWith(word) }
         assertEquals(listOf("$word Older", "$word Newer"), arrivals)
     }
 
@@ -400,7 +400,7 @@ class ProductIntegrationTest : ShopTestSupport() {
         stocked("$word Plenty", quantity = 50)
 
         fun adminNames(query: String) = mockMvc.perform(get("/v1/admin/products?q=$word&$query").cookie(admin))
-            .andExpect(status().isOk).json()["items"].map { it["name"].asText() }.toSet()
+            .andExpect(status().isOk).json()["items"].values().map { it["name"].asString() }.toSet()
 
         assertEquals(setOf("$word Low"), adminNames("stock=low"))
         assertEquals(setOf("$word Never stocked", "$word No price"), adminNames("stock=out"))

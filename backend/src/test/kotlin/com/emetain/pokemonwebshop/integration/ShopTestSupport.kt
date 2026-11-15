@@ -1,7 +1,7 @@
 package com.emetain.pokemonwebshop.integration
 
 import com.emetain.pokemonwebshop.domain.Role
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import jakarta.servlet.http.Cookie
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.mock.web.MockMultipartFile
@@ -65,7 +65,7 @@ abstract class ShopTestSupport : CollectionTestSupport() {
         return mockMvc.perform(if (session != null) request.cookie(session) else request).andExpect(status().isOk).json()
     }
 
-    protected fun names(query: String): List<String> = shop(query)["results"]["items"].map { it["name"].asText() }
+    protected fun names(query: String): List<String> = shop(query)["results"]["items"].values().map { it["name"].asString() }
 
     protected fun uploadImage(productId: Long, bytes: ByteArray = png): ResultActions =
         mockMvc.perform(

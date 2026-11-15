@@ -3,12 +3,15 @@ package com.emetain.pokemonwebshop.integration
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.HttpStatus
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.JavaMailSenderImpl
 import org.springframework.test.context.ActiveProfiles
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import kotlin.test.assertEquals
 
 /**
@@ -40,8 +43,7 @@ import kotlin.test.assertEquals
 @ActiveProfiles("prod")
 class ProdProfileIntegrationTest {
 
-    @Autowired
-    private lateinit var http: TestRestTemplate
+    private val http = HttpClient.newHttpClient()
 
     @Autowired
     private lateinit var mailSender: JavaMailSender
@@ -50,16 +52,17 @@ class ProdProfileIntegrationTest {
     private var port = 0
 
     /** A full URL, so the test sees the public paths with the /api context path exactly as a browser does. */
-    private fun get(path: String) = http.getForEntity("http://localhost:$port$path", String::class.java)
+    private fun get(path: String): HttpResponse<String> =
+        http.send(HttpRequest.newBuilder(URI.create("http://localhost:$port$path")).build(), HttpResponse.BodyHandlers.ofString())
 
-    private fun statusOf(path: String): HttpStatus = HttpStatus.valueOf(get(path).statusCode.value())
+    private fun statusOf(path: String): HttpStatus = HttpStatus.valueOf(get(path).statusCode())
 
     @Test
     fun `the health endpoint answers without details`() {
         val response = get("/api/actuator/health")
 
-        assertEquals(HttpStatus.OK, HttpStatus.valueOf(response.statusCode.value()))
-        assertEquals("""{"status":"UP"}""", response.body)
+        assertEquals(HttpStatus.OK, HttpStatus.valueOf(response.statusCode()))
+        assertEquals("""{"status":"UP"}""", response.body())
     }
 
     @Test

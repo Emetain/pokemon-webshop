@@ -1,9 +1,9 @@
 package com.emetain.pokemonwebshop.service.ai
 
 import com.emetain.pokemonwebshop.config.AppProperties
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.node.ObjectNode
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.URI
@@ -59,20 +59,20 @@ class OpenAiClient(
                 put("type", "json_schema")
                 put("name", schemaName)
                 put("strict", true)
-                set<JsonNode>("schema", schema)
+                set("schema", schema)
             }
         }
         val response = post("/responses", body)
-        if (response.path("status").asText() == "incomplete") {
-            throw AiException("OpenAI stopte halverwege (${response.path("incomplete_details").path("reason").asText("onbekend")}). Probeer het opnieuw.")
+        if (response.path("status").asString() == "incomplete") {
+            throw AiException("OpenAI stopte halverwege (${response.path("incomplete_details").path("reason").asString("onbekend")}). Probeer het opnieuw.")
         }
         val content = response.path("output")
-            .filter { it.path("type").asText() == "message" }
+            .filter { it.path("type").asString() == "message" }
             .flatMap { it.path("content").toList() }
-        content.firstOrNull { it.path("type").asText() == "refusal" }?.let {
-            throw AiException("OpenAI wilde deze tekst niet schrijven: ${it.path("refusal").asText()}")
+        content.firstOrNull { it.path("type").asString() == "refusal" }?.let {
+            throw AiException("OpenAI wilde deze tekst niet schrijven: ${it.path("refusal").asString()}")
         }
-        val text = content.firstOrNull { it.path("type").asText() == "output_text" }?.path("text")?.asText()
+        val text = content.firstOrNull { it.path("type").asString() == "output_text" }?.path("text")?.asString()
             ?: throw AiException("OpenAI gaf geen tekst terug. Probeer het opnieuw.")
         val json = try {
             objectMapper.readTree(text)
@@ -93,7 +93,7 @@ class OpenAiClient(
             put("n", 1)
         }
         val response = post("/images/generations", body)
-        val encoded = response.path("data").firstOrNull()?.path("b64_json")?.asText()?.takeIf { it.isNotEmpty() }
+        val encoded = response.path("data").firstOrNull()?.path("b64_json")?.asString()?.takeIf { it.isNotEmpty() }
             ?: throw AiException("OpenAI gaf geen afbeelding terug. Probeer het opnieuw.")
         val usage = response.path("usage")
         return AiImageResult(
@@ -119,14 +119,14 @@ class OpenAiClient(
         val json = runCatching { objectMapper.readTree(response.body()) }.getOrNull()
         if (response.statusCode() in SUCCESS) return json ?: throw AiException("OpenAI gaf een antwoord dat we niet konden lezen.")
         val error = json?.path("error")
-        log.warn("OpenAI {} answered {}: {} ({})", path, response.statusCode(), error?.path("message")?.asText(), error?.path("code")?.asText())
+        log.warn("OpenAI {} answered {}: {} ({})", path, response.statusCode(), error?.path("message")?.asString(), error?.path("code")?.asString())
         throw AiException(
             when {
-                error?.path("code")?.asText() == "moderation_blocked" ->
+                error?.path("code")?.asString() == "moderation_blocked" ->
                     "OpenAI maakte dit niet, vanwege zijn inhoudsregels. Probeer een andere omschrijving."
                 response.statusCode() == UNAUTHORIZED -> "De OpenAI-sleutel klopt niet of is ingetrokken."
                 response.statusCode() == TOO_MANY -> "OpenAI is even te druk, of het tegoed bij OpenAI is op. Probeer het later opnieuw."
-                response.statusCode() == BAD_REQUEST -> "OpenAI kon deze vraag niet aan: ${error?.path("message")?.asText().orEmpty()}".trim()
+                response.statusCode() == BAD_REQUEST -> "OpenAI kon deze vraag niet aan: ${error?.path("message")?.asString().orEmpty()}".trim()
                 else -> "OpenAI gaf een fout (${response.statusCode()}). Probeer het later opnieuw."
             },
         )
