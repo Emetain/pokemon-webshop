@@ -232,7 +232,14 @@ watch(
   { immediate: true },
 )
 
-usePageMeta(() => (notFound.value || !title.value ? null : { title: title.value, description: t('meta.shopList', { title: title.value }) }))
+/** "Booster boxen (Pokémon)": a part of a game's shop names the game, so search results tell them apart. */
+const pageTitle = computed(() =>
+  gameLabel.value && title.value !== gameLabel.value ? `${title.value} (${gameLabel.value})` : title.value,
+)
+
+usePageMeta(() =>
+  notFound.value || !title.value ? null : { title: pageTitle.value, description: t('meta.shopList', { title: pageTitle.value }) },
+)
 </script>
 
 <template>
