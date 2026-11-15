@@ -16,6 +16,16 @@ export default {
     drop: '{name}: een drop bij Poketopia.',
     pokedex: '{name} in de Pokédex: alle kaarten van deze Pokémon.',
     notFound: 'Pagina niet gevonden',
+    // Pages with a fixed title, set from the route's `meta.description`.
+    pages: {
+      drops: 'Limited releases bij Poketopia: zie welke drops eraan komen, zet een herinnering en koop eerlijk via de wachtrij.',
+      news: 'Nieuws over Pokémon, Lorcana, Magic, One Piece en Riftbound: nieuwe sets, releases en wat er in de shop binnenkomt.',
+      collection:
+        'Houd gratis je kaartencollectie bij voor Pokémon, Lorcana, Magic, One Piece en Riftbound: je voortgang per set en wat je kaarten waard zijn.',
+      pokedex: 'Vul je Pokédex met je eigen kaarten: zie per generatie welke Pokémon je al hebt en welke nog niet.',
+      preOrders: 'Alle pre-orders bij Poketopia op een rij, met de releasedatum en wanneer we verzenden.',
+      releases: 'De releasekalender: alle nieuwe sets van Pokémon, Lorcana, Magic, One Piece en Riftbound per datum, met de pre-orders erbij.',
+    },
   },
   notFound: {
     title: 'Deze pagina bestaat niet',

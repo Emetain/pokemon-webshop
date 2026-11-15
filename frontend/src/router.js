@@ -185,14 +185,14 @@ const router = createRouter({
           path: 'collectie',
           name: 'collection',
           component: () => import('./views/collection/CollectionView.vue'),
-          meta: { title: 'collection.title' },
+          meta: { title: 'collection.title', description: 'meta.pages.collection' },
         },
         {
           path: 'collectie/pokedex',
           name: 'pokedex',
           component: () => import('./views/collection/PokedexView.vue'),
           props: withQuery('generatie'),
-          meta: { title: 'pokedex.title' },
+          meta: { title: 'pokedex.title', description: 'meta.pages.pokedex' },
         },
         {
           path: 'collectie/pokedex/:dexNumber',
@@ -215,7 +215,12 @@ const router = createRouter({
           meta: { title: 'wishlist.title', noindex: true },
         },
 
-        { path: 'drops', name: 'drops', component: () => import('./views/drops/DropsView.vue'), meta: { title: 'drops.title' } },
+        {
+          path: 'drops',
+          name: 'drops',
+          component: () => import('./views/drops/DropsView.vue'),
+          meta: { title: 'drops.title', description: 'meta.pages.drops' },
+        },
         { path: 'drops/:slug', name: 'drop', component: () => import('./views/drops/DropView.vue'), props: true },
         {
           path: 'drops/:slug/afrekenen',
@@ -233,21 +238,21 @@ const router = createRouter({
           name: 'pre-orders',
           component: () => import('./views/shop/PreOrderView.vue'),
           props: withQuery('game'),
-          meta: { title: 'preOrders.title' },
+          meta: { title: 'preOrders.title', description: 'meta.pages.preOrders' },
         },
         {
           path: 'releasekalender',
           name: 'release-calendar',
           component: () => import('./views/shop/ReleaseCalendarView.vue'),
           props: withQuery('game'),
-          meta: { title: 'releases.title' },
+          meta: { title: 'releases.title', description: 'meta.pages.releases' },
         },
         {
           path: 'nieuws',
           name: 'news',
           component: () => import('./views/content/NewsView.vue'),
           props: withQuery('game', 'page'),
-          meta: { title: 'news.title' },
+          meta: { title: 'news.title', description: 'meta.pages.news' },
         },
         {
           path: 'nieuws/:slug',
