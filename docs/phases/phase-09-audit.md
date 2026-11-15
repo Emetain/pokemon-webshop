@@ -222,13 +222,20 @@ Must be fixed before going live.
     for a 404 and now show it too. The real 404 status for unknown product, drop and news paths comes from the
     backend with S4; other paths get 200 with the 404 page and `noindex` (the SPA can't set a status).
 
-- [ ] **S7. The admin menu fills the whole phone screen.**
+- [x] **S7. The admin menu fills the whole phone screen.**
   - Where: `frontend/src/components/layout/AdminLayout.vue:37`. The sidebar only moves to the side from 900 px
     (line 179).
   - Why: at 360 px the 19 menu links come first on every admin page. The friend who adds pictures has to scroll past
     all of them on a phone, every time.
   - Fix: below 900 px, a top bar with a menu button that opens and closes the list, closed after a click on a link,
     with `aria-expanded` and working with the keyboard.
+  - Done (9b, commit `24aaf5b`): below 900 px `AdminLayout.vue` shows the logo and a "Menu" button
+    (`aria-expanded`, `aria-controls="admin-menu"`); the links and "Terug naar de shop" sit behind it. It closes
+    after a route change (so after clicking a link) and with Escape, which puts focus back on the button. From
+    900 px the sidebar is as before. Checked in headless Chromium at 360 px: closed, the page starts 68 px from the
+    top instead of below 19 links; Enter opens it and Tab goes to the first link; Escape closes it with focus on the
+    button; a click on "Voorraad" navigates and closes it; axe finds nothing. At 1280 px the button is hidden and the
+    sidebar shows.
 
 - [x] **S8. A wrong query value shows Spring's own English error.**
   - Where: `GlobalExceptionHandler.kt:58`. `GET /v1/products?page=abc` answers
