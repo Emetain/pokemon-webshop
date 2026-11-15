@@ -508,3 +508,119 @@ Final checks on 2026-11-15, after the last code change (commit `aa93d13`):
 - Open: N4, N6, N8 and N9, each with its reason above. For the owner: run `npm install` in `frontend/` once after
   stopping the dev server (S9).
 
+
+## Final review (9c)
+
+Read-only review of 9b on 2026-11-15, at commit `c113ed9`. No code was changed. Every item above was checked against
+the code, and the main ones again on running servers.
+
+### How it was checked
+
+- Read the full diff of 9b (`a0a7f75..c113ed9`, 143 files) against each item.
+- `./gradlew test --rerun`: 1024 tests, 0 failures, 0 errors, 0 skipped. `npm run build` passes on Vite 8.3.8 (now
+  installed in `frontend/node_modules`), `npm audit` finds 0 vulnerabilities.
+- `prod` profile on an empty Postgres 16 database: Flyway validated and applied 14 migrations, Hibernate validation
+  passed, no ERROR or WARN line at start, health `{"status":"UP"}`, Swagger, API docs, H2 console and
+  `/actuator/env` 404, and SIGTERM gave "Graceful shutdown complete".
+- A second backend on a copy of the local database (3,124 products, 1,313 sets), called directly and through the real
+  `deploy/Caddyfile` in the `caddy:2.11-alpine` image (only the backend address changed), with the built frontend.
+- Headless Chromium through that Caddy: 23 pages at 1280 px for title, description, robots tag, canonical link and
+  `h1`; the register form and the admin menu at 360 px; the cart drawer with the keyboard; axe-core on six of them.
+- The seven pinned GitHub Actions commits compared with their version tags (`git ls-remote`): all match.
+- Jackson 3.1.7 tried on missing, null and wrong-type values, and every call site in the code checked against it.
+- Both databases, the servers and the Caddy container were removed afterwards.
+
+### Result per item
+
+All four Critical items and all fourteen Should fix items are really fixed. What was seen:
+
+| Item | Seen in 9c |
+| --- | --- |
+| C1 | Tests and `prod` start on Spring Boot 4.1.2. Jackson 3: see R7. |
+| C2 | 300 kB and 20 MB JSON get 413 before reading; a 5 MB chunked JSON body gets 413 while reading; the Stripe webhook too. Through Caddy the same, and a 20 MB multipart to admin gets 413. See R4 to R6 for three edges. |
+| C3 | Settings reach the mail sender (test), and pass through both compose files and both env examples. Not tried with a real mail provider: that is phase 10. |
+| C4 | Product with 3 in stock: adding 3, 4 and 3 worked, the 11th was refused with the fixed maximum. No stock number in the cart or product answers. |
+| S1 | 10 wrong passwords, then the right one a minute later: 429 "over 13 minuten", also with capitals in the address. Another address from the same IP still works. The 4th reset mail in an hour gets 429, the same for a known and an unknown address. |
+| S2 | Read and covered by five tests. Not tried live: checkout needs a Stripe key. See R1 and R2. |
+| S3 | Every page tried has its own title; private pages, search, drafts and 404 pages have `noindex` and no canonical link; `?page=2&sort=price` gives a canonical link with only `?page=2`; titles follow in-app navigation. |
+| S4 | Product and drop pages through Caddy carry their own title, text, `og:*` tags and picture; a drop shows no price. |
+| S5 | Sitemap: 4,486 addresses, valid XML, all 3,124 active products, 1,313 sets, 3 drops, 4 info pages (the 3 legal drafts are left out). `robots.txt` as described. While the preview runs, its own "keep out" file still answers. |
+| S6 | Unknown product, drop and news paths: 404 with the 404 page. Other unknown paths: 200 with the 404 page and `noindex`. |
+| S7 | At 360 px the content starts 68 px from the top; Enter opens the menu, Escape closes it with focus on the button, a link closes it. axe: nothing. |
+| S8 | `?page=abc` and `/catalog/cards/abc`: 400 with the Dutch text. |
+| S9 | `npm audit`: 0. Build passes. |
+| S10 | axe: nothing on the product page, register form with an error, admin at 360 px (menu open) and at 1280×720. Cart drawer: Escape puts focus back on "In winkelwagen". |
+| S11 | `no-store` on API answers through Caddy; the sitemap and hashed assets keep their own header. |
+| S12 | The test finds the endpoints by itself. Visitor on admin and account paths: 401. |
+| S13 | Read. |
+| S14 | Backend refuses a missing or different repeat on register and reset. The form shows the message under the second field, marks it invalid, moves focus there and clears it on typing. |
+| N1, N2, N5, N7, N10, N11, N12 | Confirmed in the code and, where it shows, in the `prod` start. |
+| N3 | Decided by the owner, replaced by S14. |
+| N4, N6, N8, N9 | Still open, each with a reason. Agreed: none blocks going live. N4 needs a line in the privacy policy. |
+
+One accepted leftover of C4: a stock below 10 can still be found with a few checkouts, each of which needs a full
+address and counts for the limit of 5 per 10 minutes. This was the owner's choice.
+
+### New findings
+
+Nothing Critical. Two things to decide before the shop opens, the rest is small.
+
+- [ ] **R1. The cap on open checkouts per IP address also hits customers who share an address.** (Should decide)
+  - Where: `service/OpenCheckoutService.kt` (`requireRoom`), and the `checkout` bucket of 5 per 10 minutes in
+    `application.yml`.
+  - Why: a phone network, a school or an office puts many people behind one address; the drop limits in the same
+    file are generous for that reason. With 2 open checkouts per IP, the third customer on that network is refused
+    with "Je hebt al 2 bestellingen die op betaling wachten", which isn't true for them. It matters most right after
+    a restock or a release.
+  - Fix: a higher cap per IP than per email address (for example 5), and its own message for the IP case ("Er wordt
+    vanaf jouw netwerk veel tegelijk afgerekend, probeer het over een paar minuten opnieuw"). Owner decision: the
+    numbers.
+- [ ] **R2. Someone who knows a customer's email address can keep them from checking out.** (Should decide)
+  - Where: the same check, per email address.
+  - Why: two guest checkouts with the customer's address fill their cap for 15 minutes, and it can be repeated. The
+    refusal also tells that the address has open orders. This is the same kind of price as the login lock of S1,
+    but it wasn't written down for S2.
+  - Fix: count a logged-in customer by account instead of by email address, so guest checkouts on their address
+    don't block them. For guests, accept it or count email address and IP together.
+- [ ] **R3. Product, drop and news pages now depend on the backend for every visitor.** (Nice to have)
+  - Where: `deploy/Caddyfile` (`@sharePage`), `SeoService.indexHtml`.
+  - Why: before 9b these pages loaded from Caddy and showed their own error when the backend was away. Now a direct
+    link or a refresh gets Caddy's 502 while the backend restarts in a deploy, and an empty 404 when the backend
+    can't read its `index.html`. Both images get that file from the same build in CI, so the file names in it match
+    (checked in the workflow).
+  - Fix: in Caddy, fall back to the plain `index.html` when the backend doesn't answer (`handle_errors` or
+    `lb_try_duration` with a fallback), and let the deploy check one product page besides the health endpoint.
+- [ ] **R4. A chunked form body above 2 MB answers 500 and writes a stack trace.** (Nice to have)
+  `Content-Type: application/x-www-form-urlencoded` with `Transfer-Encoding: chunked`: Tomcat stops it at its own
+  2 MB, so memory is safe, but the answer is `internal_error` and every try logs an ERROR. Fix: map Tomcat's
+  `InvalidParameterException` to 413 without a stack trace. Caddy already stops these at 256 kB.
+- [ ] **R5. Caddy's own 413 has no body.** (Nice to have) A too large request stopped by Caddy gets an empty answer
+  instead of the JSON error. Check that the frontend shows a readable message for it, for example for an admin who
+  uploads a picture above 7 MB.
+- [ ] **R6. A multipart body is read before the login check.** (Nice to have, not new in 9b) A visitor can send up
+  to 6 MB of multipart to an admin path; it is written to a temporary file and then refused with 401. Bounded, and
+  not in memory. Caddy limits multipart outside `/api/v1/admin` to 256 kB.
+- [ ] **R7. A full card sync hasn't run on Jackson 3 yet.** (Check after the first deploy) Jackson 3 throws where
+  Jackson 2 gave an empty text or 0: `asString()` on an object or list, `asLong()` on a text that isn't a number,
+  `stringValue()` on anything that isn't text. Every call site was checked and is fine with the data the sources
+  send today, and the mapper tests pass. But no sync of all five games ran after the upgrade. Look at the sync page
+  in admin after the first night on the preview.
+- [ ] **R8. No index on `orders.email_key`.** (Nice to have) Every checkout now counts open orders by it. Fine while
+  the table is small; add it with the next migration.
+- [ ] **R9. Pages with a fixed title use the general description.** (Nice to have) Drops, news, the collection, the
+  Pokédex, pre-orders and the release calendar have their own title but the shop's default description. Add a
+  `description` key to their route `meta`.
+- **Note on the notes.** C1 and S11 refer to "the Caddy test run under S4", but S4 doesn't describe one. 9c ran it
+  again; the results are in the table above.
+
+### Not checked in 9c
+
+- A real Stripe payment and the open-checkout cap on a running server (no Stripe key in the test setup).
+- The GitHub workflow with the pinned actions: it only runs on a push to `main`.
+- The preview server itself, and mail through a real provider.
+
+### Verdict
+
+Phase 9 is done: every Critical and Should fix item is fixed, the tests pass, the production build works and the
+`prod` profile starts cleanly on an empty database. Decide on R1 and R2 before the shop opens to customers, and look
+at the first card sync on the preview (R7).
