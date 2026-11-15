@@ -409,6 +409,10 @@ Must be fixed before going live.
   - Decided (9b): the owner chose no confirmation mail, and a repeated password instead. That is S14, done.
 - [ ] **N4. No "change password" and no "delete my account" on the account page.** A password can only be changed
   through the reset mail. Deleting can go through a ticket; say so in the privacy policy.
+  - Not done (9b): a new feature rather than a fix, and deleting an account needs a decision on what happens to its
+    orders, which the shop must keep for the tax office. Until then a customer can change the password through
+    "wachtwoord vergeten" and ask for deletion through a ticket; the privacy policy (a draft for the legal check)
+    should say so. A "change password" form would reuse the repeat-password field of S14.
 - [x] **N5. Foreign keys without an index:** `binder_selections(card_id)`, `card_wishlist_entries(card_id)`,
   `drop_queue_entries(user_id)`, `product_reviews(user_id)`, `set_release_products(product_id)`,
   `set_releases(set_id)`, `mystery_box_prizes(card_id)`, `support_messages(author_id)`, `ai_usage(user_id)`,
@@ -421,6 +425,7 @@ Must be fixed before going live.
     no Flyway) won't get them; that only matters for speed on a large local database.
 - [ ] **N6. Lists without pages:** admin news, discount codes, drops and release calendar, "Mijn tickets", and the
   public pre-order list. They grow slowly. Page them when one passes a few hundred rows.
+  - Not done (9b), as the item says: none of these lists is near a few hundred rows yet. Worth doing when one is.
 - [x] **N7. Eight images without `loading="lazy"`.** Most are at the top of the page, where it shouldn't be lazy
   (logo, hero, banners). Check `views/catalog/SetView.vue:205`, `views/shop/ShopListView.vue:250` and
   `views/content/NewsArticleView.vue:49`, and add `width` and `height` where they are missing so the page doesn't
@@ -432,11 +437,20 @@ Must be fixed before going live.
     data has no news picture or set logo to look at.
 - [ ] **N8. Order and ticket keys are stored as plain text,** unlike session tokens. Someone who reads the database
   can open every order page. Hashing them needs a migration and a change to the mails; low priority.
+  - Not done (9b): needs a migration that can't hash the keys of existing orders without breaking the links in
+    mails already sent, so it needs a plan for old orders (keep reading plain keys for a while, or accept that old
+    links stop working). Low priority, as the item says; a good phase 10 task before real orders exist.
 - [ ] **N9. A paid amount that differs from the order only writes a log line and a note** (`OrderPaymentService.kt:63`).
   The amount comes from our own Stripe session, so it shouldn't happen. Show such orders with a warning in the
   admin order list.
-- [ ] **N10. GitHub Actions are pinned to a version tag, not a commit** (`.github/workflows/deploy.yml`). A tag can
+  - Not done (9b): showing it in the list needs a flag on the order (a migration and a filter) for something that
+    can't happen with our own Stripe sessions. The note is on the order page and the log line is there; left for
+    when it ever shows up.
+- [x] **N10. GitHub Actions are pinned to a version tag, not a commit** (`.github/workflows/deploy.yml`). A tag can
   be moved by the action's owner. Pin to commit hashes.
+  - Done (9b): every `uses:` in `.github/workflows/deploy.yml` is pinned to the commit its major tag pointed to on
+    2026-11-15 (looked up with `git ls-remote`), with the exact version in a comment, so nothing changes in what
+    runs. Not run: the workflow only runs on a push to `main`.
 - [x] **N11. One broken set symbol:** `https://assets.tcgdex.net/univ/mc/2021swsh/symbol.webp` gives 404 on
   `/kaarten/pokemon`. Check that a broken symbol hides itself instead of showing a broken image.
   - Done (9b): the set tiles on `/kaarten/pokemon` already fall back to the set code when a symbol or logo fails
