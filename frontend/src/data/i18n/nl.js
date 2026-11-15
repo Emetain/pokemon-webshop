@@ -2176,5 +2176,8 @@ export default {
   errors: {
     generic: 'Er ging iets mis. Probeer het opnieuw.',
     network: 'We kunnen de server niet bereiken. Controleer je verbinding en probeer het opnieuw.',
+    tooLarge: 'Dit is te veel om in één keer te versturen. Maak het korter en probeer het opnieuw.',
+    fileTooLarge: 'Dit bestand is te groot. Kies een bestand tot 5 MB.',
+    unavailable: 'De shop is even niet bereikbaar, bijvoorbeeld door een update. Probeer het over een minuut opnieuw.',
   },
 }

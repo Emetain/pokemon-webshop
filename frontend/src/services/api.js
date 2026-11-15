@@ -11,7 +11,17 @@ export class ApiError extends Error {
   }
 }
 
-async function send(method, path, options) {
+/**
+ * For an answer without the backend's own message: Caddy refuses a body that is too large with an empty 413, and
+ * answers an empty 502 while the backend restarts during a deploy.
+ */
+function messageWithoutBody(status, isUpload) {
+  if (status === 413) return t(isUpload ? 'errors.fileTooLarge' : 'errors.tooLarge')
+  if (status === 502 || status === 503 || status === 504) return t('errors.unavailable')
+  return t('errors.generic')
+}
+
+async function send(method, path, options, { isUpload = false } = {}) {
   let response
   const sentAt = Date.now()
   try {
@@ -25,7 +35,7 @@ async function send(method, path, options) {
 
   const data = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new ApiError(response.status, data?.error ?? 'unknown', data?.message ?? t('errors.generic'))
+    throw new ApiError(response.status, data?.error ?? 'unknown', data?.message ?? messageWithoutBody(response.status, isUpload))
   }
   // Replies for a countdown carry the shop's time. Measured here, where the time the request took is known.
   if (typeof data?.serverTime === 'string') sampleServerTime(data.serverTime, sentAt, receivedAt)
@@ -41,7 +51,7 @@ function request(method, path, body) {
 function upload(path, file) {
   const body = new FormData()
   body.append('file', file)
-  return send('POST', path, { body })
+  return send('POST', path, { body }, { isUpload: true })
 }
 
 export const authApi = {
