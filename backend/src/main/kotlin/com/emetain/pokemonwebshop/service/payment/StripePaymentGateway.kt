@@ -23,9 +23,13 @@ class StripePaymentGateway(properties: AppProperties) : PaymentGateway {
 
     private val log = LoggerFactory.getLogger(javaClass)
     private val secretKey = properties.payments.stripe.secretKey
-    private val client: StripeClient? = secretKey.takeIf { it.isNotBlank() }?.let(::StripeClient)
+    private val keyProblem = StripeKeyRules.problem(secretKey, properties.shopAccess)
+        ?.also { log.error(it.logMessage) }
+    private val client: StripeClient? = secretKey.takeIf { it.isNotBlank() && keyProblem == null }?.let(::StripeClient)
 
     override val configured: Boolean get() = client != null
+
+    override val setupProblem: String? get() = keyProblem?.code
 
     override fun createCheckout(request: CheckoutRequest): CheckoutSession {
         val params = SessionCreateParams.builder()
@@ -153,7 +157,8 @@ class StripePaymentGateway(properties: AppProperties) : PaymentGateway {
         )
     }
 
-    private fun stripe(): StripeClient = client ?: throw PaymentUnavailableException("STRIPE_SECRET_KEY is not set")
+    private fun stripe(): StripeClient =
+        client ?: throw PaymentUnavailableException(keyProblem?.logMessage ?: "STRIPE_SECRET_KEY is not set")
 
     private fun <T> call(what: String, action: () -> T): T = try {
         action()

@@ -173,4 +173,6 @@ data class DashboardDto(
     val lowStock: List<AdminProductRowDto>,
     val latestOrders: List<AdminOrderRowDto>,
     val paymentsEnabled: Boolean,
+    /** Why online payment is off although a Stripe key is set, such as `test_key_in_open_shop`. See `StripeKeyRules`. */
+    val paymentsProblem: String? = null,
 )

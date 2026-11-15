@@ -109,6 +109,7 @@ class AdminOrderOrchestrator(
             lowStock = adminProductOrchestrator.lowStock().take(LOW_STOCK),
             latestOrders = latest.content.map(AdminOrderRowDto::from),
             paymentsEnabled = gateway.configured,
+            paymentsProblem = gateway.setupProblem,
         )
     }
 

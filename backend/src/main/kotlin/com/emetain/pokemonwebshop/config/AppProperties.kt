@@ -7,6 +7,12 @@ import org.springframework.util.unit.DataSize
 import java.time.Duration
 import java.time.LocalDate
 
+/**
+ * Who gets into the shop: the closed preview behind one shared login (the default), or everyone. Caddy reads the same
+ * SHOP_ACCESS for the login and robots.txt; the backend uses it to only accept the Stripe key that fits.
+ */
+enum class ShopAccess { PREVIEW, OPEN }
+
 @ConfigurationProperties(prefix = "app")
 data class AppProperties(
     val baseUrl: String,
@@ -25,7 +31,23 @@ data class AppProperties(
     val openai: OpenAi = OpenAi(),
     val http: Http = Http(),
     val seo: Seo = Seo(),
+    val shopAccess: ShopAccess = ShopAccess.PREVIEW,
+    val company: Company = Company(),
 ) {
+    /**
+     * The business details the site must show: iDEAL's rules and Dutch law ask for the KVK number. Empty until the
+     * shop is registered; the footer shows only what is filled in.
+     */
+    data class Company(
+        /** The registered name, when it isn't just "Poketopia". */
+        val legalName: String = "",
+        /** Street, house number, postcode and city, on one line. */
+        val address: String = "",
+        val kvkNumber: String = "",
+        /** The btw-identificatienummer (NL...B..), the one meant for customers. */
+        val vatNumber: String = "",
+    )
+
     data class Seo(
         /**
          * The built `index.html` of the frontend, for link previews of product, drop and news pages. The backend
@@ -185,7 +207,10 @@ data class AppProperties(
     )
 
     data class Stripe(
-        /** A test key (`sk_test_...`) locally. Empty switches online payment off. */
+        /**
+         * A test key (`sk_test_...`) locally and in the closed preview, a live key once the shop is open (see
+         * `StripeKeyRules`). Empty switches online payment off.
+         */
         val secretKey: String = "",
         /** The `whsec_...` secret that proves a webhook comes from Stripe. */
         val webhookSecret: String = "",

@@ -85,6 +85,17 @@ springdoc:
 app:
   # Public address of the frontend, used for links in emails.
   base-url: ${APP_BASE_URL:http://localhost:5173}
+  # Who gets in: "preview" (the closed preview behind one shared login, the default) or "open" (everyone). Caddy
+  # reads the same variable for the login and robots.txt. The backend only accepts a Stripe test key in the preview
+  # and a live key in the open shop; the other kind keeps online payment off (see StripeKeyRules).
+  shop-access: ${SHOP_ACCESS:preview}
+  # The business details in the footer of every page: iDEAL's rules and Dutch law ask for the KVK number on the site.
+  # Empty shows nothing. Fill them in on the server once the shop is registered at the KVK.
+  company:
+    legal-name: ${COMPANY_LEGAL_NAME:}
+    address: ${COMPANY_ADDRESS:}
+    kvk-number: ${COMPANY_KVK_NUMBER:}
+    vat-number: ${COMPANY_VAT_NUMBER:}
   http:
     # The largest request body the API reads; larger ones get 413. Uploads are multipart and limited by
     # spring.servlet.multipart above. The longest text an admin can save is 50,000 characters. Caddy has the same limit.

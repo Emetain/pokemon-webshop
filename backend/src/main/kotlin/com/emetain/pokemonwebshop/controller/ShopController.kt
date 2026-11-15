@@ -1,8 +1,10 @@
 package com.emetain.pokemonwebshop.controller
 
+import com.emetain.pokemonwebshop.dto.CompanyDto
 import com.emetain.pokemonwebshop.dto.HeroSlideDto
 import com.emetain.pokemonwebshop.dto.ShopSeriesDetailDto
 import com.emetain.pokemonwebshop.dto.ShopSeriesDto
+import com.emetain.pokemonwebshop.orchestration.CompanyOrchestrator
 import com.emetain.pokemonwebshop.orchestration.HeroSlideOrchestrator
 import com.emetain.pokemonwebshop.orchestration.ShopNavigationOrchestrator
 import org.springframework.web.bind.annotation.GetMapping
@@ -10,12 +12,16 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-/** The parts of the shop around the products: the navigation by series and set, and the hero on the home page. */
+/**
+ * The parts of the shop around the products: the navigation by series and set, the hero on the home page, and the
+ * business details in the footer.
+ */
 @RestController
 @RequestMapping("/v1/shop")
 class ShopController(
     private val navigationOrchestrator: ShopNavigationOrchestrator,
     private val heroSlideOrchestrator: HeroSlideOrchestrator,
+    private val companyOrchestrator: CompanyOrchestrator,
 ) {
 
     @GetMapping("/{game}/series")
@@ -29,4 +35,8 @@ class ShopController(
     @GetMapping("/hero-slides")
     fun heroSlides(): List<HeroSlideDto> =
         heroSlideOrchestrator.showing()
+
+    @GetMapping("/company")
+    fun company(): CompanyDto =
+        companyOrchestrator.company()
 }

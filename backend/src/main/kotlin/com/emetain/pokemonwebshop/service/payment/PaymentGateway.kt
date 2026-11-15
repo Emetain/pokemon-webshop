@@ -59,6 +59,12 @@ interface PaymentGateway {
 
     val configured: Boolean
 
+    /**
+     * Why online payment is off although a key is set, as a code for the admin dashboard (see [StripeKeyRules]).
+     * Null when it is on, or when no key is set.
+     */
+    val setupProblem: String? get() = null
+
     fun createCheckout(request: CheckoutRequest): CheckoutSession
 
     fun retrieve(sessionId: String): SessionState
