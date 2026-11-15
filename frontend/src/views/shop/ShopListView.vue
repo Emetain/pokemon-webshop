@@ -5,6 +5,7 @@ import { BookOpen } from 'lucide-vue-next'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
+import NotFoundView from '../NotFoundView.vue'
 import PageLinks from '../../components/catalog/PageLinks.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import ProductFilters from '../../components/shop/ProductFilters.vue'
@@ -25,6 +26,7 @@ import { useShopNavigation } from '../../stores/shopNavigation'
 import { filterQuery, pageFromQuery } from '../../utils/catalog'
 import { formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { usePageMeta } from '../../utils/pageMeta'
 
 const PAGE_SIZE = 24
 
@@ -229,14 +231,12 @@ watch(
   },
   { immediate: true },
 )
+
+usePageMeta(() => (notFound.value || !title.value ? null : { title: title.value, description: t('meta.shopList', { title: title.value }) }))
 </script>
 
 <template>
-  <div v-if="notFound" class="container">
-    <CatalogNotice :title="t('shop.notFound.title')" :text="t('shop.notFound.text')">
-      <router-link class="btn btn-primary" to="/pokemon">{{ t('home.browsePokemon') }}</router-link>
-    </CatalogNotice>
-  </div>
+  <NotFoundView v-if="notFound" />
 
   <div v-else :data-game="gameInfo?.accent">
     <CatalogBand :accent="gameInfo?.accent ?? 'pokemon'">

@@ -7,6 +7,8 @@ import RichText from '../../components/content/RichText.vue'
 import { checkoutApi, contentApi } from '../../services/api'
 import { formatDate, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { usePageMeta } from '../../utils/pageMeta'
+import NotFoundView from '../NotFoundView.vue'
 
 /** A page under /info with the text from admin. Contact gets the form, shipping the rates as they are set now. */
 const props = defineProps({
@@ -16,23 +18,30 @@ const props = defineProps({
 const page = ref(null)
 const rates = ref([])
 const error = ref('')
+const notFound = ref(false)
 
 async function load() {
   page.value = null
   error.value = ''
+  notFound.value = false
   try {
     page.value = await contentApi.page(props.slug)
     if (props.slug === 'verzending') rates.value = (await checkoutApi.options()).countries
   } catch (exception) {
-    error.value = exception.message
+    if (exception.status === 404) notFound.value = true
+    else error.value = exception.message
   }
 }
 
 watch(() => props.slug, load, { immediate: true })
+
+// A draft, such as a legal page that hasn't been checked yet, stays out of search engines.
+usePageMeta(() => (page.value ? { title: page.value.title, description: page.value.body, noindex: page.value.draft } : null))
 </script>
 
 <template>
-  <div class="container page">
+  <NotFoundView v-if="notFound" />
+  <div v-else class="container page">
     <FormMessage v-if="error">{{ error }}</FormMessage>
     <p v-else-if="!page" class="muted" aria-busy="true">{{ t('info.loading') }}</p>
     <article v-else>

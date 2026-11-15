@@ -6,6 +6,7 @@ import CardFilters from '../../components/catalog/CardFilters.vue'
 import CardGrid from '../../components/catalog/CardGrid.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
+import NotFoundView from '../NotFoundView.vue'
 import PageLinks from '../../components/catalog/PageLinks.vue'
 import SetProgressPanel from '../../components/collection/SetProgressPanel.vue'
 import FormMessage from '../../components/FormMessage.vue'
@@ -15,6 +16,7 @@ import { useSession } from '../../stores/session'
 import { cardCountLabel, filterQuery, pageFromQuery, seriesLabel } from '../../utils/catalog'
 import { formatDate } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { usePageMeta } from '../../utils/pageMeta'
 
 const props = defineProps({
   game: { type: String, required: true },
@@ -178,16 +180,19 @@ watch(
   },
   { immediate: true },
 )
+
+usePageMeta(() =>
+  detail.value && game.value
+    ? {
+        title: `${detail.value.set.name} (${gameLabel.value})`,
+        description: t('meta.set', { set: detail.value.set.name, game: gameLabel.value }),
+      }
+    : null,
+)
 </script>
 
 <template>
-  <div v-if="notFound || !game" class="container">
-    <CatalogNotice :title="t('catalog.notFound.setTitle')" :text="t('catalog.notFound.text')">
-      <router-link class="btn btn-primary" :to="{ name: 'sets', params: { game: game ? props.game : 'pokemon' } }">
-        {{ t('nav.allSets') }}
-      </router-link>
-    </CatalogNotice>
-  </div>
+  <NotFoundView v-if="notFound || !game" />
 
   <div v-else :data-game="game.accent">
     <CatalogBand :accent="game.accent">

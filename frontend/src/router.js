@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { GAMES } from './data/games'
 import { navDestinations } from './data/navigation'
 import { useSession } from './stores/session'
+import { setRouteMeta, updateCanonical } from './utils/pageMeta'
 
 const ShopLayout = () => import('./components/layout/ShopLayout.vue')
 const AdminLayout = () => import('./components/layout/AdminLayout.vue')
@@ -62,55 +63,89 @@ const router = createRouter({
       children: [
         { path: '', component: () => import('./views/HomeView.vue') },
 
-        { path: 'inloggen', component: () => import('./views/LoginView.vue'), meta: { guestOnly: true } },
-        { path: 'registreren', component: () => import('./views/RegisterView.vue'), meta: { guestOnly: true } },
-        { path: 'wachtwoord-vergeten', component: () => import('./views/ForgotPasswordView.vue') },
-        { path: 'wachtwoord-herstellen', component: () => import('./views/ResetPasswordView.vue') },
-        { path: 'account', component: () => import('./views/AccountView.vue'), meta: { requiresLogin: true } },
+        {
+          path: 'inloggen',
+          component: () => import('./views/LoginView.vue'),
+          meta: { guestOnly: true, title: 'auth.login.title', noindex: true },
+        },
+        {
+          path: 'registreren',
+          component: () => import('./views/RegisterView.vue'),
+          meta: { guestOnly: true, title: 'auth.register.title', noindex: true },
+        },
+        {
+          path: 'wachtwoord-vergeten',
+          component: () => import('./views/ForgotPasswordView.vue'),
+          meta: { title: 'auth.forgot.title', noindex: true },
+        },
+        {
+          path: 'wachtwoord-herstellen',
+          component: () => import('./views/ResetPasswordView.vue'),
+          meta: { title: 'auth.reset.title', noindex: true },
+        },
+        {
+          path: 'account',
+          component: () => import('./views/AccountView.vue'),
+          meta: { requiresLogin: true, title: 'account.title', noindex: true },
+        },
         {
           path: 'account/bestellingen',
           name: 'account-orders',
           component: () => import('./views/account/OrdersView.vue'),
           props: withQuery('page'),
-          meta: { requiresLogin: true },
+          meta: { requiresLogin: true, title: 'orders.list.title', noindex: true },
         },
         {
           path: 'account/tickets',
           component: () => import('./views/account/TicketsView.vue'),
-          meta: { requiresLogin: true },
+          meta: { requiresLogin: true, title: 'support.mine.title', noindex: true },
         },
         {
           path: 'klantenservice/ticket/:token',
           component: () => import('./views/support/TicketView.vue'),
           props: true,
+          meta: { noindex: true },
         },
         {
           path: 'account/bestellingen/:number',
           name: 'account-order',
           component: () => import('./views/account/OrderView.vue'),
           props: true,
-          meta: { requiresLogin: true },
+          meta: { requiresLogin: true, title: 'orders.list.title', noindex: true },
         },
 
-        { path: 'winkelwagen', name: 'cart', component: () => import('./views/checkout/CartView.vue') },
-        { path: 'afrekenen', name: 'checkout', component: () => import('./views/checkout/CheckoutView.vue') },
+        {
+          path: 'winkelwagen',
+          name: 'cart',
+          component: () => import('./views/checkout/CartView.vue'),
+          meta: { title: 'cart.title', noindex: true },
+        },
+        {
+          path: 'afrekenen',
+          name: 'checkout',
+          component: () => import('./views/checkout/CheckoutView.vue'),
+          meta: { title: 'checkout.title', noindex: true },
+        },
         {
           path: 'bestelling/bedankt',
           name: 'order-placed',
           component: () => import('./views/checkout/OrderPlacedView.vue'),
           props: withQuery('order', 'token'),
+          meta: { title: 'orders.placed.title', noindex: true },
         },
         {
           path: 'bestelling/geannuleerd',
           name: 'order-cancelled',
           component: () => import('./views/checkout/OrderCancelledView.vue'),
           props: withQuery('order', 'token', 'drop'),
+          meta: { title: 'orders.cancelled.title', noindex: true },
         },
         {
           path: 'bestelling/:number',
           name: 'guest-order',
           component: () => import('./views/checkout/GuestOrderView.vue'),
           props: withQuery('token'),
+          meta: { noindex: true },
         },
 
         {
@@ -130,7 +165,7 @@ const router = createRouter({
           name: 'set-missing',
           component: () => import('./views/collection/SetMissingView.vue'),
           props: withQuery('sort', 'category', 'color', 'rarity', 'variant', 'priced', 'master', 'page'),
-          meta: { requiresLogin: true },
+          meta: { requiresLogin: true, title: 'collection.missingList.title', noindex: true },
         },
         {
           path: 'kaarten/:game/:setCode/:cardId',
@@ -143,18 +178,21 @@ const router = createRouter({
           name: 'search',
           component: () => import('./views/SearchView.vue'),
           props: withQuery('q', 'game', ...CARD_FILTERS, 'page'),
+          meta: { title: 'search.title', noindex: true },
         },
 
         {
           path: 'collectie',
           name: 'collection',
           component: () => import('./views/collection/CollectionView.vue'),
+          meta: { title: 'collection.title' },
         },
         {
           path: 'collectie/pokedex',
           name: 'pokedex',
           component: () => import('./views/collection/PokedexView.vue'),
           props: withQuery('generatie'),
+          meta: { title: 'pokedex.title' },
         },
         {
           path: 'collectie/pokedex/:dexNumber',
@@ -167,21 +205,24 @@ const router = createRouter({
           name: 'shared-collection',
           component: () => import('./views/collection/SharedCollectionView.vue'),
           props: true,
+          meta: { title: 'collection.title', noindex: true },
         },
         {
           path: 'verlanglijst',
           name: 'wishlist',
           component: () => import('./views/collection/WishlistView.vue'),
           props: withQuery('sort', 'priced', 'collection', 'page'),
+          meta: { title: 'wishlist.title', noindex: true },
         },
 
-        { path: 'drops', name: 'drops', component: () => import('./views/drops/DropsView.vue') },
+        { path: 'drops', name: 'drops', component: () => import('./views/drops/DropsView.vue'), meta: { title: 'drops.title' } },
         { path: 'drops/:slug', name: 'drop', component: () => import('./views/drops/DropView.vue'), props: true },
         {
           path: 'drops/:slug/afrekenen',
           name: 'drop-checkout',
           component: () => import('./views/checkout/CheckoutView.vue'),
           props: (route) => ({ dropSlug: route.params.slug }),
+          meta: { title: 'checkout.title', noindex: true },
         },
 
         ...gameShopRoutes(),
@@ -192,18 +233,21 @@ const router = createRouter({
           name: 'pre-orders',
           component: () => import('./views/shop/PreOrderView.vue'),
           props: withQuery('game'),
+          meta: { title: 'preOrders.title' },
         },
         {
           path: 'releasekalender',
           name: 'release-calendar',
           component: () => import('./views/shop/ReleaseCalendarView.vue'),
           props: withQuery('game'),
+          meta: { title: 'releases.title' },
         },
         {
           path: 'nieuws',
           name: 'news',
           component: () => import('./views/content/NewsView.vue'),
           props: withQuery('game', 'page'),
+          meta: { title: 'news.title' },
         },
         {
           path: 'nieuws/:slug',
@@ -221,11 +265,13 @@ const router = createRouter({
           path: 'nieuwsbrief/bevestigen',
           component: () => import('./views/content/NewsletterLinkView.vue'),
           props: (route) => ({ mode: 'confirm', ...withQuery('token')(route) }),
+          meta: { title: 'newsletter.confirmTitle', noindex: true },
         },
         {
           path: 'nieuwsbrief/afmelden',
           component: () => import('./views/content/NewsletterLinkView.vue'),
           props: (route) => ({ mode: 'unsubscribe', ...withQuery('token')(route) }),
+          meta: { title: 'newsletter.unsubscribeTitle', noindex: true },
         },
         shopRoute('producten', { mode: 'all' }),
         {
@@ -236,12 +282,15 @@ const router = createRouter({
         },
 
         ...placeholderPages(),
+
+        // Anything else: a page that says so, instead of a second copy of the home page.
+        { path: ':pathMatch(.*)*', name: 'not-found', component: () => import('./views/NotFoundView.vue') },
       ],
     },
     {
       path: '/admin',
       component: AdminLayout,
-      meta: { requiresAdmin: true },
+      meta: { requiresAdmin: true, title: 'admin.title', noindex: true },
       children: [
         { path: '', component: () => import('./views/admin/AdminDashboardView.vue') },
         {
@@ -304,9 +353,8 @@ const router = createRouter({
       path: '/admin/bestellingen/:number/pakbon',
       component: () => import('./views/admin/AdminPackingSlipView.vue'),
       props: true,
-      meta: { requiresAdmin: true },
+      meta: { requiresAdmin: true, title: 'admin.title', noindex: true },
     },
-    { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })
 
@@ -325,6 +373,11 @@ router.beforeEach(async (to) => {
     return { path: '/account' }
   }
   return true
+})
+
+router.afterEach((to, from) => {
+  if (to.path !== from.path || from.matched.length === 0) setRouteMeta(to)
+  else updateCanonical()
 })
 
 export default router

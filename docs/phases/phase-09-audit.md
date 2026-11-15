@@ -154,7 +154,7 @@ Must be fixed before going live.
     Drops keep their own limits. Tests in `CheckoutIntegrationTest`. Two checkouts at the same moment can both pass
     the count; the rate limit keeps that small.
 
-- [ ] **S3. Every page has the title "Poketopia" and no description.**
+- [x] **S3. Every page has the title "Poketopia" and no description.**
   - Where: `frontend/index.html:6`. Nothing in `frontend/src` sets `document.title` or a meta tag. Measured: 147 of
     147 page loads had the same title and no description.
   - Why: search results and browser tabs all show the same word, and screen reader users don't hear which page
@@ -162,6 +162,13 @@ Must be fixed before going live.
   - Fix: a small composable that sets the title, description and canonical link. Static pages get theirs from the
     route's `meta`; product, set, card, drop, news and info pages set theirs once their data is loaded. Format:
     `<page> | Poketopia`.
+  - Done (9b): `utils/pageMeta.js` sets the title (`<page> | Poketopia`), the description (cut to 160 characters,
+    marks stripped), a `robots` tag and the canonical link (without filters, with `?page=` from page 2). The router
+    sets them from `meta.title`/`meta.noindex` on every change of path (`router.afterEach`); a query-only change
+    only moves the canonical link. Product, shop list, set list, set, card, Pokédex entry, drop, news and info pages
+    call `usePageMeta` once their data has loaded. A product draft, an unpublished article and a draft info page
+    (the legal pages) get `noindex`. `index.html` has a default title and description for crawlers without
+    JavaScript.
 
 - [ ] **S4. No Open Graph tags for products and drops.**
   - Where: nowhere in the repository.
@@ -184,12 +191,17 @@ Must be fixed before going live.
     on the search page and on the 404 page. Leave the lines marked "preview" in the Caddyfile alone: phase 10
     removes them.
 
-- [ ] **S6. An unknown address goes to the home page.**
+- [x] **S6. An unknown address goes to the home page.**
   - Where: `frontend/src/router.js:309` (`redirect: '/'`).
   - Why: a mistyped or old link silently shows the home page. Search engines see a second copy of the home page
     instead of a missing page.
   - Fix: a `NotFoundView` with a message, a search field and a link home, `noindex`, at the catch-all route. Use it
     for an unknown product, drop, set and article too, where the views now show their own error.
+  - Done (9b): `views/NotFoundView.vue` (message, search field to `/zoeken`, link home, `noindex`) is the
+    catch-all route inside the shop layout, and replaces the own "not found" notices of the product, shop list, set
+    list, set, card, Pokédex entry and drop views. The news article and info page views showed the API's error text
+    for a 404 and now show it too. The real 404 status for unknown product, drop and news paths comes from the
+    backend with S4; other paths get 200 with the 404 page and `noindex` (the SPA can't set a status).
 
 - [ ] **S7. The admin menu fills the whole phone screen.**
   - Where: `frontend/src/components/layout/AdminLayout.vue:37`. The sidebar only moves to the side from 900 px

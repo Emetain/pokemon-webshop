@@ -7,12 +7,14 @@ import CardFilters from '../../components/catalog/CardFilters.vue'
 import CardGrid from '../../components/catalog/CardGrid.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
+import NotFoundView from '../NotFoundView.vue'
 import PageLinks from '../../components/catalog/PageLinks.vue'
 import { pokedexApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { cardCountLabel, dexLabel, filterQuery, pageFromQuery } from '../../utils/catalog'
 import { formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { usePageMeta } from '../../utils/pageMeta'
 
 const props = defineProps({
   dexNumber: { type: String, required: true },
@@ -125,14 +127,16 @@ function onCollectionChange(card, change) {
 
 watch(() => props.dexNumber, loadEntry, { immediate: true })
 watch(() => [props.dexNumber, filters.value, currentPage.value], loadCards, { immediate: true })
+
+usePageMeta(() =>
+  entry.value
+    ? { title: `${dexLabel(props.dexNumber)} ${entry.value.name}`, description: t('meta.pokedex', { name: entry.value.name }) }
+    : null,
+)
 </script>
 
 <template>
-  <div v-if="notFound" class="container">
-    <CatalogNotice :title="t('pokedex.entry.notFoundTitle')" :text="t('catalog.notFound.text')">
-      <router-link class="btn btn-primary" to="/collectie/pokedex">{{ t('pokedex.title') }}</router-link>
-    </CatalogNotice>
-  </div>
+  <NotFoundView v-if="notFound" />
 
   <div v-else data-game="pokemon">
     <CatalogBand accent="pokemon">

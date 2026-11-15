@@ -7,6 +7,8 @@ import { findGame } from '../../data/games'
 import { contentApi } from '../../services/api'
 import { formatDate } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { usePageMeta } from '../../utils/pageMeta'
+import NotFoundView from '../NotFoundView.vue'
 
 const props = defineProps({
   slug: { type: String, required: true },
@@ -14,24 +16,34 @@ const props = defineProps({
 
 const article = ref(null)
 const error = ref('')
+const notFound = ref(false)
 
 watch(
   () => props.slug,
   async () => {
     article.value = null
     error.value = ''
+    notFound.value = false
     try {
       article.value = await contentApi.article(props.slug)
     } catch (exception) {
-      error.value = exception.message
+      if (exception.status === 404) notFound.value = true
+      else error.value = exception.message
     }
   },
   { immediate: true },
 )
+
+usePageMeta(() =>
+  article.value
+    ? { title: article.value.title, description: article.value.summary || article.value.body, noindex: !article.value.published }
+    : null,
+)
 </script>
 
 <template>
-  <div class="container page">
+  <NotFoundView v-if="notFound" />
+  <div v-else class="container page">
     <router-link class="back" to="/nieuws">
       <ChevronLeft :size="18" aria-hidden="true" />
       {{ t('news.back') }}

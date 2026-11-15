@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { CalendarClock, CircleCheck, CircleX, Minus, Plus, ShoppingBag, Zap } from 'lucide-vue-next'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
+import NotFoundView from '../NotFoundView.vue'
 import CardImage from '../../components/catalog/CardImage.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
 import FormMessage from '../../components/FormMessage.vue'
@@ -29,6 +30,7 @@ import { useCurrency } from '../../stores/currency'
 import { variantLabel } from '../../utils/catalog'
 import { formatDate, formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { usePageMeta } from '../../utils/pageMeta'
 
 const props = defineProps({
   slug: { type: String, required: true },
@@ -154,14 +156,21 @@ function onWished(item, wished) {
 }
 
 watch(() => props.slug, load, { immediate: true })
+
+usePageMeta(() =>
+  product.value
+    ? {
+        title: product.value.name,
+        description: detail.value.description || t('meta.product', { name: product.value.name }),
+        // A draft only an admin can see.
+        noindex: detail.value.status !== 'ACTIVE',
+      }
+    : null,
+)
 </script>
 
 <template>
-  <div v-if="notFound" class="container">
-    <CatalogNotice :title="t('shop.notFound.productTitle')" :text="t('shop.notFound.text')">
-      <router-link class="btn btn-primary" to="/producten">{{ t('shop.titles.all') }}</router-link>
-    </CatalogNotice>
-  </div>
+  <NotFoundView v-if="notFound" />
 
   <div v-else-if="error" class="container">
     <CatalogNotice :title="error">

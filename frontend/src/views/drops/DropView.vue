@@ -12,6 +12,8 @@ import { useLiveDrops } from '../../stores/drops'
 import { useRegion } from '../../stores/region'
 import { formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { usePageMeta } from '../../utils/pageMeta'
+import NotFoundView from '../NotFoundView.vue'
 
 /**
  * The page of one drop: banner, countdown, products, and the waiting room. It asks the shop for two things: the drop
@@ -166,13 +168,15 @@ onBeforeUnmount(() => {
   clearTimeout(detailTimer)
   clearTimeout(queueTimer)
 })
+
+// Never a price or how many there are: only the name and the shop's own text.
+usePageMeta(() =>
+  drop.value ? { title: drop.value.name, description: drop.value.description || t('meta.drop', { name: drop.value.name }) } : null,
+)
 </script>
 
 <template>
-  <div v-if="notFound" class="container page">
-    <h1>{{ t('drops.page.notFound') }}</h1>
-    <router-link class="btn btn-secondary" to="/drops">{{ t('drops.page.toDrops') }}</router-link>
-  </div>
+  <NotFoundView v-if="notFound" />
 
   <div v-else-if="!drop" class="container page">
     <FormMessage v-if="loadError">{{ loadError }}</FormMessage>

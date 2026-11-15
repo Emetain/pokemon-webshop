@@ -2,6 +2,29 @@ export default {
   brand: {
     name: 'Poketopia',
   },
+  // The title and description in the browser tab and in search results.
+  meta: {
+    title: '{page} | Poketopia',
+    siteTitle: 'Poketopia | Pokémon en andere TCG-kaarten, boosters en je collectie',
+    description:
+      'Boosters, losse kaarten en accessoires voor Pokémon, Disney Lorcana, Magic, One Piece en Riftbound. En gratis je collectie en Pokédex bijhouden.',
+    product: '{name} bestel je bij Poketopia. Snel verzonden in Nederland en België.',
+    shopList: '{title} bij Poketopia: bekijk het aanbod en bestel online.',
+    sets: 'Alle sets en kaarten van {game}, met prijzen. Houd gratis bij welke kaarten je hebt.',
+    set: 'Alle kaarten van {set} ({game}), met prijzen. Houd gratis bij welke kaarten je hebt.',
+    card: '{name} uit {set}: prijzen per variant, en bijhouden of je hem hebt.',
+    drop: '{name}: een drop bij Poketopia.',
+    pokedex: '{name} in de Pokédex: alle kaarten van deze Pokémon.',
+    notFound: 'Pagina niet gevonden',
+  },
+  notFound: {
+    title: 'Deze pagina bestaat niet',
+    text: 'De link is misschien oud of verkeerd getypt. Zoek wat je zocht, of begin op de homepage.',
+    searchLabel: 'Zoek in de shop en de kaarten',
+    searchPlaceholder: 'Bijvoorbeeld Charizard of Elite Trainer Box',
+    search: 'Zoeken',
+    home: 'Naar de homepage',
+  },
   layout: {
     skipToContent: 'Ga naar de inhoud',
     shippingNotice: 'We verzenden naar Nederland en België',

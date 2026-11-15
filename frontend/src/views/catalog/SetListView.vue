@@ -3,12 +3,14 @@ import { computed, ref, watch } from 'vue'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
+import NotFoundView from '../NotFoundView.vue'
 import SetTile from '../../components/catalog/SetTile.vue'
 import { findGame } from '../../data/games'
 import { catalogApi, collectionApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { seriesLabel } from '../../utils/catalog'
 import { t } from '../../utils/i18n'
+import { usePageMeta } from '../../utils/pageMeta'
 
 const props = defineProps({
   game: { type: String, required: true },
@@ -71,16 +73,16 @@ async function loadProgress() {
 
 watch(() => props.game, load, { immediate: true })
 watch(() => props.game, loadProgress, { immediate: true })
+
+usePageMeta(() =>
+  game.value
+    ? { title: t('catalog.gameTitle', { game: gameLabel.value }), description: t('meta.sets', { game: gameLabel.value }) }
+    : null,
+)
 </script>
 
 <template>
-  <div v-if="!game" class="container">
-    <CatalogNotice :title="t('catalog.notFound.gameTitle')" :text="t('catalog.notFound.text')">
-      <router-link class="btn btn-primary" :to="{ name: 'sets', params: { game: 'pokemon' } }">
-        {{ t('catalog.notFound.toPokemon') }}
-      </router-link>
-    </CatalogNotice>
-  </div>
+  <NotFoundView v-if="!game" />
 
   <div v-else :data-game="game.accent">
     <CatalogBand :accent="game.accent">

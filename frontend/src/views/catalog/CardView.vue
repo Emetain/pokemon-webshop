@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CardImage from '../../components/catalog/CardImage.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
+import NotFoundView from '../NotFoundView.vue'
 import CardCollectionPanel from '../../components/collection/CardCollectionPanel.vue'
 import { findGame } from '../../data/games'
 import { catalogApi } from '../../services/api'
@@ -11,6 +12,7 @@ import { categoryLabel, colorFilterLabel, colorLabel, dexLabel, variantLabel } f
 import { productFacts } from '../../data/shop'
 import { formatDate, formatMoney, formatRate } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { usePageMeta } from '../../utils/pageMeta'
 
 const props = defineProps({
   game: { type: String, required: true },
@@ -78,16 +80,19 @@ async function load() {
 }
 
 watch(() => props.cardId, load, { immediate: true })
+
+usePageMeta(() =>
+  card.value
+    ? {
+        title: `${card.value.name} (${card.value.set.name})`,
+        description: t('meta.card', { name: card.value.name, set: card.value.set.name }),
+      }
+    : null,
+)
 </script>
 
 <template>
-  <div v-if="notFound" class="container">
-    <CatalogNotice :title="t('catalog.notFound.cardTitle')" :text="t('catalog.notFound.text')">
-      <router-link class="btn btn-primary" :to="{ name: 'sets', params: { game: game ? game.slug : 'pokemon' } }">
-        {{ t('nav.allSets') }}
-      </router-link>
-    </CatalogNotice>
-  </div>
+  <NotFoundView v-if="notFound" />
 
   <div v-else-if="error" class="container">
     <CatalogNotice :title="error">
