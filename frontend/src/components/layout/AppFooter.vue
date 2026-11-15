@@ -1,7 +1,31 @@
 <script setup>
+import { computed, onMounted, ref } from 'vue'
 import NewsletterForm from '../content/NewsletterForm.vue'
 import { footerInfoLinks, footerShopLinks } from '../../data/navigation'
+import { shopApi } from '../../services/api'
 import { t } from '../../utils/i18n'
+
+// The KVK number and the rest, once the owner has filled them in on the server. Nothing shows until then.
+const company = ref(null)
+
+const companyParts = computed(() => {
+  const details = company.value
+  if (!details || !(details.address || details.kvkNumber || details.vatNumber)) return []
+  return [
+    details.legalName ?? t('brand.name'),
+    details.address,
+    details.kvkNumber && t('footer.company.kvk', { number: details.kvkNumber }),
+    details.vatNumber && t('footer.company.vat', { number: details.vatNumber }),
+  ].filter(Boolean)
+})
+
+onMounted(async () => {
+  try {
+    company.value = await shopApi.company()
+  } catch {
+    // The footer works without it.
+  }
+})
 </script>
 
 <template>
@@ -41,6 +65,9 @@ import { t } from '../../utils/i18n'
     </div>
 
     <div class="container">
+      <p v-if="companyParts.length" class="company">
+        <span v-for="part in companyParts" :key="part" class="company-part">{{ part }}</span>
+      </p>
       <div class="attribution">
         <p v-for="line in t('footer.attribution')" :key="line">{{ line }}</p>
       </div>
@@ -124,6 +151,20 @@ import { t } from '../../utils/i18n'
   color: var(--color-on-brand);
   font-size: var(--text-xs);
   font-weight: 600;
+}
+
+.company {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-5) 0 0;
+  color: var(--color-on-brand);
+}
+
+.company-part:not(:last-child)::after {
+  content: '·';
+  margin-left: var(--space-3);
+  color: var(--color-on-brand-soft);
 }
 
 .attribution {

@@ -12,6 +12,10 @@ const error = ref('')
 
 const PERIODS = ['today', 'week', 'month']
 
+/** Why online payment is off: no key, or a key that doesn't fit how open the shop is. */
+const paymentsOffText = ({ paymentsProblem }) =>
+  paymentsProblem ? t(`admin.dashboard.paymentsProblem.${paymentsProblem}`) : t('admin.dashboard.paymentsOff')
+
 const orderCount = (count) => (count === 1 ? t('admin.dashboard.oneOrder') : t('admin.dashboard.orders', { count }))
 
 onMounted(async () => {
@@ -29,7 +33,7 @@ onMounted(async () => {
   <p v-else-if="status" class="status">{{ t('admin.greeting', { name: status.displayName }) }}</p>
 
   <template v-if="dashboard">
-    <FormMessage v-if="!dashboard.paymentsEnabled" class="status">{{ t('admin.dashboard.paymentsOff') }}</FormMessage>
+    <FormMessage v-if="!dashboard.paymentsEnabled" class="status">{{ paymentsOffText(dashboard) }}</FormMessage>
 
     <section class="revenue" :aria-label="t('admin.dashboard.revenue')">
       <div v-for="period in PERIODS" :key="period" class="figure">

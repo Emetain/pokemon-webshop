@@ -141,6 +141,11 @@ export default {
     news: 'Nieuws',
     calendar: 'Releasekalender',
     paymentMethods: ['iDEAL | Wero', 'Bancontact', 'Creditcard'],
+    // The business details from the server's settings. Only what is filled in shows.
+    company: {
+      kvk: 'KVK {number}',
+      vat: 'Btw-id {number}',
+    },
     attribution: [
       'Pokémon-kaartgegevens van TCGdex. Deze site wordt niet geproduceerd, ondersteund of gesponsord door Nintendo of The Pokémon Company en is daar niet aan verbonden.',
       'Magic-kaartgegevens van Scryfall. Dit is onofficiële fancontent onder het Fan Content Policy, niet goedgekeurd of ondersteund door Wizards. Delen van de gebruikte materialen zijn eigendom van Wizards of the Coast. ©Wizards of the Coast LLC.',
@@ -1341,6 +1346,13 @@ export default {
       noLowStock: 'Niets is bijna op.',
       toStock: 'Naar de voorraad',
       paymentsOff: 'Online betalen staat uit: zet STRIPE_SECRET_KEY in .env en start de backend opnieuw.',
+      // A Stripe key that doesn't fit SHOP_ACCESS keeps online payment off (StripeKeyRules in the backend).
+      paymentsProblem: {
+        live_key_in_preview:
+          'Online betalen staat uit: STRIPE_SECRET_KEY is een live sleutel, maar de shop is nog een gesloten preview. Stripe kan de betalingen dan niet terugmelden. Gebruik een testsleutel, of open de shop.',
+        test_key_in_open_shop:
+          'Online betalen staat uit: de shop is open, maar STRIPE_SECRET_KEY is geen live sleutel. Zet de live sleutel (sk_live_...) in .env op de server en start de backend opnieuw.',
+      },
     },
     orders: {
       nav: 'Bestellingen',

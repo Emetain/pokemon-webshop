@@ -142,6 +142,7 @@ export const shopApi = {
   series: (game) => request('GET', `/shop/${game}/series`),
   seriesDetail: (game, slug) => request('GET', `/shop/${game}/series/${encodeURIComponent(slug)}`),
   heroSlides: () => request('GET', '/shop/hero-slides'),
+  company: () => request('GET', '/shop/company'),
 }
 
 export const productWishlistApi = {
