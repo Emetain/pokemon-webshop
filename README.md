@@ -55,6 +55,20 @@ To add a new API key:
 
 Keep API keys on the backend. Anything in a `VITE_` variable ends up in the browser.
 
+### Mail
+
+Locally and on the preview server, Mailpit catches every mail and needs no login. For a real mail provider set:
+
+| Variable | Value |
+|----------|-------|
+| `MAIL_HOST`, `MAIL_PORT` | The provider's SMTP server, usually port 587 |
+| `MAIL_USERNAME`, `MAIL_PASSWORD` | The SMTP login (empty for Mailpit) |
+| `MAIL_SMTP_AUTH` | `true` to log in (default `false`) |
+| `MAIL_SMTP_STARTTLS` | `true` to encrypt; a server that doesn't offer it is then refused (default `false`) |
+| `MAIL_FROM` | The sender address of every mail |
+
+Connecting, reading and writing each time out after 10 seconds, so a slow mail server can't hold a thread.
+
 ## Card data
 
 The card catalog comes from five public sources that need no key. Their base URLs are in `.env.example`.

@@ -64,6 +64,10 @@ services:
       APP_BASE_URL: ${APP_BASE_URL:?set APP_BASE_URL in .env}
       MAIL_HOST: ${MAIL_HOST:-mailpit}
       MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-false}
       MAIL_FROM: ${MAIL_FROM:?set MAIL_FROM in .env}
       # Caddy sets X-Forwarded-For, so rate limits see the visitor's IP address instead of Caddy's.
       FORWARD_HEADERS_STRATEGY: native

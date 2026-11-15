@@ -84,7 +84,7 @@ Must be fixed before going live.
     `ErrorHandlingIntegrationTest` and `RequestSizeFilterTest`. The Caddyfile passes `caddy validate` in the
     `caddy:2.11-alpine` image already on the Mac (no build or pull); CI validates it again when the image is built.
 
-- [ ] **C3. Mail has no username, password or TLS settings.**
+- [x] **C3. Mail has no username, password or TLS settings.**
   - Where: `backend/src/main/resources/application.yml:11` only has `MAIL_HOST` and `MAIL_PORT`. `deploy/compose.yml`,
     `docker-compose.yml`, `.env.example` and `deploy/server/env.example` have no variables for them either.
   - Why: Mailpit needs no login, a real mail provider does. Without this, phase 10 can't send order confirmations,
@@ -92,6 +92,12 @@ Must be fixed before going live.
   - Fix: add `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SMTP_AUTH` and `MAIL_SMTP_STARTTLS` (default empty and `false`,
     so Mailpit keeps working), map them to `spring.mail.*`, pass them through both compose files, and describe them
     in both env examples and the README. Add connect and read timeouts, so a slow mail server can't hold a thread.
+  - Done (9b): `spring.mail.username`, `password`, `properties.mail.smtp.auth` and `starttls.enable` from the four
+    variables (empty and `false` by default; Spring's mail sender treats an empty username as "no login", so Mailpit
+    keeps working). `MAIL_SMTP_STARTTLS` also sets `starttls.required`, so a server without encryption is refused
+    instead of getting the password in plain text. Connect, read and write timeouts of 10 seconds. Passed through
+    `docker-compose.yml` and `deploy/compose.yml`, described in `.env.example`, `deploy/server/env.example` and a
+    "Mail" section in the README. `ProdProfileIntegrationTest` checks that the values reach the mail sender.
 
 - [x] **C4. The cart gives away how many of a product are in stock.**
   - Where: `backend/.../service/CartService.kt:48` and `:71` refuse a quantity above `stock.available`.

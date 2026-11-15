@@ -47,6 +47,10 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD:-pokemonwebshop}
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-false}
       MAIL_FROM: ${MAIL_FROM:-noreply@example.com}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:5173}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}

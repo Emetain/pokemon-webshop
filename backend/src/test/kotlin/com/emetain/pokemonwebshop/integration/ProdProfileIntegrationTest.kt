@@ -6,6 +6,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.HttpStatus
+import org.springframework.mail.javamail.JavaMailSender
+import org.springframework.mail.javamail.JavaMailSenderImpl
 import org.springframework.test.context.ActiveProfiles
 import kotlin.test.assertEquals
 
@@ -26,6 +28,13 @@ import kotlin.test.assertEquals
         "app.catalog.sync-cron=-",
         "app.collection.snapshot-cron=-",
         "app.media.directory=build/test-media",
+        // As the server's .env would set them for a real mail provider.
+        "MAIL_HOST=smtp.example.com",
+        "MAIL_PORT=587",
+        "MAIL_USERNAME=shop@example.com",
+        "MAIL_PASSWORD=geheim",
+        "MAIL_SMTP_AUTH=true",
+        "MAIL_SMTP_STARTTLS=true",
     ],
 )
 @ActiveProfiles("prod")
@@ -33,6 +42,9 @@ class ProdProfileIntegrationTest {
 
     @Autowired
     private lateinit var http: TestRestTemplate
+
+    @Autowired
+    private lateinit var mailSender: JavaMailSender
 
     @LocalServerPort
     private var port = 0
@@ -74,5 +86,22 @@ class ProdProfileIntegrationTest {
     fun `the h2 console is off`() {
         assertEquals(HttpStatus.NOT_FOUND, statusOf("/api/h2-console"))
         assertEquals(HttpStatus.NOT_FOUND, statusOf("/api/h2-console/"))
+    }
+
+    @Test
+    fun `the mail settings reach the mail sender, with timeouts`() {
+        val sender = mailSender as JavaMailSenderImpl
+        val properties = sender.javaMailProperties
+
+        assertEquals("smtp.example.com", sender.host)
+        assertEquals(587, sender.port)
+        assertEquals("shop@example.com", sender.username)
+        assertEquals("geheim", sender.password)
+        assertEquals("true", properties.getProperty("mail.smtp.auth"))
+        assertEquals("true", properties.getProperty("mail.smtp.starttls.enable"))
+        assertEquals("true", properties.getProperty("mail.smtp.starttls.required"))
+        assertEquals("10000", properties.getProperty("mail.smtp.connectiontimeout"))
+        assertEquals("10000", properties.getProperty("mail.smtp.timeout"))
+        assertEquals("10000", properties.getProperty("mail.smtp.writetimeout"))
     }
 }
