@@ -15,6 +15,7 @@ const router = useRouter()
 const chat = useSupportChat()
 const open = ref(false)
 const panel = ref(null)
+const launcher = ref(null)
 
 const HIDDEN = [/^\/info\/contact/, /^\/afrekenen/, /\/afrekenen$/, /^\/bestelling\//]
 const shown = computed(() => chat.state.available && !HIDDEN.some((pattern) => pattern.test(route.path)))
@@ -25,6 +26,13 @@ async function toggle() {
     await nextTick()
     panel.value?.querySelector('textarea')?.focus()
   }
+}
+
+/** With Escape or the close button: focus goes back to the button, instead of getting lost on the page. */
+async function close() {
+  open.value = false
+  await nextTick()
+  launcher.value?.focus()
 }
 
 function toTicket() {
@@ -49,11 +57,11 @@ onMounted(() => chat.loadStatus())
       class="panel"
       role="dialog"
       aria-labelledby="chat-panel-title"
-      @keydown.esc="open = false"
+      @keydown.esc="close"
     >
       <header class="head">
         <h2 id="chat-panel-title">{{ t('support.widget.title') }}</h2>
-        <button class="close" type="button" :aria-label="t('support.widget.close')" @click="open = false">
+        <button class="close" type="button" :aria-label="t('support.widget.close')" @click="close">
           <X :size="20" aria-hidden="true" />
         </button>
       </header>
@@ -61,6 +69,7 @@ onMounted(() => chat.loadStatus())
       <button class="link-button ticket-link" type="button" @click="toTicket">{{ t('support.widget.toTicket') }}</button>
     </section>
     <button
+      ref="launcher"
       class="launcher"
       type="button"
       :aria-expanded="open"

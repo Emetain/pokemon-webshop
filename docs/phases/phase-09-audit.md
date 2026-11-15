@@ -249,7 +249,7 @@ Must be fixed before going live.
   - Fix: move to the current Vite with the matching `@vitejs/plugin-vue`, then check `npm run build`, `npm run dev`
     and the proxy. `npm audit` should report nothing.
 
-- [ ] **S10. Three accessibility findings from axe.**
+- [x] **S10. Three accessibility findings from axe.**
   - `color-contrast`: three links in the admin sidebar, among them "Kaartdata" and "Afbeeldingen"
     (`AdminLayout.vue`, `.sidebar-link` at line 158, `--color-on-brand-soft` on the brand blue). 20 hits, all this
     sidebar. Fix: a lighter text colour that reaches 4.5:1.
@@ -260,6 +260,35 @@ Must be fixed before going live.
     (`views/content/InfoPageView.vue:46`, `.rates-scroll`). Fix: `tabindex="0"`, `role="region"` and a label.
   - Also do the keyboard walk-through that this audit skipped: main menu, search, cart, checkout, the chat widget
     and the cookie notice. Write what you find below this item.
+  - Done (9b), checked afterwards with axe-core 4.14 in headless Chromium against the `dev` profile's demo data:
+    0 violations on `/info/verzending` at 360 px, the order page, the cart, the admin order page, and `/admin`,
+    `/admin/sync` and `/admin/afbeeldingen` at 1280×720.
+    - `color-contrast`: I disagree with the cause. `--color-on-brand-soft` (#d6e4ff) on the sidebar's
+      `--color-brand-deep` is about 10:1, and 7.5:1 on `--color-brand-raised`. The hits were the last links
+      (Kaartdata, Afbeeldingen, Terug naar de shop): the 19 links are taller than a 720 px window, so they ran out of
+      the 100dvh sticky sidebar onto the white page. Fixed with `overflow-y: auto` on the sidebar
+      (`AdminLayout.vue`), no colour change.
+    - `definition-list`: the VAT line was a `<p>` inside the `dl` of `components/cart/CartTotals.vue`, which both
+      order pages (and the cart and checkout) use. It now sits between two `dl`s.
+    - `scrollable-region-focusable`: `.rates-scroll` in `InfoPageView.vue` has `tabindex="0"`, `role="region"` and
+      the table's caption as its label.
+  - Keyboard walk-through (9b, scripted in headless Chromium at 1280 and 360 px, Tab/Enter/Escape only):
+    - Skip link first, then logo, search, account, wishlist, cart, the menu buttons. Every stop showed a focus
+      style.
+    - Main menu: Enter opens a panel (`aria-expanded` true), Tab goes into it, Escape closes it and puts focus back
+      on its button. Phone menu: opens as a modal dialog with focus on "Menu sluiten"; Escape closes it and focus
+      returns to "Menu openen".
+    - Search: typing and Enter goes to `/zoeken?q=…`.
+    - Cart drawer: opens with focus on its close button and keeps Tab inside. Found: after Escape focus fell to the
+      page body, because the "In winkelwagen" button is disabled while it adds, so the browser had nothing to return
+      to. Fixed in `CartDrawer.vue`: it remembers the last element outside the drawer that had focus.
+    - Chat widget: Enter opens it with focus in the text field. Found: Escape and the close button hid the panel
+      with focus inside it, so focus was lost. Fixed in `ChatWidget.vue`: focus goes back to the chat button.
+    - Checkout: every field has a label; the order follows the page. The pay button is skipped when online payment
+      is off (it is disabled), which is right.
+    - Cookie notice: the "Oké" button is reachable, but as the last stop on the page, after the footer. It doesn't
+      block anything and its space is reserved, so I left it there; moving it to the start of the page is an easy
+      change if the owner prefers it.
 
 - [x] **S11. Personal API answers may be cached.**
   - Where: `deploy/Caddyfile`, the `handle /api/*` block. The backend sends no `Cache-Control` except for media.

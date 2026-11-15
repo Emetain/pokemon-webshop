@@ -52,7 +52,14 @@ usePageMeta(() => (page.value ? { title: page.value.title, description: page.val
       </p>
       <RichText class="text" :text="page.body" />
 
-      <div v-if="slug === 'verzending' && rates.length" class="rates-scroll">
+      <!-- Scrolls sideways on a phone: focusable, so it also scrolls with the arrow keys. -->
+      <div
+        v-if="slug === 'verzending' && rates.length"
+        class="rates-scroll"
+        tabindex="0"
+        role="region"
+        :aria-label="t('info.ratesTitle')"
+      >
       <table class="rates">
         <caption>{{ t('info.ratesTitle') }}</caption>
         <thead>

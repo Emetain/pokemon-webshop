@@ -17,35 +17,41 @@ defineProps({
 </script>
 
 <template>
-  <dl class="totals">
-    <div class="row">
-      <dt>{{ t('cart.subtotal') }}</dt>
-      <dd>{{ formatMoney(subtotalCents, 'EUR') }}</dd>
-    </div>
-    <div v-if="discountCents > 0" class="row discount">
-      <dt>{{ discountCode ? t('cart.discountWithCode', { code: discountCode }) : t('cart.discount') }}</dt>
-      <dd>−{{ formatMoney(discountCents, 'EUR') }}</dd>
-    </div>
-    <div v-if="shippingCents !== null" class="row">
-      <dt>{{ country ? t('cart.shippingTo', { country: t(`countries.${country}`) }) : t('cart.shipping') }}</dt>
-      <dd :class="{ free: shippingCents === 0 }">
-        {{ shippingCents === 0 ? t('cart.free') : formatMoney(shippingCents, 'EUR') }}
-      </dd>
-    </div>
-    <div class="row total">
-      <dt>{{ t('cart.total') }}</dt>
-      <dd>{{ formatMoney(totalCents, 'EUR') }}</dd>
-    </div>
+  <!-- A list of terms only holds dt/dd pairs, so the VAT line sits between two lists. -->
+  <div class="totals">
+    <dl class="list">
+      <div class="row">
+        <dt>{{ t('cart.subtotal') }}</dt>
+        <dd>{{ formatMoney(subtotalCents, 'EUR') }}</dd>
+      </div>
+      <div v-if="discountCents > 0" class="row discount">
+        <dt>{{ discountCode ? t('cart.discountWithCode', { code: discountCode }) : t('cart.discount') }}</dt>
+        <dd>−{{ formatMoney(discountCents, 'EUR') }}</dd>
+      </div>
+      <div v-if="shippingCents !== null" class="row">
+        <dt>{{ country ? t('cart.shippingTo', { country: t(`countries.${country}`) }) : t('cart.shipping') }}</dt>
+        <dd :class="{ free: shippingCents === 0 }">
+          {{ shippingCents === 0 ? t('cart.free') : formatMoney(shippingCents, 'EUR') }}
+        </dd>
+      </div>
+      <div class="row total">
+        <dt>{{ t('cart.total') }}</dt>
+        <dd>{{ formatMoney(totalCents, 'EUR') }}</dd>
+      </div>
+    </dl>
     <p class="vat">{{ t('cart.vat', { amount: formatMoney(vatCents, 'EUR') }) }}</p>
-    <div v-if="refundedCents > 0" class="row refunded">
-      <dt>{{ t('orders.detail.refunded') }}</dt>
-      <dd>−{{ formatMoney(refundedCents, 'EUR') }}</dd>
-    </div>
-  </dl>
+    <dl v-if="refundedCents > 0" class="list">
+      <div class="row refunded">
+        <dt>{{ t('orders.detail.refunded') }}</dt>
+        <dd>−{{ formatMoney(refundedCents, 'EUR') }}</dd>
+      </div>
+    </dl>
+  </div>
 </template>
 
 <style scoped>
-.totals {
+.totals,
+.list {
   display: grid;
   gap: var(--space-1);
   margin: 0;

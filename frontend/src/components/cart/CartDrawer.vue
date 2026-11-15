@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { CircleCheck, ShoppingBag, X } from 'lucide-vue-next'
 import CartLine from './CartLine.vue'
@@ -24,15 +24,38 @@ const added = computed(() => {
   return last.quantity > 1 ? t('cart.addedMany', { quantity: last.quantity, name: last.name }) : t('cart.added', { name: last.name })
 })
 
+/*
+ * Where focus goes back to when the drawer closes. The browser would use whatever had focus at the moment it opened,
+ * but an "In winkelwagen" button is disabled while it adds, so that is often nothing. This remembers the last thing
+ * outside the drawer that had focus instead.
+ */
+let lastFocused = null
+let returnTo = null
+
+function rememberFocus(event) {
+  if (!dialog.value?.contains(event.target)) lastFocused = event.target
+}
+
+onMounted(() => document.addEventListener('focusin', rememberFocus))
+onBeforeUnmount(() => document.removeEventListener('focusin', rememberFocus))
+
 function open() {
   error.value = ''
   closing.value = false
+  returnTo = lastFocused
   if (!dialog.value.open) dialog.value.showModal()
 }
 
 function finishClose() {
   closing.value = false
   dialog.value?.close()
+}
+
+function onClosed() {
+  cart.closeDrawer()
+  const target = returnTo
+  returnTo = null
+  if (target?.isConnected && !target.disabled) target.focus()
 }
 
 function close() {
@@ -65,7 +88,7 @@ function onClick(event) {
     :aria-label="t('cart.drawerTitle')"
     @click="onClick"
     @cancel.prevent="cart.closeDrawer()"
-    @close="cart.closeDrawer()"
+    @close="onClosed"
     @animationend.self="onAnimationEnd"
   >
     <div class="panel">
