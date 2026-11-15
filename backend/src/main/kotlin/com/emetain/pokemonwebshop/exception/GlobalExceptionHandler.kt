@@ -1,6 +1,8 @@
 package com.emetain.pokemonwebshop.exception
 
 import com.emetain.pokemonwebshop.dto.ErrorResponse
+import com.emetain.pokemonwebshop.security.RequestSizeFilter
+import com.emetain.pokemonwebshop.security.RequestTooLargeException
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.OptimisticLockingFailureException
@@ -8,6 +10,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -57,6 +60,19 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     ): ResponseEntity<Any>? {
         val message = ex.bindingResult.fieldErrors.firstOrNull()?.defaultMessage ?: "Controleer de ingevulde gegevens."
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse("validation_failed", message))
+    }
+
+    /** A body without a Content-Length that went over the limit while it was read. See [RequestSizeFilter]. */
+    override fun handleHttpMessageNotReadable(
+        ex: HttpMessageNotReadableException,
+        headers: HttpHeaders,
+        status: HttpStatusCode,
+        request: WebRequest,
+    ): ResponseEntity<Any>? {
+        if (generateSequence(ex as Throwable) { it.cause }.any { it is RequestTooLargeException }) {
+            return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(RequestSizeFilter.tooLarge())
+        }
+        return super.handleHttpMessageNotReadable(ex, headers, status, request)
     }
 
     override fun handleMaxUploadSizeExceededException(

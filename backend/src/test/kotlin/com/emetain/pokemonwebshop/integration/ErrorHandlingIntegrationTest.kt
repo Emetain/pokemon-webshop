@@ -3,7 +3,9 @@ package com.emetain.pokemonwebshop.integration
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
+import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.RequestPostProcessor
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
@@ -76,5 +78,38 @@ class ErrorHandlingIntegrationTest : IntegrationTest() {
         repeat(5) { attempt().andExpect(status().isCreated) }
 
         attempt().andExpect(status().isTooManyRequests)
+    }
+
+    @Test
+    fun `a json body above the limit is refused before it is read`() {
+        val padding = "a".repeat(300 * 1024)
+
+        mockMvc.perform(
+            post("/v1/auth/login").with(fromRandomIp())
+                .json(mapOf("email" to "ash@example.com", "password" to "fout", "padding" to padding)),
+        )
+            .andExpect(status().isPayloadTooLarge)
+            .andExpect(jsonPath("$.error").value("request_too_large"))
+            .andExpect(jsonPath("$.message").value("Dit verzoek is te groot."))
+    }
+
+    @Test
+    fun `a json body below the limit is read as usual`() {
+        val padding = "a".repeat(200 * 1024)
+
+        mockMvc.perform(
+            post("/v1/auth/login").with(fromRandomIp())
+                .json(mapOf("email" to "ash@example.com", "password" to "fout", "padding" to padding)),
+        )
+            .andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `uploads keep their own limit`() {
+        val picture = MockMultipartFile("file", "foto.png", "image/png", ByteArray(1024 * 1024))
+
+        // A visitor: the upload limit lets the request through, and the login check refuses it.
+        mockMvc.perform(multipart("/v1/admin/products/1/images").file(picture).with(fromRandomIp()))
+            .andExpect(status().isUnauthorized)
     }
 }

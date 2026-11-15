@@ -61,6 +61,10 @@ springdoc:
 app:
   # Public address of the frontend, used for links in emails.
   base-url: ${APP_BASE_URL:http://localhost:5173}
+  http:
+    # The largest request body the API reads; larger ones get 413. Uploads are multipart and limited by
+    # spring.servlet.multipart above. The longest text an admin can save is 50,000 characters. Caddy has the same limit.
+    max-body-size: 256KB
   mail:
     from: ${MAIL_FROM:noreply@example.com}
   auth:

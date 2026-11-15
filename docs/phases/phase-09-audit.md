@@ -68,7 +68,7 @@ Must be fixed before going live.
     the code was written for. Run all tests and the `prod` start on an empty database afterwards. If a move to the
     newest line breaks too much, at least take the last 3.3.x patch and write down what blocked the rest.
 
-- [ ] **C2. A request body has no size limit.**
+- [x] **C2. A request body has no size limit.**
   - Where: no limit in `deploy/Caddyfile` (the `handle /api/*` block), and none in the backend for JSON. Only
     multipart uploads are limited (`application.yml:18`).
   - Why: tested: a 20 MB JSON body to `/v1/auth/login` was read completely before it was refused. Anyone can send
@@ -77,6 +77,12 @@ Must be fixed before going live.
   - Fix: in Caddy, `request_body { max_size ... }`: about 7 MB for the upload paths and the CSV import, 256 kB for
     the rest of `/api`. Add the same guard in the backend for requests that don't come through Caddy, as a filter
     that refuses a JSON body above the limit with 413 and the usual error format. Add a test.
+  - Done (9b): `security/RequestSizeFilter.kt` refuses a non-multipart body above `app.http.max-body-size` (256 kB)
+    with 413 `request_too_large`: by Content-Length before reading, or while reading a chunked body (the handler
+    maps it in `GlobalExceptionHandler.handleHttpMessageNotReadable`). Multipart keeps `spring.servlet.multipart`.
+    Caddy: `request_body` 7 MB for multipart under `/api/v1/admin/*`, 256 kB for the rest of `/api`. Tests in
+    `ErrorHandlingIntegrationTest` and `RequestSizeFilterTest`. The Caddyfile passes `caddy validate` in the
+    `caddy:2.11-alpine` image already on the Mac (no build or pull); CI validates it again when the image is built.
 
 - [ ] **C3. Mail has no username, password or TLS settings.**
   - Where: `backend/src/main/resources/application.yml:11` only has `MAIL_HOST` and `MAIL_PORT`. `deploy/compose.yml`,

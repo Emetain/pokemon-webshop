@@ -38,6 +38,24 @@ Disallow: /
 		handle /api/* {
 			# The shop has its own login with a cookie. The preview login stays here.
 			request_header -Authorization
+
+			# Request bodies: uploads and the CSV import in admin are multipart, up to 6 MB in the backend. Everything
+			# else is JSON, 256 kB at most (app.http.max-body-size). Larger bodies get 413 before they reach the backend.
+			@upload {
+				path /api/v1/admin/*
+				header Content-Type multipart/form-data*
+			}
+			@notUpload not {
+				path /api/v1/admin/*
+				header Content-Type multipart/form-data*
+			}
+			request_body @upload {
+				max_size 7MB
+			}
+			request_body @notUpload {
+				max_size 256KB
+			}
+
 			reverse_proxy backend:8080
 		}
 

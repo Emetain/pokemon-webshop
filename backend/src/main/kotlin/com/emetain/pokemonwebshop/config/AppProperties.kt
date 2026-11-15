@@ -3,6 +3,7 @@ package com.emetain.pokemonwebshop.config
 import com.emetain.pokemonwebshop.domain.Carrier
 import com.emetain.pokemonwebshop.domain.Game
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.util.unit.DataSize
 import java.time.Duration
 import java.time.LocalDate
 
@@ -22,7 +23,16 @@ data class AppProperties(
     val contact: Contact = Contact(),
     val newsletter: Newsletter = Newsletter(),
     val openai: OpenAi = OpenAi(),
+    val http: Http = Http(),
 ) {
+    data class Http(
+        /**
+         * The largest request body the API reads. Uploads are multipart and have their own limit in
+         * `spring.servlet.multipart`. Caddy has the same limits in front of the backend.
+         */
+        val maxBodySize: DataSize = DataSize.ofKilobytes(256),
+    )
+
     data class Contact(
         /** Where the contact form sends its messages. */
         val email: String = "shop@example.com",
