@@ -79,7 +79,13 @@ class CheckoutService(
             val product = item.product
             val available = product.stock.available
             if (product.status != ProductStatus.ACTIVE || !ProductRules.canBuy(product)) throw cartChanged("${product.name} is uitverkocht.")
-            if (item.quantity > available) throw cartChanged("Van ${product.name} hebben we niet genoeg meer voor dit aantal.")
+            if (item.quantity > CartRules.MAX_PER_LINE) {
+                throw cartChanged("Je kunt maximaal ${CartRules.MAX_PER_LINE} stuks van ${product.name} in één bestelling doen.")
+            }
+            // Without a number: the cart doesn't check the stock, so this is where a customer finds out.
+            if (item.quantity > available) {
+                throw cartChanged("Van ${product.name} hebben we niet genoeg voor dit aantal.", "Verlaag het aantal in je winkelwagen en probeer het opnieuw.")
+            }
         }
         val lines = cart.items.map { CheckoutLine(it.product, it.quantity, ProductRules.shownPriceCents(it.product)!!) }
         val discount = discount(request, lines, viewer, party, drop = false)
@@ -244,8 +250,8 @@ class CheckoutService(
     private fun uniqueNumber(): String =
         generateSequence { OrderNumbers.generate() }.first { !orderRepository.existsByNumber(it) }
 
-    private fun cartChanged(message: String) =
-        ApiException(HttpStatus.CONFLICT, "cart_changed", "$message Pas je winkelwagen aan en probeer het opnieuw.")
+    private fun cartChanged(message: String, whatToDo: String = "Pas je winkelwagen aan en probeer het opnieuw.") =
+        ApiException(HttpStatus.CONFLICT, "cart_changed", "$message $whatToDo")
 
     private companion object {
         val EMAIL = Regex("[^\\s@]{1,64}@[^\\s@]+\\.[^\\s@]{2,}")

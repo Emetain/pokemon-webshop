@@ -35,7 +35,11 @@ class CartService(
         else -> null
     }
 
-    /** Adds [quantity] to what is in the cart already. Only for products that can be bought right now. */
+    /**
+     * Adds [quantity] to what is in the cart already, up to [CartRules.MAX_PER_LINE]. Only for products that can be
+     * bought right now. The stock isn't looked at: a refusal at "just above the stock" would tell how many are left.
+     * Checkout checks the stock.
+     */
     @Transactional
     fun add(owner: CartOwner, productId: Long, quantity: Int): CartChange {
         requireQuantity(quantity)
@@ -45,8 +49,7 @@ class CartService(
         val (cart, newToken) = findOrCreate(owner)
         val item = cart.items.firstOrNull { it.product.id == productId }
         val inCart = item?.quantity ?: 0
-        val max = CartRules.maxQuantity(product.stock.available)
-        if (inCart + quantity > max) throw tooMany(inCart)
+        if (inCart + quantity > CartRules.MAX_PER_LINE) throw tooMany(inCart)
         if (item == null) {
             cart.items.add(CartItem(cart, product, quantity, clock.instant()))
         } else {
@@ -56,7 +59,10 @@ class CartService(
         return CartChange(cartRepository.save(cart), newToken)
     }
 
-    /** Lowering always works, also for a product that sold out. Raising only up to what can be bought. 0 removes it. */
+    /**
+     * Lowering always works, also for a product that sold out. Raising only for a product that can be bought, up to
+     * [CartRules.MAX_PER_LINE], without looking at the stock. 0 removes it.
+     */
     @Transactional
     fun setQuantity(owner: CartOwner, productId: Long, quantity: Int): Cart {
         if (quantity < 0 || quantity > CartRules.MAX_PER_LINE) throw ApiException.validation("Kies een aantal van 0 tot ${CartRules.MAX_PER_LINE}.")
@@ -68,8 +74,6 @@ class CartService(
         } else if (quantity > item.quantity) {
             val product = item.product
             if (!ProductRules.canBuy(product)) throw notBuyable(product)
-            val max = CartRules.maxQuantity(product.stock.available)
-            if (quantity > max) throw tooMany(null)
             item.quantity = quantity
         } else {
             item.quantity = quantity
@@ -86,8 +90,8 @@ class CartService(
     }
 
     /**
-     * On login: the guest cart goes into the account cart. Quantities of a product in both add up, up to what can be
-     * bought. Returns whether there was a guest cart, so the caller can clear its cookie.
+     * On login: the guest cart goes into the account cart. Quantities of a product in both add up, up to
+     * [CartRules.MAX_PER_LINE]. Returns whether there was a guest cart, so the caller can clear its cookie.
      */
     @Transactional
     fun mergeGuestCart(guestToken: String, user: User): Boolean {
@@ -97,11 +101,7 @@ class CartService(
             val now = clock.instant()
             for (guestItem in guest.items) {
                 val existing = cart.items.firstOrNull { it.product.id == guestItem.product.id }
-                val merged = CartRules.mergedQuantity(
-                    existing?.quantity ?: 0,
-                    guestItem.quantity,
-                    guestItem.product.stock.available.takeIf { ProductRules.canBuy(guestItem.product) },
-                )
+                val merged = CartRules.mergedQuantity(existing?.quantity ?: 0, guestItem.quantity)
                 if (existing == null) {
                     cart.items.add(CartItem(cart, guestItem.product, merged, now))
                 } else {
@@ -155,44 +155,47 @@ class CartService(
         ApiException(HttpStatus.CONFLICT, "not_for_sale", "Dit product kun je nu niet bestellen.")
     }
 
-    /** Never says how many are left: the shop doesn't show its stock. */
-    private fun tooMany(inCart: Int?) = ApiException(
+    /** About the fixed maximum per line, never about the stock: the shop doesn't show how many are left. */
+    private fun tooMany(inCart: Int) = ApiException(
         HttpStatus.CONFLICT,
-        "out_of_stock",
-        when {
-            inCart != null && inCart > 0 -> "We hebben niet genoeg meer van dit product voor dit aantal. Je hebt er al $inCart in je winkelwagen."
-            else -> "We hebben niet genoeg meer van dit product voor dit aantal."
+        "too_many",
+        buildString {
+            append("Je kunt maximaal ${CartRules.MAX_PER_LINE} stuks van dit product in één bestelling doen.")
+            if (inCart > 0) append(" Je hebt er al $inCart in je winkelwagen.")
         },
     )
 }
 
 /** Quantities in a cart. Pure, so it can be tested without a database. */
 object CartRules {
-    /** Nobody needs more of one product in one order. Stock usually limits it sooner. */
-    const val MAX_PER_LINE = 99
+    /**
+     * The most of one product in one order. Low on purpose: the cart doesn't look at the stock, so a customer only
+     * finds out at checkout that a quantity isn't there, and a low maximum keeps what such a try says small. The owner
+     * chose 10 in phase 9.
+     */
+    const val MAX_PER_LINE = 10
 
     /** At most 50 different products: Stripe takes up to 100 lines, and this keeps the payment page readable. */
     const val MAX_LINES = 50
 
-    fun maxQuantity(available: Int): Int = available.coerceIn(0, MAX_PER_LINE)
+    /**
+     * Both carts had the product: the quantities add up, up to [MAX_PER_LINE]. Never fewer than the account had, so a
+     * line that already shows a problem keeps showing it.
+     */
+    fun mergedQuantity(inAccount: Int, inGuestCart: Int): Int =
+        (inAccount + inGuestCart).coerceAtMost(maxOf(MAX_PER_LINE, inAccount))
 
     /**
-     * Both carts had the product: the quantities add up, up to what can be bought. [available] is null for a product
-     * that can't be bought now: it keeps the quantity, and the cart shows it as sold out.
+     * What is wrong with a line before checkout, or null. Only what the customer may know: that a product can't be
+     * bought, or that a line is above the maximum (from a cart made before the maximum was lowered). Never that a
+     * line is above the stock: checkout tells that, without a number.
      */
-    fun mergedQuantity(inAccount: Int, inGuestCart: Int, available: Int?): Int {
-        val sum = (inAccount + inGuestCart).coerceAtMost(MAX_PER_LINE)
-        if (available == null) return sum
-        // Never fewer than the account had: a line that already shows a problem keeps showing it.
-        return sum.coerceAtMost(maxOf(maxQuantity(available), inAccount)).coerceAtLeast(1)
-    }
-
-    /** What is wrong with a line before checkout, or null. */
-    fun problem(quantity: Int, canBuy: Boolean, available: Int): CartProblem? = when {
+    fun problem(quantity: Int, canBuy: Boolean): CartProblem? = when {
         !canBuy -> CartProblem.SOLD_OUT
-        quantity > available -> CartProblem.TOO_MANY
+        quantity > MAX_PER_LINE -> CartProblem.TOO_MANY
         else -> null
     }
 }
 
+/** `TOO_MANY`: above [CartRules.MAX_PER_LINE], never "above the stock". */
 enum class CartProblem { SOLD_OUT, TOO_MANY }

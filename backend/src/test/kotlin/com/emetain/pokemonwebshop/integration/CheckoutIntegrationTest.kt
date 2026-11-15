@@ -313,12 +313,12 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val error = checkout(cartCookie).andExpect(status().isConflict).json()
 
         assertEquals("cart_changed", error["error"].asText())
-        assertContains(error["message"].asText(), "niet genoeg meer")
-        assertFalse(error["message"].asText().contains("nog maar"), "the message never says how many are left")
+        assertContains(error["message"].asText(), "niet genoeg voor dit aantal")
+        assertContains(error["message"].asText(), "Verlaag het aantal")
+        assertFalse(error["message"].asText().contains(Regex("\\d")), "the message never says how many are left")
         assertEquals(0, stock(other)["reserved"].asInt(), "nothing is reserved when one line fails")
-        val cart = cart(cartCookie)
-        assertEquals("TOO_MANY", cart["items"].first { it["productId"].asLong() == productId }["problem"].asText())
-        assertFalse(cart["canCheckout"].asBoolean())
+        val line = cart(cartCookie)["items"].first { it["productId"].asLong() == productId }
+        assertTrue(line["problem"].isNull, "the cart doesn't compare with the stock either")
     }
 
     @Test
@@ -558,18 +558,46 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     }
 
     @Test
-    fun `cart quantities stay within the stock, and a sold-out product can still be lowered or removed`() {
+    fun `the cart never compares with the stock, so it can't tell how many are left`() {
         val productId = stocked(quantity = 2)["id"].asLong()
         val cartCookie = guestCart(productId, 2)
 
-        val tooMany = addToCart(productId, 1, cartCookie).andExpect(status().isConflict).json()
-        assertContains(tooMany["message"].asText(), "Je hebt er al 2")
-        assertContains(tooMany["message"].asText(), "niet genoeg meer", message = "never how many are left")
-        mockMvc.perform(put("/v1/cart/items/$productId").cookie(cartCookie).json(mapOf("quantity" to 3))).andExpect(status().isConflict)
+        // Above the stock of 2 is fine in the cart: checkout says there aren't enough, without a number.
+        addToCart(productId, 1, cartCookie).andExpect(status().isOk)
+        val cart = mockMvc.perform(put("/v1/cart/items/$productId").cookie(cartCookie).json(mapOf("quantity" to 10)))
+            .andExpect(status().isOk).json()
+        val line = cart["items"].single()
+        assertEquals(10, line["quantity"].asInt())
+        assertEquals(10, line["maxQuantity"].asInt())
+        assertTrue(line["problem"].isNull)
+        assertTrue(cart["canCheckout"].asBoolean())
+        assertFalse(cart.toString().contains("available"), "the cart has no stock in it")
+    }
+
+    @Test
+    fun `a cart line stops at 10, whatever the stock`() {
+        val productId = stocked(quantity = 50)["id"].asLong()
+        val cartCookie = guestCart(productId, 8)
+
+        val tooMany = addToCart(productId, 3, cartCookie).andExpect(status().isConflict).json()
+        assertEquals("too_many", tooMany["error"].asText())
+        assertContains(tooMany["message"].asText(), "maximaal 10 stuks")
+        assertContains(tooMany["message"].asText(), "Je hebt er al 8")
+        addToCart(productId, 2, cartCookie).andExpect(status().isOk)
+        mockMvc.perform(put("/v1/cart/items/$productId").cookie(cartCookie).json(mapOf("quantity" to 11)))
+            .andExpect(status().isBadRequest)
+        addToCart(productId, 11).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `a sold-out product can still be lowered or removed, but not raised`() {
+        val productId = stocked(quantity = 2)["id"].asLong()
+        val cartCookie = guestCart(productId, 2)
 
         adjustStock(productId, -2, "CORRECTION").andExpect(status().isOk)
         assertEquals("SOLD_OUT", cart(cartCookie)["items"].single()["problem"].asText())
         addToCart(productId, 1).andExpect(status().isConflict)
+        mockMvc.perform(put("/v1/cart/items/$productId").cookie(cartCookie).json(mapOf("quantity" to 3))).andExpect(status().isConflict)
         mockMvc.perform(put("/v1/cart/items/$productId").cookie(cartCookie).json(mapOf("quantity" to 1))).andExpect(status().isOk)
         mockMvc.perform(delete("/v1/cart/items/$productId").cookie(cartCookie)).andExpect(status().isOk)
         assertEquals(0, cart(cartCookie)["itemCount"].asInt())

@@ -71,7 +71,6 @@ class CartOrchestrator(
         val items = cart?.items.orEmpty()
         return items.map { item ->
             val product = item.product
-            val available = product.stock.available
             val canBuy = ProductRules.canBuy(product)
             val unitPrice = ProductRules.shownPriceCents(product)
             val ownImage = product.images.firstOrNull()
@@ -94,7 +93,7 @@ class CartOrchestrator(
                 canBuy = canBuy,
                 preOrder = product.preOrder,
                 shipsFrom = if (product.preOrder) product.shipsFrom ?: product.releaseDate else null,
-                problem = CartRules.problem(item.quantity, canBuy, available)?.name,
+                problem = CartRules.problem(item.quantity, canBuy)?.name,
             )
         }
     }

@@ -29,6 +29,9 @@ export const ACCESSORY_TYPES = [
   { type: 'STORAGE_BOXES', slug: 'opbergboxen', navKey: 'storageBoxes' },
 ]
 
+/** The most of one product in one order: `CartRules.MAX_PER_LINE` in the backend. The cart never looks at the stock. */
+export const MAX_PER_LINE = 10
+
 export const LANGUAGES = ['EN', 'JP', 'CN', 'DE', 'FR']
 
 export const CONDITIONS = ['MINT', 'NEAR_MINT', 'EXCELLENT', 'GOOD', 'LIGHT_PLAYED', 'PLAYED', 'POOR']

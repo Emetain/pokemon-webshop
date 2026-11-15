@@ -8,6 +8,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * Limits and access, called straight at the API the way a bot would: without the waiting room, with someone else's
@@ -80,12 +82,25 @@ class DropLimitsIntegrationTest : DropTestSupport() {
         assertEquals(3, cart["cart"]["itemCount"].asInt())
         assertEquals(1, cart["limits"][1]["room"].asInt())
 
-        // More than is left never goes in.
+    }
+
+    @Test
+    fun `the drop cart doesn't compare with what is left, the checkout does, without a number`() {
         val scarce = createDrop(listOf(stocked(name = "$word Schaars", quantity = 1)["id"].asLong() to 1))
         startNow(scarce)
-        val other = admittedBuyer(scarce)
-        setQuantity(scarce, other, scarce.dropProductIds[0], 2).andExpect(status().isConflict)
-            .andExpect(jsonPath("$.error").value("out_of_stock"))
+        val buyer = admittedBuyer(scarce)
+
+        // A refusal at 2 would tell there is 1 left.
+        val cart = setQuantity(scarce, buyer, scarce.dropProductIds[0], 2).andExpect(status().isOk).json()
+        assertTrue(cart["cart"]["items"][0]["problem"].isNull)
+
+        val error = checkout(scarce, buyer).andExpect(status().isConflict).json()
+        assertEquals("cart_changed", error["error"].asText())
+        assertFalse(error["message"].asText().contains(Regex("\\d")), "never how many are left")
+        assertEquals(0, dropProduct(scarce.id, scarce.dropProductIds[0]).reserved)
+
+        setQuantity(scarce, buyer, scarce.dropProductIds[0], 1).andExpect(status().isOk)
+        checkout(scarce, buyer).andExpect(status().isCreated)
     }
 
     @Test

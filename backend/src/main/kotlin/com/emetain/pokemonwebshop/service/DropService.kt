@@ -310,7 +310,7 @@ class DropService(
     }
 
     private fun requireLimit(limit: Int) {
-        if (limit !in 1..CartRules.MAX_PER_LINE) throw ApiException.validation("Kies een limiet van 1 tot ${CartRules.MAX_PER_LINE}.")
+        if (limit !in 1..DropRules.MAX_LIMIT) throw ApiException.validation("Kies een limiet van 1 tot ${DropRules.MAX_LIMIT}.")
     }
 
     private fun requireAdmitRate(perMinute: Int) {

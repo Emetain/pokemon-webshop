@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.dto
 
+import com.emetain.pokemonwebshop.service.CartRules
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import java.time.LocalDate
@@ -8,13 +9,13 @@ data class CartItemRequest(
     val productId: Long = 0,
 
     @field:Min(1, message = "Kies minstens 1 stuk.")
-    @field:Max(99, message = "Je kunt maximaal 99 stuks tegelijk bestellen.")
+    @field:Max(CartRules.MAX_PER_LINE.toLong(), message = "Je kunt maximaal ${CartRules.MAX_PER_LINE} stuks van een product bestellen.")
     val quantity: Int = 1,
 )
 
 data class CartQuantityRequest(
     @field:Min(0, message = "Kies een aantal van 0 of meer.")
-    @field:Max(99, message = "Je kunt maximaal 99 stuks tegelijk bestellen.")
+    @field:Max(CartRules.MAX_PER_LINE.toLong(), message = "Je kunt maximaal ${CartRules.MAX_PER_LINE} stuks van een product bestellen.")
     val quantity: Int = 1,
 )
 
@@ -34,12 +35,12 @@ data class CartLineDto(
     val onSale: Boolean,
     val quantity: Int,
     val lineTotalCents: Long?,
-    /** The most this line can go up to: 99, or 0 when it can't be bought. Not the stock: the shop never shows that. */
+    /** The most this line can go up to: [CartRules.MAX_PER_LINE], or 0 when it can't be bought. Never the stock. */
     val maxQuantity: Int,
     val canBuy: Boolean,
     val preOrder: Boolean,
     val shipsFrom: LocalDate?,
-    /** `SOLD_OUT` or `TOO_MANY`: the line has to change before checkout. */
+    /** `SOLD_OUT`, or `TOO_MANY` above [CartRules.MAX_PER_LINE]: the line has to change before checkout. */
     val problem: String?,
 )
 

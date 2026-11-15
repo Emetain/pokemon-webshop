@@ -106,9 +106,10 @@ class DropShopOrchestrator(
             val price = dropProduct.priceCents ?: shopPrice
             val ownImage = product.images.firstOrNull()
             val cardImage = product.card?.shownImageSmallUrl
+            // Never "more than is left": the drop checkout says that, without a number.
             val problem = when {
                 available <= 0 -> CartProblem.SOLD_OUT
-                item.quantity > available -> CartProblem.TOO_MANY
+                item.quantity > CartRules.MAX_PER_LINE -> CartProblem.TOO_MANY
                 else -> null
             }
             CartLineDto(

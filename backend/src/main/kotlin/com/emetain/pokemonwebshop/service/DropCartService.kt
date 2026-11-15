@@ -41,8 +41,10 @@ class DropCartService(
         ordered(drop, entry.user, entry.user?.email?.let(DropRules::emailKey), null, entry.id)
 
     /**
-     * Sets how many of a product are in the drop cart. Lowering always works. Raising only up to what is left and what
-     * the limits allow. 0 takes it out. Call this inside a transaction with the entry loaded.
+     * Sets how many of a product are in the drop cart. Lowering always works. Raising only while the product isn't
+     * sold out or fully reserved (the drop page shows both), up to [CartRules.MAX_PER_LINE] and what the limits allow.
+     * Not up to what is left: a refusal just above it would tell how many there are. The checkout checks that, under
+     * the lock on the drop. 0 takes it out. Call this inside a transaction with the entry loaded.
      */
     @Transactional
     fun setQuantity(drop: Drop, entry: DropQueueEntry, dropProductId: Long, quantity: Int) {
@@ -59,7 +61,7 @@ class DropCartService(
             return
         }
         if (quantity > current) {
-            if (quantity > dropProduct.available) throw notEnough(dropProduct)
+            if (dropProduct.available <= 0) throw notEnough(dropProduct)
             val ordered = orderedBy(drop, entry)
             val inCartOther = entry.items.filter { it !== item }.sumOf { it.quantity }
             val check = DropLimitCheck(

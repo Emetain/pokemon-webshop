@@ -93,7 +93,7 @@ Must be fixed before going live.
     so Mailpit keeps working), map them to `spring.mail.*`, pass them through both compose files, and describe them
     in both env examples and the README. Add connect and read timeouts, so a slow mail server can't hold a thread.
 
-- [ ] **C4. The cart gives away how many of a product are in stock.**
+- [x] **C4. The cart gives away how many of a product are in stock.**
   - Where: `backend/.../service/CartService.kt:48` and `:71` refuse a quantity above `stock.available`.
   - Why: the owner's rule is that customers never learn the stock: not on a page, not in an API reply and not in a
     message. Tested on a product with 10 in stock: adding 99, 50 and 20 was refused, adding 10 worked, adding one
@@ -105,6 +105,15 @@ Must be fixed before going live.
     slow, limited checkouts. Check the drop cart (`DropCartService`) for the same pattern. Update the cart tests.
   - Owner decision: the maximum per line (10 is a suggestion), and whether a customer may only find out at checkout
     that a quantity isn't available. That is the price of not showing stock in the cart.
+  - Done (9b), with the owner's confirmed choices (10 per line, finding out at checkout): `CartService.add` and
+    `setQuantity` only check that the product can be bought and `CartRules.MAX_PER_LINE` (now 10, one constant, also
+    used by the request DTOs and `data/shop.js` in the frontend). The cart line's `TOO_MANY` problem now means "above
+    10" instead of "above the stock", which was a second way to read the stock. Checkout refuses without a number:
+    "Van X hebben we niet genoeg voor dit aantal. Verlaag het aantal in je winkelwagen en probeer het opnieuw." The
+    drop cart had the same pattern (`DropCartService.setQuantity` refused above `available`, and its cart showed
+    `TOO_MANY`): it now only refuses a sold-out or fully reserved product (both shown on the drop page anyway), and
+    the drop checkout checks the rest under the lock. Admin drop limits keep 1 to 99 (`DropRules.MAX_LIMIT`). Tests
+    updated in `CartRulesTest`, `CheckoutIntegrationTest`, `DropLimitsIntegrationTest` and `ProductIntegrationTest`.
 
 ## Should fix
 
@@ -217,6 +226,17 @@ Must be fixed before going live.
     ones), syncing card data for all five games, testing payments with the Stripe CLI, and a phase overview with
     links to `docs/phases/`. Most sections exist; check each against the code rather than rewriting them.
 
+- [ ] **S14. Repeat the password when making an account.** (Added in 9b at the owner's request, instead of the
+  confirmation mail of N3.)
+  - Where: every place a customer chooses a new password: the register page (`RegisterView.vue`), the reset page
+    (`ResetPasswordView.vue`) and the "make an account" form a guest gets after paying (the order placed page,
+    `POST /v1/orders/{number}/account`). Login stays as it is.
+  - Why: a typo in a new password locks the customer out of the account they just made.
+  - Fix: a second "repeat password" field with a label and `autocomplete="new-password"` on both; the form refuses
+    to submit when they differ, with "De wachtwoorden zijn niet hetzelfde." tied to the second field. The backend
+    checks it too: `passwordConfirmation` in `RegisterRequest`, `ResetPasswordRequest` and `GuestAccountRequest`,
+    refused with `validation_failed` and the same message. Tests for the mismatch.
+
 ## Nice to have
 
 - [ ] **N1. Started without a profile, the backend runs `dev`.** `application.yml:10` (`profiles.default: dev`): an
@@ -277,9 +297,10 @@ Must be fixed before going live.
 12. S4: Open Graph tags from the backend for products, drops and news.
 13. S7: admin menu behind a button on small screens.
 14. S10: the three axe findings and the keyboard walk-through.
-15. S9: Vite upgrade until `npm audit` is clean.
-16. C1: Spring Boot upgrade. Last of the code changes, so everything above is tested on the version it was written
+15. S14: repeat the password wherever a customer chooses a new one, checked in the page and in the backend.
+16. S9: Vite upgrade until `npm audit` is clean.
+17. C1: Spring Boot upgrade. Last of the code changes, so everything above is tested on the version it was written
     on, and then once more after the upgrade.
-17. S13: README.
-18. Nice to have, as far as time allows: N1, N2, N5, N7, N11, N12 first.
-19. Done when: `./gradlew test`, `npm run build`, and the `prod` profile starting cleanly on an empty database.
+18. S13: README.
+19. Nice to have, as far as time allows: N1, N2, N5, N7, N11, N12 first.
+20. Done when: `./gradlew test`, `npm run build`, and the `prod` profile starting cleanly on an empty database.

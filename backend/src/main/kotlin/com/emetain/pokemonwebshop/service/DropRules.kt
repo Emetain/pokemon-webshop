@@ -36,6 +36,12 @@ object DropRules {
     /** At most this many products in one drop: it keeps the drop page and the payment page readable. */
     const val MAX_PRODUCTS = 30
 
+    /**
+     * The highest limit per customer an admin can set, per product or per drop. A drop cart line still stops at
+     * [CartRules.MAX_PER_LINE].
+     */
+    const val MAX_LIMIT = 99
+
     private val random: Random = SecureRandom().asKotlinRandom()
 
     /**

@@ -120,7 +120,7 @@ class ProductIntegrationTest : ShopTestSupport() {
         mockMvc.perform(get("/v1/products/$slug"))
             .andExpect(jsonPath("$.product.canBuy").value(true))
             .andExpect(jsonPath("$.product.lastFew").value(false))
-            .andExpect(jsonPath("$.maxQuantity").value(99))
+            .andExpect(jsonPath("$.maxQuantity").value(10))
     }
 
     @Test

@@ -7,6 +7,7 @@ import CountrySelect from '../../components/account/CountrySelect.vue'
 import FormField from '../../components/FormField.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import ProductImage from '../../components/shop/ProductImage.vue'
+import { MAX_PER_LINE } from '../../data/shop'
 import { accountApi, cartApi, checkoutApi, dropApi } from '../../services/api'
 import { useCart } from '../../stores/cart'
 import { useRegion } from '../../stores/region'
@@ -359,7 +360,7 @@ const loginLink = computed(() => ({ path: '/inloggen', query: { redirect: route.
             <span class="summary-name">
               {{ item.name }}
               <span v-if="item.preOrder" class="pre-order">{{ t('shop.badges.preOrder') }}</span>
-              <span v-if="item.problem" class="warning">{{ t(`cart.problems.${item.problem}`) }}</span>
+              <span v-if="item.problem" class="warning">{{ t(`cart.problems.${item.problem}`, { max: MAX_PER_LINE }) }}</span>
             </span>
             <span class="summary-amount">{{ item.lineTotalCents !== null ? formatMoney(item.lineTotalCents, 'EUR') : '' }}</span>
           </li>

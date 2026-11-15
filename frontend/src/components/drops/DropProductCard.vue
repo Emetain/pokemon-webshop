@@ -3,13 +3,14 @@ import { computed } from 'vue'
 import { Minus, Plus } from 'lucide-vue-next'
 import ProductImage from '../shop/ProductImage.vue'
 import { findGame } from '../../data/games'
+import { MAX_PER_LINE } from '../../data/shop'
 import { formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
 /**
  * A product in a drop: its limit, and whether it sold out. Never how many there are. The price only shows once it is
- * this person's turn: then they get a counter to put it in the drop cart, as far as the limits allow. Asking for more
- * than is left gets a message from the shop, without the number.
+ * this person's turn: then they get a counter to put it in the drop cart, as far as the limits allow. The drop cart
+ * doesn't look at what is left: the checkout says when there isn't enough, without the number.
  */
 const props = defineProps({
   product: { type: Object, required: true },
@@ -30,7 +31,7 @@ const props = defineProps({
 const emit = defineEmits(['change'])
 
 const accent = computed(() => (props.product.game ? findGame(props.product.game)?.accent : null))
-const max = computed(() => (props.product.allReserved ? 0 : (props.room ?? 99)))
+const max = computed(() => (props.product.allReserved ? 0 : Math.min(props.room ?? MAX_PER_LINE, MAX_PER_LINE)))
 const showPrice = computed(() => props.shopping && props.price?.priceCents != null)
 </script>
 

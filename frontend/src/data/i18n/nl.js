@@ -489,7 +489,7 @@ export default {
     preOrderNoDate: 'Pre-order',
     problems: {
       SOLD_OUT: 'Uitverkocht. Haal dit product uit je winkelwagen om af te rekenen.',
-      TOO_MANY: 'We hebben er niet genoeg meer voor dit aantal. Verlaag het aantal om af te rekenen.',
+      TOO_MANY: 'Je kunt maximaal {max} stuks van een product bestellen. Verlaag het aantal om af te rekenen.',
     },
     fixProblems: 'Pas eerst de producten met een melding aan.',
     subtotal: 'Subtotaal',

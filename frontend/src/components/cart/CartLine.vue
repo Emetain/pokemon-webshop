@@ -3,11 +3,12 @@ import { computed, ref } from 'vue'
 import { Minus, Plus, Trash2 } from 'lucide-vue-next'
 import ProductImage from '../shop/ProductImage.vue'
 import { findGame } from '../../data/games'
+import { MAX_PER_LINE } from '../../data/shop'
 import { useCart } from '../../stores/cart'
 import { formatDate, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
-/** One product in the cart, with its quantity. Lowering always works, raising up to what is in stock. */
+/** One product in the cart, with its quantity. Lowering always works, raising up to the maximum per line. */
 const props = defineProps({
   item: { type: Object, required: true },
   compact: { type: Boolean, default: false },
@@ -22,7 +23,7 @@ const accent = computed(() => (props.item.game ? findGame(props.item.game)?.acce
 const link = computed(() => ({ name: 'product', params: { slug: props.item.slug } }))
 
 const problem = computed(() =>
-  props.item.problem ? t(`cart.problems.${props.item.problem}`) : '',
+  props.item.problem ? t(`cart.problems.${props.item.problem}`, { max: MAX_PER_LINE }) : '',
 )
 
 async function change(call) {
