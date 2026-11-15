@@ -1306,6 +1306,7 @@ export default {
   admin: {
     title: 'Beheer',
     navigation: 'Beheermenu',
+    menu: 'Menu',
     overview: 'Overzicht',
     backToShop: 'Terug naar de shop',
     greeting: 'Ingelogd als {name}.',
