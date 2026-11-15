@@ -39,6 +39,7 @@ import java.time.Instant
         Index(name = "idx_orders_cart_status", columnList = "cart_id, status"),
         Index(name = "idx_orders_stock_reserved_until", columnList = "stock_state, reserved_until"),
         Index(name = "idx_orders_email", columnList = "email"),
+        Index(name = "idx_orders_email_key_status", columnList = "email_key, status"),
         Index(name = "idx_orders_drop_id", columnList = "drop_id"),
         Index(name = "idx_orders_drop_entry_id", columnList = "drop_entry_id"),
         Index(name = "idx_orders_discount_code_id", columnList = "discount_code_id"),
