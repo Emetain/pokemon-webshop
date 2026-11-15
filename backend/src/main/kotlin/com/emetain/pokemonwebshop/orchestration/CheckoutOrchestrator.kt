@@ -11,6 +11,7 @@ import com.emetain.pokemonwebshop.exception.ApiException
 import com.emetain.pokemonwebshop.repository.OrderRepository
 import com.emetain.pokemonwebshop.service.CartService
 import com.emetain.pokemonwebshop.service.CheckoutService
+import com.emetain.pokemonwebshop.service.OpenCheckoutService
 import com.emetain.pokemonwebshop.service.OrderPaymentService
 import com.emetain.pokemonwebshop.service.PaymentMethods
 import com.emetain.pokemonwebshop.service.ShippingRateService
@@ -30,6 +31,7 @@ class CheckoutOrchestrator(
     private val cartOrchestrator: CartOrchestrator,
     private val cartService: CartService,
     private val checkoutService: CheckoutService,
+    private val openCheckoutService: OpenCheckoutService,
     private val orderPaymentService: OrderPaymentService,
     private val shippingRateService: ShippingRateService,
     private val orderRepository: OrderRepository,
@@ -59,7 +61,9 @@ class CheckoutOrchestrator(
         for (orderId in orderRepository.findIdsByCartAndStatus(cart.id)) {
             orderPaymentService.closePending(orderId, "Vervangen door een nieuwe poging om af te rekenen")
         }
-        val order = retryingOnStockConflict { checkoutService.createOrder(cart.id, viewer, request) }
+        val clientIp = httpRequest.remoteAddr
+        val order = retryingOnStockConflict { checkoutService.createOrder(cart.id, viewer, request, clientIp) }
+        openCheckoutService.started(clientIp, order.id)
         val session = try {
             gateway.createCheckout(paymentRequest(order))
         } catch (exception: PaymentUnavailableException) {

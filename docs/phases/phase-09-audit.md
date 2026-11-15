@@ -125,13 +125,21 @@ Must be fixed before going live.
   - Fix: also count per email address with `RateLimitService`, for example 10 failed logins per 15 minutes and 3
     reset mails per hour. Keep the answer the same for known and unknown addresses.
 
-- [ ] **S2. One visitor can hold the whole stock.**
+- [x] **S2. One visitor can hold the whole stock.**
   - Where: `CheckoutController.kt:31` (`checkout` bucket, default 10 a minute per IP), `CheckoutService.createOrder`.
   - Why: every checkout reserves its stock for 15 minutes, also for a guest without paying. Only an earlier checkout
     of the same cart is closed. With a new guest cart each time, one address can reserve up to 99 of every product,
     ten times a minute, and keep the shop "Uitverkocht".
   - Fix: give `checkout` its own tight limit (for example 5 per 10 minutes per IP), and refuse a new checkout when
     the same email address or IP already has 2 open ones. The lower maximum per line from C4 helps too.
+  - Done (9b), with the owner's confirmed numbers: the `checkout` bucket is 5 per 10 minutes per IP
+    (`app.rate-limit.buckets.checkout`), and `service/OpenCheckoutService.kt` refuses a third shop checkout waiting
+    for payment per email address or per IP (`app.checkout.max-open-checkouts: 2`) with 429
+    `too_many_open_checkouts`. Email counts from the orders by `email_key` (Gmail dots and `+tags` are one person;
+    every order now gets the key, not only drop orders). The IP isn't stored with an order, so the orders per IP are
+    kept in memory like the rate limits. Retrying the same cart closes the earlier attempt first and doesn't count.
+    Drops keep their own limits. Tests in `CheckoutIntegrationTest`. Two checkouts at the same moment can both pass
+    the count; the rate limit keeps that small.
 
 - [ ] **S3. Every page has the title "Poketopia" and no description.**
   - Where: `frontend/index.html:6`. Nothing in `frontend/src` sets `document.title` or a meta tag. Measured: 147 of

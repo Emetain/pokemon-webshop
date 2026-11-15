@@ -17,10 +17,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
+import org.springframework.test.web.servlet.request.RequestPostProcessor
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.Duration
 import java.time.Instant
@@ -77,14 +79,19 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         return mockMvc.perform(if (session != null) request.cookie(session) else request.withCart(cart)).andExpect(status().isOk).json()
     }
 
-    private fun checkout(cart: Cookie? = null, session: Cookie? = null, extra: Map<String, Any?> = emptyMap()): ResultActions {
+    private fun checkout(
+        cart: Cookie? = null,
+        session: Cookie? = null,
+        extra: Map<String, Any?> = emptyMap(),
+        ip: RequestPostProcessor = fromRandomIp(),
+    ): ResultActions {
         val body = mapOf(
             "address" to address,
             "name" to "Ash Ketchum",
             "email" to "ash-${word.lowercase()}@example.com",
             "acceptTerms" to true,
         ) + extra
-        val request = post("/v1/checkout").with(fromRandomIp()).json(body)
+        val request = post("/v1/checkout").with(ip).json(body)
         return mockMvc.perform(if (session != null) request.cookie(session) else request.withCart(cart))
     }
 
@@ -572,6 +579,56 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         assertTrue(line["problem"].isNull)
         assertTrue(cart["canCheckout"].asBoolean())
         assertFalse(cart.toString().contains("available"), "the cart has no stock in it")
+    }
+
+    @Test
+    fun `one email address can have at most 2 checkouts waiting for payment`() {
+        val carts = (1..3).map { guestCart(stocked(name = "$word Box $it", quantity = 5)["id"].asLong()) }
+
+        val first = checkout(carts[0]).andExpect(status().isCreated).json()["orderNumber"].asText()
+        checkout(carts[1]).andExpect(status().isCreated)
+        val refused = checkout(carts[2]).andExpect(status().isTooManyRequests).json()
+
+        assertEquals("too_many_open_checkouts", refused["error"].asText())
+        assertContains(refused["message"].asText(), "op betaling wachten")
+        // Gmail dots and +tags are the same person.
+        checkout(carts[2], extra = mapOf("email" to "ash-${word.lowercase()}+extra@example.com")).andExpect(status().isTooManyRequests)
+
+        pay(first).andExpect(status().isOk)
+        checkout(carts[2]).andExpect(status().isCreated)
+    }
+
+    @Test
+    fun `one ip address can have at most 2 checkouts waiting for payment`() {
+        val sameIp = fromRandomIp()
+        val carts = (1..3).map { guestCart(stocked(name = "$word Box $it", quantity = 5)["id"].asLong()) }
+
+        checkout(carts[0], ip = sameIp, extra = mapOf("email" to "een-${word}@example.com")).andExpect(status().isCreated)
+        checkout(carts[1], ip = sameIp, extra = mapOf("email" to "twee-${word}@example.com")).andExpect(status().isCreated)
+
+        checkout(carts[2], ip = sameIp, extra = mapOf("email" to "drie-${word}@example.com"))
+            .andExpect(status().isTooManyRequests)
+            .andExpect(jsonPath("$.error").value("too_many_open_checkouts"))
+        checkout(carts[2], extra = mapOf("email" to "drie-${word}@example.com")).andExpect(status().isCreated)
+    }
+
+    @Test
+    fun `trying the same cart again doesn't count as another open checkout`() {
+        val cartCookie = guestCart(stocked(quantity = 5)["id"].asLong())
+
+        repeat(3) { checkout(cartCookie).andExpect(status().isCreated) }
+    }
+
+    @Test
+    fun `checkout has its own tight rate limit per ip address`() {
+        val sameIp = fromRandomIp()
+        val cartCookie = guestCart(stocked(quantity = 5)["id"].asLong())
+
+        repeat(5) { checkout(cartCookie, ip = sameIp, extra = mapOf("acceptTerms" to false)).andExpect(status().isBadRequest) }
+
+        checkout(cartCookie, ip = sameIp)
+            .andExpect(status().isTooManyRequests)
+            .andExpect(jsonPath("$.error").value("rate_limited"))
     }
 
     @Test

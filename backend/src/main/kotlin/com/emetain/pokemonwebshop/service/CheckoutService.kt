@@ -57,16 +57,18 @@ class CheckoutService(
     private val dropStockService: DropStockService,
     private val tokenService: TokenService,
     private val discountCodeService: DiscountCodeService,
+    private val openCheckoutService: OpenCheckoutService,
     private val properties: AppProperties,
     private val clock: Clock,
 ) {
 
     /**
      * Copies the cart into an order with the current prices and reserves the stock of every line. Everything happens
-     * in one transaction: when one product has too few left, nothing is reserved and nothing is saved.
+     * in one transaction: when one product has too few left, nothing is reserved and nothing is saved. Refused when
+     * the email address or [clientIp] already has the maximum of checkouts waiting for payment.
      */
     @Transactional
-    fun createOrder(cartId: Long, viewer: User?, request: StartCheckoutRequest): Order {
+    fun createOrder(cartId: Long, viewer: User?, request: StartCheckoutRequest, clientIp: String): Order {
         if (!request.acceptTerms) throw ApiException.validation("Ga akkoord met de algemene voorwaarden om te bestellen.")
         val cart = cartRepository.findWithItemsById(cartId)
         if (cart == null || cart.items.isEmpty()) throw ApiException.validation("Je winkelwagen is leeg.")
@@ -74,6 +76,7 @@ class CheckoutService(
             throw ApiException.validation("Je kunt maximaal ${CartRules.MAX_LINES} verschillende producten in één bestelling doen.")
         }
         val party = party(viewer, request)
+        openCheckoutService.requireRoom(party.emailKey, clientIp)
 
         for (item in cart.items) {
             val product = item.product
@@ -156,7 +159,8 @@ class CheckoutService(
             reservedUntil = now.plus(reservationTtl),
             drop = drop,
             dropEntryId = dropEntryId,
-            emailKey = drop?.let { party.emailKey },
+            // Drop limits and the cap on open shop checkouts count by it.
+            emailKey = party.emailKey,
             addressKey = drop?.let { party.addressKey },
             discountCode = discount?.code,
             discountCodeText = discount?.code?.code,

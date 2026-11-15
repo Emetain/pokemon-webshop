@@ -47,6 +47,12 @@ interface OrderRepository : JpaRepository<Order, Long>, JpaSpecificationExecutor
     @Query("select o.id from Order o where o.cartId = :cartId and o.status = :status")
     fun findIdsByCartAndStatus(cartId: Long, status: OrderStatus = OrderStatus.PENDING_PAYMENT): List<Long>
 
+    /** Shop checkouts of one email address (see `DropRules.emailKey`) that wait for payment. Drops don't count. */
+    @Query("select count(o) from Order o where o.emailKey = :emailKey and o.status = :status and o.drop is null")
+    fun countOpenShopCheckouts(emailKey: String, status: OrderStatus = OrderStatus.PENDING_PAYMENT): Long
+
+    fun countByIdInAndStatus(ids: Collection<Long>, status: OrderStatus): Long
+
     @Query(
         "select o.id from Order o where o.status = :status and o.stockState = :state and o.reservedUntil < :now " +
             "order by o.reservedUntil",

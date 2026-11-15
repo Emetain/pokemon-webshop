@@ -149,6 +149,8 @@ data class AppProperties(
     data class Checkout(
         /** How long a checkout holds the stock while the customer pays. */
         val reservationTtl: Duration = Duration.ofMinutes(15),
+        /** Shop checkouts that may wait for payment at once, per email address and per IP address. */
+        val maxOpenCheckouts: Int = 2,
         /** A guest cart that hasn't changed for this long is deleted. */
         val guestCartTtl: Duration = Duration.ofDays(60),
         val cartCookieName: String = "cart",
