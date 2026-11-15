@@ -41,7 +41,10 @@ class ApiException(
         fun rateLimited(retryAfterSeconds: Long) = ApiException(
             HttpStatus.TOO_MANY_REQUESTS,
             "rate_limited",
-            "Te veel pogingen. Probeer het over een minuut opnieuw.",
+            when {
+                retryAfterSeconds <= 60 -> "Te veel pogingen. Probeer het over een minuut opnieuw."
+                else -> "Te veel pogingen. Probeer het over ${(retryAfterSeconds + 59) / 60} minuten opnieuw."
+            },
             retryAfterSeconds,
         )
     }

@@ -6,10 +6,12 @@ import com.emetain.pokemonwebshop.dto.LoginRequest
 import com.emetain.pokemonwebshop.dto.RegisterRequest
 import com.emetain.pokemonwebshop.dto.ResetPasswordRequest
 import com.emetain.pokemonwebshop.dto.UserDto
+import com.emetain.pokemonwebshop.exception.ApiException
 import com.emetain.pokemonwebshop.service.CartCookieService
 import com.emetain.pokemonwebshop.service.CartService
 import com.emetain.pokemonwebshop.service.MailService
 import com.emetain.pokemonwebshop.service.PasswordResetService
+import com.emetain.pokemonwebshop.service.RateLimitService
 import com.emetain.pokemonwebshop.service.SessionCookieService
 import com.emetain.pokemonwebshop.service.SessionService
 import com.emetain.pokemonwebshop.service.UserService
@@ -28,15 +30,31 @@ class AuthOrchestrator(
     private val mailService: MailService,
     private val cartService: CartService,
     private val cartCookieService: CartCookieService,
+    private val rateLimitService: RateLimitService,
 ) {
+
+    private companion object {
+        const val LOGIN_EMAIL_BUCKET = "login-email"
+        const val RESET_EMAIL_BUCKET = "forgot-password-email"
+    }
 
     fun register(request: RegisterRequest, httpRequest: HttpServletRequest): ResponseEntity<UserDto> {
         val user = userService.register(request.email, request.password, request.displayName)
         return startSession(user, HttpStatus.CREATED, httpRequest)
     }
 
+    /**
+     * Besides the limit per IP address, failed logins count per email address, so many addresses can't keep guessing
+     * one customer's password. Known and unknown addresses count the same way.
+     */
     fun login(request: LoginRequest, httpRequest: HttpServletRequest): ResponseEntity<UserDto> {
-        val user = userService.authenticate(request.email, request.password)
+        rateLimitService.requireEmailBelowLimit(LOGIN_EMAIL_BUCKET, request.email)
+        val user = try {
+            userService.authenticate(request.email, request.password)
+        } catch (exception: ApiException) {
+            rateLimitService.recordEmail(LOGIN_EMAIL_BUCKET, request.email)
+            throw exception
+        }
         return startSession(user, HttpStatus.OK, httpRequest)
     }
 
@@ -49,8 +67,12 @@ class AuthOrchestrator(
 
     fun me(user: User): UserDto = UserDto.from(user)
 
-    /** Gives the same result for known and unknown addresses, so nobody can test who has an account. */
+    /**
+     * Gives the same result for known and unknown addresses, so nobody can test who has an account. Limited per email
+     * address as well, so nobody can flood a customer's inbox from many IP addresses.
+     */
     fun forgotPassword(request: ForgotPasswordRequest) {
+        rateLimitService.checkEmail(RESET_EMAIL_BUCKET, request.email)
         passwordResetService.issue(request.email)?.let { issued ->
             mailService.sendPasswordReset(issued.user.email, issued.user.displayName, issued.token)
         }

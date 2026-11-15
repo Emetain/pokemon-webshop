@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -30,18 +31,46 @@ class RateLimitService(
     /** Per account, for endpoints where many people can share one IP address, such as a phone network. */
     fun checkAccount(bucket: String, userId: Long) = count(bucket, "user-$userId")
 
+    /**
+     * Per email address, whether or not it has an account, for endpoints where an attacker can use many IP addresses
+     * against one customer, such as reset mails.
+     */
+    fun checkEmail(bucket: String, email: String) = count(bucket, emailKey(email))
+
+    /**
+     * Refuses when [email] has used up [bucket], without counting this attempt. Count only what should count, such
+     * as a failed login, with [recordEmail]. A correct password is refused too while the limit holds, or the limit
+     * wouldn't stop guessing.
+     */
+    fun requireEmailBelowLimit(bucket: String, email: String) {
+        val now = clock.instant()
+        val window = windows["$bucket:${emailKey(email)}"]?.takeUnless { it.isExpired(now) } ?: return
+        if (window.attempts >= properties.rateLimit.maxAttempts(bucket)) throw limited(window, now)
+    }
+
+    fun recordEmail(bucket: String, email: String) {
+        increment(bucket, emailKey(email))
+    }
+
+    private fun emailKey(email: String) = "email-" + email.trim().lowercase(Locale.ROOT)
+
     private fun count(bucket: String, key: String) {
         val now = clock.instant()
-        val limits = properties.rateLimit
-        val length = limits.window(bucket)
-        val window = windows.compute("$bucket:$key") { _, current ->
+        val window = increment(bucket, key)
+        if (window.attempts > properties.rateLimit.maxAttempts(bucket)) throw limited(window, now)
+    }
+
+    private fun increment(bucket: String, key: String): Window {
+        val now = clock.instant()
+        val length = properties.rateLimit.window(bucket)
+        return windows.compute("$bucket:$key") { _, current ->
             if (current == null || current.isExpired(now)) Window(now, 1, length) else current.copy(attempts = current.attempts + 1)
         }!!
+    }
 
-        if (window.attempts > limits.maxAttempts(bucket)) {
-            val retryAfter = Duration.between(now, window.startedAt.plus(window.length))
-            throw ApiException.rateLimited(maxOf(retryAfter.toSeconds(), 1))
-        }
+    private fun limited(window: Window, now: Instant): ApiException {
+        val retryAfter = Duration.between(now, window.startedAt.plus(window.length))
+        return ApiException.rateLimited(maxOf(retryAfter.toSeconds(), 1))
     }
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)

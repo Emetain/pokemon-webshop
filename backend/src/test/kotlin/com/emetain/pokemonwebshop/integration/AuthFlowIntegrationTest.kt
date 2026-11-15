@@ -245,4 +245,52 @@ class AuthFlowIntegrationTest : IntegrationTest() {
 
         assertFalse(mailSender.sent.any { it.getRecipients(Message.RecipientType.TO).first().toString() == email })
     }
+
+    @Test
+    fun `failed logins count per email address, also from other ip addresses`() {
+        val email = uniqueEmail()
+        register(email).andExpect(status().isCreated)
+
+        // Every attempt from a new IP address: the limit per IP never kicks in.
+        repeat(10) { login(email, "fout-$it").andExpect(status().isUnauthorized) }
+
+        login(email)
+            .andExpect(status().isTooManyRequests)
+            .andExpect(jsonPath("$.error").value("rate_limited"))
+            .andExpect(jsonPath("$.message").value("Te veel pogingen. Probeer het over 15 minuten opnieuw."))
+        login(uniqueEmail(), "fout").andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `an unknown email address is limited the same way as a known one`() {
+        val unknown = uniqueEmail()
+
+        repeat(10) { login(unknown, "fout").andExpect(status().isUnauthorized) }
+
+        login(unknown, "fout").andExpect(status().isTooManyRequests)
+    }
+
+    @Test
+    fun `a successful login doesn't count towards the limit`() {
+        val email = uniqueEmail()
+        register(email).andExpect(status().isCreated)
+
+        repeat(12) { login(email).andExpect(status().isOk) }
+    }
+
+    @Test
+    fun `reset mails are limited per email address, known or not`() {
+        val known = uniqueEmail()
+        register(known).andExpect(status().isCreated)
+        val unknown = uniqueEmail()
+
+        repeat(3) {
+            forgotPassword(known).andExpect(status().isNoContent)
+            forgotPassword(unknown.uppercase()).andExpect(status().isNoContent)
+        }
+
+        forgotPassword(known).andExpect(status().isTooManyRequests).andExpect(jsonPath("$.error").value("rate_limited"))
+        forgotPassword(unknown).andExpect(status().isTooManyRequests)
+        assertEquals(3, mailSender.sent.count { it.getRecipients(Message.RecipientType.TO).first().toString() == known })
+    }
 }

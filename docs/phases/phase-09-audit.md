@@ -117,13 +117,20 @@ Must be fixed before going live.
 
 ## Should fix
 
-- [ ] **S1. Logging in can be guessed per account, and reset mails can be sent in bulk.**
+- [x] **S1. Logging in can be guessed per account, and reset mails can be sent in bulk.**
   - Where: `AuthController.kt:36` and `:50`. The limit is 10 a minute per IP address (`application.yml`,
     `app.rate-limit`). Tested: attempts 9 to 12 within a minute got 429.
   - Why: nothing counts per account. An attacker with many addresses can keep guessing one customer's password, and
     one address can send a customer 10 reset mails a minute.
   - Fix: also count per email address with `RateLimitService`, for example 10 failed logins per 15 minutes and 3
     reset mails per hour. Keep the answer the same for known and unknown addresses.
+  - Done (9b): `RateLimitService` counts per email address too (`checkEmail`, `requireEmailBelowLimit`,
+    `recordEmail`, trimmed and lowercased). `AuthOrchestrator.login` refuses once an address has 10 failed logins in
+    15 minutes (`login-email` bucket; a correct password is refused too while it holds, or guessing could go on), and
+    `forgotPassword` allows 3 per address per hour (`forgot-password-email`). Known and unknown addresses get the
+    same answers. The 429 message now says how many minutes to wait instead of always "een minuut". Tests in
+    `AuthFlowIntegrationTest` and `RateLimitServiceTest`. Side effect to know: someone can lock a customer out of
+    logging in for 15 minutes by failing 10 times on their address; that is the usual price of a per-account limit.
 
 - [x] **S2. One visitor can hold the whole stock.**
   - Where: `CheckoutController.kt:31` (`checkout` bucket, default 10 a minute per IP), `CheckoutService.createOrder`.

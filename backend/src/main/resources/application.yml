@@ -76,9 +76,17 @@ app:
   rate-limit:
     max-attempts: 10
     window: 1m
-    # Drops get their own limits. Per IP address they are generous, because a phone network can put hundreds of
-    # people behind one address. Per account they are tight: one person needs only a few calls a minute.
     buckets:
+      # Per email address, whether it has an account or not: failed logins (a correct password is refused too while
+      # the limit holds), and reset mails. Against many IP addresses guessing one password or flooding one inbox.
+      login-email:
+        max-attempts: 10
+        window: 15m
+      forgot-password-email:
+        max-attempts: 3
+        window: 1h
+      # Drops get their own limits. Per IP address they are generous, because a phone network can put hundreds of
+      # people behind one address. Per account they are tight: one person needs only a few calls a minute.
       drop-join:
         max-attempts: 60
       drop-join-account:

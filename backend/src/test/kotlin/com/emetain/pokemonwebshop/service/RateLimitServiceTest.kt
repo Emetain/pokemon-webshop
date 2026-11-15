@@ -83,4 +83,32 @@ class RateLimitServiceTest {
         assertThrows<ApiException> { limiter.checkAccount("drop-cart-account", 7) }
         assertDoesNotThrow { limiter.checkAccount("drop-cart-account", 8) }
     }
+
+    @Test
+    fun `an email limit only counts what is recorded, and ignores casing`() {
+        repeat(5) { service.requireEmailBelowLimit("login-email", "Ash@Example.com") }
+
+        repeat(3) { service.recordEmail("login-email", "ash@example.com ") }
+
+        val exception = assertThrows<ApiException> { service.requireEmailBelowLimit("login-email", "ASH@example.com") }
+        assertEquals("rate_limited", exception.code)
+        assertDoesNotThrow { service.requireEmailBelowLimit("login-email", "misty@example.com") }
+        clock.advance(Duration.ofMinutes(1))
+        assertDoesNotThrow { service.requireEmailBelowLimit("login-email", "ash@example.com") }
+    }
+
+    @Test
+    fun `checking an email counts every call`() {
+        repeat(3) { service.checkEmail("forgot-password-email", "ash@example.com") }
+
+        assertThrows<ApiException> { service.checkEmail("forgot-password-email", "ASH@example.com") }
+        assertDoesNotThrow { service.check("forgot-password-email", "ash@example.com") }
+    }
+
+    @Test
+    fun `the message says how many minutes to wait for a long window`() {
+        assertEquals("Te veel pogingen. Probeer het over een minuut opnieuw.", ApiException.rateLimited(45).message)
+        assertEquals("Te veel pogingen. Probeer het over 15 minuten opnieuw.", ApiException.rateLimited(900).message)
+        assertEquals("Te veel pogingen. Probeer het over 2 minuten opnieuw.", ApiException.rateLimited(61).message)
+    }
 }
