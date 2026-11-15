@@ -65,7 +65,7 @@ class CheckoutService(
     /**
      * Copies the cart into an order with the current prices and reserves the stock of every line. Everything happens
      * in one transaction: when one product has too few left, nothing is reserved and nothing is saved. Refused when
-     * the email address or [clientIp] already has the maximum of checkouts waiting for payment.
+     * the customer or [clientIp] already has the maximum of checkouts waiting for payment (see [OpenCheckoutService]).
      */
     @Transactional
     fun createOrder(cartId: Long, viewer: User?, request: StartCheckoutRequest, clientIp: String): Order {
@@ -76,7 +76,7 @@ class CheckoutService(
             throw ApiException.validation("Je kunt maximaal ${CartRules.MAX_LINES} verschillende producten in één bestelling doen.")
         }
         val party = party(viewer, request)
-        openCheckoutService.requireRoom(party.emailKey, clientIp)
+        openCheckoutService.requireRoom(viewer, party.emailKey, clientIp)
 
         for (item in cart.items) {
             val product = item.product

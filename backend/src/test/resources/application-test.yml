@@ -46,6 +46,8 @@ app:
     # Tests call the job themselves.
     release-cron: "-"
     cart-cleanup-cron: "-"
+    # Below the checkout rate limit of 5 per IP address, so a test can reach it. The real default is 5.
+    max-open-per-ip: 3
   drops:
     # Tests call the drop scheduler themselves.
     tick-cron: "-"

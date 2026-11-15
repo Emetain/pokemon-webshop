@@ -134,7 +134,7 @@ app:
         max-attempts: 5
       drop-reminder:
         max-attempts: 10
-      # Every checkout holds stock for 15 minutes, so this is tight. Together with app.checkout.max-open-checkouts.
+      # Every checkout holds stock for 15 minutes, so this is tight. Together with app.checkout.max-open-per-*.
       checkout:
         max-attempts: 5
         window: 10m
@@ -204,10 +204,15 @@ app:
     # How long a checkout holds the stock while the customer pays. Stripe keeps its payment page open for at least
     # 30 minutes, so when this runs out the shop closes the Stripe page first and only then releases the stock.
     reservation-ttl: 15m
-    # Shop checkouts that may wait for payment at the same time, per email address and per IP address. Every checkout
-    # holds its stock, also for a guest, so without a cap one visitor could keep the shop "Uitverkocht". Trying the
-    # same cart again closes the earlier attempt first, so it doesn't count. Drops have their own limits.
-    max-open-checkouts: 2
+    # Shop checkouts that may wait for payment at the same time. Every checkout holds its stock, also for a guest, so
+    # without a cap one visitor could keep the shop "Uitverkocht". Trying the same cart again closes the earlier
+    # attempt first, so it doesn't count. Drops have their own limits. These are defaults: change them on the server
+    # with the two variables.
+    # Per customer: the account of a logged-in customer (so guest checkouts on their address can't block them), or
+    # the email address of a guest.
+    max-open-per-customer: ${CHECKOUT_MAX_OPEN_PER_CUSTOMER:2}
+    # Per IP address: higher, because a phone network, a school or an office puts many customers behind one address.
+    max-open-per-ip: ${CHECKOUT_MAX_OPEN_PER_IP:5}
     # How often unpaid checkouts are checked, in Dutch time. "-" switches it off.
     release-cron: "0 * * * * *"
     guest-cart-ttl: 60d

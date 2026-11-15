@@ -634,17 +634,60 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     }
 
     @Test
-    fun `one ip address can have at most 2 checkouts waiting for payment`() {
+    fun `one ip address may have more checkouts waiting than one customer, with its own message`() {
+        // The test profile sets the cap per IP address to 3, below the checkout rate limit of 5, so a test can reach it.
         val sameIp = fromRandomIp()
-        val carts = (1..3).map { guestCart(stocked(name = "$word Box $it", quantity = 5)["id"].asLong()) }
+        val carts = (1..4).map { guestCart(stocked(name = "$word Box $it", quantity = 5)["id"].asLong()) }
 
-        checkout(carts[0], ip = sameIp, extra = mapOf("email" to "een-${word}@example.com")).andExpect(status().isCreated)
-        checkout(carts[1], ip = sameIp, extra = mapOf("email" to "twee-${word}@example.com")).andExpect(status().isCreated)
+        // Three customers on one network, such as a school or a phone network: more than the cap of 2 per customer.
+        listOf("een", "twee", "drie").forEachIndexed { index, who ->
+            checkout(carts[index], ip = sameIp, extra = mapOf("email" to "$who-$word@example.com")).andExpect(status().isCreated)
+        }
 
-        checkout(carts[2], ip = sameIp, extra = mapOf("email" to "drie-${word}@example.com"))
+        val refused = checkout(carts[3], ip = sameIp, extra = mapOf("email" to "vier-$word@example.com"))
+            .andExpect(status().isTooManyRequests).json()
+        assertEquals("too_many_checkouts_from_network", refused["error"].asString())
+        assertContains(refused["message"].asString(), "vanaf jouw netwerk")
+        assertFalse(refused["message"].asString().contains("bestellingen"), "the fourth customer has no open orders of their own")
+        checkout(carts[3], extra = mapOf("email" to "vier-$word@example.com")).andExpect(status().isCreated)
+    }
+
+    @Test
+    fun `a logged-in customer is counted by account, so guest checkouts on their address don't block them`() {
+        val email = uniqueEmail()
+        userService.register(email, password, "Misty")
+        val session = login(email).sessionCookie()
+        addToCart(stocked(name = "$word Account Box", quantity = 5)["id"].asLong(), 1, session = session).andExpect(status().isOk)
+
+        // Someone else fills the cap of the address with guest checkouts.
+        val guestCarts = (1..3).map { guestCart(stocked(name = "$word Box $it", quantity = 5)["id"].asLong()) }
+        checkout(guestCarts[0], extra = mapOf("email" to email)).andExpect(status().isCreated)
+        checkout(guestCarts[1], extra = mapOf("email" to email)).andExpect(status().isCreated)
+        checkout(guestCarts[2], extra = mapOf("email" to email))
             .andExpect(status().isTooManyRequests)
             .andExpect(jsonPath("$.error").value("too_many_open_checkouts"))
-        checkout(carts[2], extra = mapOf("email" to "drie-${word}@example.com")).andExpect(status().isCreated)
+
+        checkout(session = session).andExpect(status().isCreated)
+    }
+
+    @Test
+    fun `the open checkouts of an account count towards its cap`() {
+        val email = uniqueEmail()
+        userService.register(email, password, "Brock")
+        val account = requireNotNull(userService.findByEmail(email))
+        val session = login(email).sessionCookie()
+        addToCart(stocked(name = "$word Account Box", quantity = 5)["id"].asLong(), 1, session = session).andExpect(status().isOk)
+
+        // Two checkouts of the account from other carts, with other email addresses: the account counts, not the email.
+        (1..2).forEach {
+            val number = checkout(guestCart(stocked(name = "$word Box $it", quantity = 5)["id"].asLong()))
+                .andExpect(status().isCreated).json()["orderNumber"].asString()
+            orderRepository.save(order(number).apply { user = account })
+        }
+
+        checkout(session = session)
+            .andExpect(status().isTooManyRequests)
+            .andExpect(jsonPath("$.error").value("too_many_open_checkouts"))
     }
 
     @Test
