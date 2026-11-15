@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.orchestration
 
+import com.emetain.pokemonwebshop.service.PasswordRules
 import com.emetain.pokemonwebshop.service.MysteryBoxService
 import com.emetain.pokemonwebshop.domain.Order
 import com.emetain.pokemonwebshop.domain.OrderStatus
@@ -78,6 +79,7 @@ class OrderOrchestrator(
 
     /** A guest who just paid makes an account with the email of the order, and is logged in right away. */
     fun createAccount(number: String, request: GuestAccountRequest, httpRequest: HttpServletRequest): ResponseEntity<UserDto> {
+        PasswordRules.requireConfirmed(request.password, request.passwordConfirmation)
         val order = accessible(number, request.token, null)
         if (!canCreateAccount(order)) {
             throw ApiException(HttpStatus.CONFLICT, "account_not_possible", "Voor deze bestelling kun je geen account meer aanmaken. Log in of registreer je via de accountpagina.")

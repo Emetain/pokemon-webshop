@@ -189,4 +189,6 @@ data class GuestAccountRequest(
 
     @field:Size(min = 8, max = 72, message = "Kies een wachtwoord van 8 tot 72 tekens.")
     val password: String = "",
+
+    val passwordConfirmation: String = "",
 )

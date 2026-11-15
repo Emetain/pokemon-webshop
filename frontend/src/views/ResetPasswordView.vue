@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AuthShell from '../components/auth/AuthShell.vue'
 import FormField from '../components/FormField.vue'
@@ -11,15 +11,31 @@ const route = useRoute()
 
 const token = computed(() => route.query.token)
 const password = ref('')
+const passwordConfirmation = ref('')
+const mismatch = ref('')
+const confirmation = ref(null)
 const error = ref('')
 const done = ref(false)
 const submitting = ref(false)
 
+watch([password, passwordConfirmation], () => {
+  mismatch.value = ''
+})
+
 async function submit() {
   error.value = ''
+  if (password.value !== passwordConfirmation.value) {
+    mismatch.value = t('auth.passwordsDiffer')
+    confirmation.value.focus()
+    return
+  }
   submitting.value = true
   try {
-    await authApi.resetPassword({ token: token.value, password: password.value })
+    await authApi.resetPassword({
+      token: token.value,
+      password: password.value,
+      passwordConfirmation: passwordConfirmation.value,
+    })
     done.value = true
   } catch (exception) {
     error.value = exception.message
@@ -52,6 +68,14 @@ async function submit() {
           type="password"
           autocomplete="new-password"
           :hint="t('auth.passwordHint')"
+        />
+        <FormField
+          ref="confirmation"
+          v-model="passwordConfirmation"
+          :label="t('auth.repeatNewPassword')"
+          type="password"
+          autocomplete="new-password"
+          :error="mismatch"
         />
         <button class="btn btn-primary btn-block" type="submit" :disabled="submitting">
           {{ t('auth.reset.submit') }}

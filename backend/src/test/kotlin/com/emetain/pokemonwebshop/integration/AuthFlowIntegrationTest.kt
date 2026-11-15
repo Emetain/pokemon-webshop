@@ -44,7 +44,7 @@ class AuthFlowIntegrationTest : IntegrationTest() {
 
     private fun register(email: String) = mockMvc.perform(
         post("/v1/auth/register").with(fromRandomIp())
-            .json(mapOf("email" to email, "password" to password, "displayName" to "Ash")),
+            .json(mapOf("email" to email, "password" to password, "passwordConfirmation" to password, "displayName" to "Ash")),
     )
 
     private fun forgotPassword(email: String) = mockMvc.perform(
@@ -53,7 +53,7 @@ class AuthFlowIntegrationTest : IntegrationTest() {
 
     private fun resetPassword(token: String, newPassword: String) = mockMvc.perform(
         post("/v1/auth/reset-password").with(fromRandomIp())
-            .json(mapOf("token" to token, "password" to newPassword)),
+            .json(mapOf("token" to token, "password" to newPassword, "passwordConfirmation" to newPassword)),
     )
 
     private fun tokenFromMailTo(email: String): String {
@@ -292,5 +292,39 @@ class AuthFlowIntegrationTest : IntegrationTest() {
         forgotPassword(known).andExpect(status().isTooManyRequests).andExpect(jsonPath("$.error").value("rate_limited"))
         forgotPassword(unknown).andExpect(status().isTooManyRequests)
         assertEquals(3, mailSender.sent.count { it.getRecipients(Message.RecipientType.TO).first().toString() == known })
+    }
+
+    @Test
+    fun `registering needs the password twice, the same`() {
+        val email = uniqueEmail()
+        val body = mapOf("email" to email, "password" to password, "displayName" to "Ash")
+
+        listOf(body + ("passwordConfirmation" to "geheim124"), body).forEach {
+            mockMvc.perform(post("/v1/auth/register").with(fromRandomIp()).json(it))
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.error").value("validation_failed"))
+                .andExpect(jsonPath("$.message").value("De wachtwoorden zijn niet hetzelfde."))
+        }
+
+        login(email).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `a reset needs the new password twice, and a mismatch keeps the link working`() {
+        val email = uniqueEmail()
+        register(email).andExpect(status().isCreated)
+        forgotPassword(email).andExpect(status().isNoContent)
+        val token = tokenFromMailTo(email)
+
+        mockMvc.perform(
+            post("/v1/auth/reset-password").with(fromRandomIp())
+                .json(mapOf("token" to token, "password" to "eennieuwwachtwoord", "passwordConfirmation" to "eennieuwwachtwoorx")),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value("De wachtwoorden zijn niet hetzelfde."))
+        login(email).andExpect(status().isOk)
+
+        resetPassword(token, "eennieuwwachtwoord").andExpect(status().isNoContent)
+        login(email, "eennieuwwachtwoord").andExpect(status().isOk)
     }
 }

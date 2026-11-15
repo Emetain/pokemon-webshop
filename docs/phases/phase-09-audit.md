@@ -319,7 +319,7 @@ Must be fixed before going live.
     ones), syncing card data for all five games, testing payments with the Stripe CLI, and a phase overview with
     links to `docs/phases/`. Most sections exist; check each against the code rather than rewriting them.
 
-- [ ] **S14. Repeat the password when making an account.** (Added in 9b at the owner's request, instead of the
+- [x] **S14. Repeat the password when making an account.** (Added in 9b at the owner's request, instead of the
   confirmation mail of N3.)
   - Where: every place a customer chooses a new password: the register page (`RegisterView.vue`), the reset page
     (`ResetPasswordView.vue`) and the "make an account" form a guest gets after paying (the order placed page,
@@ -329,6 +329,16 @@ Must be fixed before going live.
     to submit when they differ, with "De wachtwoorden zijn niet hetzelfde." tied to the second field. The backend
     checks it too: `passwordConfirmation` in `RegisterRequest`, `ResetPasswordRequest` and `GuestAccountRequest`,
     refused with `validation_failed` and the same message. Tests for the mismatch.
+  - Done (9b): `FormField.vue` got an `error` prop (`aria-invalid`, the error first in `aria-describedby`, red
+    border) and a `focus()`; no form had per-field errors yet, so this is the new pattern. The register page, the
+    reset page and the guest's account form on the order placed page have a second field ("Herhaal je
+    (nieuwe) wachtwoord", `autocomplete="new-password"`); a mismatch stops the submit, shows the message under that
+    field and moves focus there; typing clears it. No other place chooses a new password (login and the account
+    page don't). Backend: `passwordConfirmation` in the three requests, checked by `service/PasswordRules.kt` from
+    `AuthOrchestrator` and `OrderOrchestrator` before anything else happens, so a mismatched reset keeps the link
+    usable. Tests in `AuthFlowIntegrationTest` and `CheckoutIntegrationTest`; existing calls updated. Checked in
+    headless Chromium on the register and reset pages; the guest form after payment was only checked by its test
+    and by reading the code (it needs a paid order).
 
 ## Nice to have
 
@@ -338,10 +348,11 @@ Must be fixed before going live.
 - [ ] **N2. A deploy cuts off requests that are running.** No `server.shutdown: graceful`. Stripe sends a webhook
   again, a customer in checkout sees an error. Fix: graceful shutdown with a 20 second timeout (the container gets
   30).
-- [ ] **N3. Registering doesn't check that the email address is yours.** Someone can make an account on another
+- [x] **N3. Registering doesn't check that the email address is yours.** Someone can make an account on another
   person's address. That person gets it back with "wachtwoord vergeten", which logs the other out, and no orders or
   tickets are tied to an account by email (checked). Registering also tells whether an address has an account
   (`email_taken`). Owner decision: a confirmation mail before the account works.
+  - Decided (9b): the owner chose no confirmation mail, and a repeated password instead. That is S14, done.
 - [ ] **N4. No "change password" and no "delete my account" on the account page.** A password can only be changed
   through the reset mail. Deleting can go through a ticket; say so in the privacy policy.
 - [ ] **N5. Foreign keys without an index:** `binder_selections(card_id)`, `card_wishlist_entries(card_id)`,

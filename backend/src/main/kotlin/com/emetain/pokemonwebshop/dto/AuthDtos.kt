@@ -18,6 +18,9 @@ data class RegisterRequest(
     @field:Size(min = 8, message = "Kies een wachtwoord van minstens 8 tekens.")
     val password: String = "",
 
+    /** The password typed a second time. See [com.emetain.pokemonwebshop.service.PasswordRules]. */
+    val passwordConfirmation: String = "",
+
     @field:NotBlank(message = "Vul je naam in.")
     @field:Size(max = 100, message = "Je naam mag maximaal 100 tekens lang zijn.")
     val displayName: String = "",
@@ -43,6 +46,8 @@ data class ResetPasswordRequest(
 
     @field:Size(min = 8, message = "Kies een wachtwoord van minstens 8 tekens.")
     val password: String = "",
+
+    val passwordConfirmation: String = "",
 )
 
 data class UserDto(

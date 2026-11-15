@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AuthShell from '../components/auth/AuthShell.vue'
 import FormField from '../components/FormField.vue'
@@ -10,12 +10,23 @@ import { t } from '../utils/i18n'
 const router = useRouter()
 const session = useSession()
 
-const form = reactive({ displayName: '', email: '', password: '' })
+const form = reactive({ displayName: '', email: '', password: '', passwordConfirmation: '' })
 const error = ref('')
+const mismatch = ref('')
+const confirmation = ref(null)
 const submitting = ref(false)
+
+watch(() => [form.password, form.passwordConfirmation], () => {
+  mismatch.value = ''
+})
 
 async function submit() {
   error.value = ''
+  if (form.password !== form.passwordConfirmation) {
+    mismatch.value = t('auth.passwordsDiffer')
+    confirmation.value.focus()
+    return
+  }
   submitting.value = true
   try {
     await session.register(form)
@@ -40,6 +51,14 @@ async function submit() {
         type="password"
         autocomplete="new-password"
         :hint="t('auth.passwordHint')"
+      />
+      <FormField
+        ref="confirmation"
+        v-model="form.passwordConfirmation"
+        :label="t('auth.repeatPassword')"
+        type="password"
+        autocomplete="new-password"
+        :error="mismatch"
       />
       <button class="btn btn-primary btn-block" type="submit" :disabled="submitting">
         {{ t('auth.register.submit') }}

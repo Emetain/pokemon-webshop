@@ -194,8 +194,8 @@ export const checkoutApi = {
 export const orderApi = {
   get: (number, token) => request('GET', `/orders/${encodeURIComponent(number)}${queryString({ token })}`),
   cancel: (number, token) => request('POST', `/orders/${encodeURIComponent(number)}/cancel`, { token: token ?? '' }),
-  createAccount: (number, token, password) =>
-    request('POST', `/orders/${encodeURIComponent(number)}/account`, { token, password }),
+  createAccount: (number, token, password, passwordConfirmation) =>
+    request('POST', `/orders/${encodeURIComponent(number)}/account`, { token, password, passwordConfirmation }),
   mine: (page) => request('GET', `/account/orders${queryString({ page })}`),
   myOrder: (number) => request('GET', `/account/orders/${encodeURIComponent(number)}`),
 }

@@ -454,20 +454,39 @@ class CheckoutIntegrationTest : ShopTestSupport() {
         val number = started["orderNumber"].asText()
         val token = started["accessToken"].asText()
 
-        mockMvc.perform(post("/v1/orders/$number/account").with(fromRandomIp()).json(mapOf("token" to token, "password" to "geheim123")))
+        mockMvc.perform(post("/v1/orders/$number/account").with(fromRandomIp()).json(mapOf("token" to token, "password" to "geheim123", "passwordConfirmation" to "geheim123")))
             .andExpect(status().isConflict)
         pay(number).andExpect(status().isOk)
         assertTrue(mockMvc.perform(get("/v1/orders/$number?token=$token")).andReturn().let {
             objectMapper.readTree(it.response.contentAsString)["canCreateAccount"].asBoolean()
         })
 
-        val created = mockMvc.perform(post("/v1/orders/$number/account").with(fromRandomIp()).json(mapOf("token" to token, "password" to "geheim123")))
+        val created = mockMvc.perform(post("/v1/orders/$number/account").with(fromRandomIp()).json(mapOf("token" to token, "password" to "geheim123", "passwordConfirmation" to "geheim123")))
             .andExpect(status().isCreated).andReturn()
         val session = created.response.getCookie("session")!!
         val orders = mockMvc.perform(get("/v1/account/orders").cookie(session)).andExpect(status().isOk).json()
         assertEquals(number, orders["items"].single()["number"].asText())
-        mockMvc.perform(post("/v1/orders/$number/account").with(fromRandomIp()).json(mapOf("token" to token, "password" to "geheim123")))
+        mockMvc.perform(post("/v1/orders/$number/account").with(fromRandomIp()).json(mapOf("token" to token, "password" to "geheim123", "passwordConfirmation" to "geheim123")))
             .andExpect(status().isConflict)
+    }
+
+    @Test
+    fun `a guest's new account needs the password twice`() {
+        val productId = stocked(quantity = 5)["id"].asLong()
+        val email = "dubbel-${word.lowercase()}@example.com"
+        val started = checkout(guestCart(productId), extra = mapOf("email" to email)).andExpect(status().isCreated).json()
+        val number = started["orderNumber"].asText()
+        val token = started["accessToken"].asText()
+        pay(number).andExpect(status().isOk)
+
+        mockMvc.perform(
+            post("/v1/orders/$number/account").with(fromRandomIp())
+                .json(mapOf("token" to token, "password" to "geheim123", "passwordConfirmation" to "geheim321")),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error").value("validation_failed"))
+            .andExpect(jsonPath("$.message").value("De wachtwoorden zijn niet hetzelfde."))
+        assertNull(userService.findByEmail(email))
     }
 
     @Test

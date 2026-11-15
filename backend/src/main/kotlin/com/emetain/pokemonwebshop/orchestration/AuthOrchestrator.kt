@@ -11,6 +11,7 @@ import com.emetain.pokemonwebshop.service.CartCookieService
 import com.emetain.pokemonwebshop.service.CartService
 import com.emetain.pokemonwebshop.service.MailService
 import com.emetain.pokemonwebshop.service.PasswordResetService
+import com.emetain.pokemonwebshop.service.PasswordRules
 import com.emetain.pokemonwebshop.service.RateLimitService
 import com.emetain.pokemonwebshop.service.SessionCookieService
 import com.emetain.pokemonwebshop.service.SessionService
@@ -39,6 +40,7 @@ class AuthOrchestrator(
     }
 
     fun register(request: RegisterRequest, httpRequest: HttpServletRequest): ResponseEntity<UserDto> {
+        PasswordRules.requireConfirmed(request.password, request.passwordConfirmation)
         val user = userService.register(request.email, request.password, request.displayName)
         return startSession(user, HttpStatus.CREATED, httpRequest)
     }
@@ -79,6 +81,7 @@ class AuthOrchestrator(
     }
 
     fun resetPassword(request: ResetPasswordRequest) {
+        PasswordRules.requireConfirmed(request.password, request.passwordConfirmation)
         passwordResetService.reset(request.token, request.password)
     }
 

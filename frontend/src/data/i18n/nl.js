@@ -600,6 +600,7 @@ export default {
       title: 'Bewaar je bestelling in een account',
       intro: 'Kies een wachtwoord. Je account gebruikt {email}, en deze bestelling staat er meteen in.',
       password: 'Wachtwoord',
+      repeatPassword: 'Herhaal je wachtwoord',
       passwordHint: 'Minstens 8 tekens.',
       create: 'Account aanmaken',
       created: 'Je account is aangemaakt en je bent ingelogd.',
@@ -1192,6 +1193,9 @@ export default {
     email: 'E-mailadres',
     password: 'Wachtwoord',
     newPassword: 'Nieuw wachtwoord',
+    repeatPassword: 'Herhaal je wachtwoord',
+    repeatNewPassword: 'Herhaal je nieuwe wachtwoord',
+    passwordsDiffer: 'De wachtwoorden zijn niet hetzelfde.',
     displayName: 'Naam',
     passwordHint: 'Minstens 8 tekens.',
     login: {

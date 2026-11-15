@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { CircleCheck, Hourglass } from 'lucide-vue-next'
 import FormField from '../../components/FormField.vue'
 import FormMessage from '../../components/FormMessage.vue'
@@ -26,7 +26,12 @@ const notFound = ref(false)
 const slow = ref(false)
 const error = ref('')
 
-const account = reactive({ password: '', saving: false, error: '', created: false })
+const account = reactive({ password: '', passwordConfirmation: '', mismatch: '', saving: false, error: '', created: false })
+const confirmation = ref(null)
+
+watch(() => [account.password, account.passwordConfirmation], () => {
+  account.mismatch = ''
+})
 
 const POLL_EVERY_MS = 2000
 const SLOW_AFTER_MS = 30000
@@ -63,11 +68,17 @@ async function poll() {
 
 async function createAccount() {
   account.error = ''
+  if (account.password !== account.passwordConfirmation) {
+    account.mismatch = t('auth.passwordsDiffer')
+    confirmation.value.focus()
+    return
+  }
   account.saving = true
   try {
-    session.state.user = await orderApi.createAccount(props.order, props.token, account.password)
+    session.state.user = await orderApi.createAccount(props.order, props.token, account.password, account.passwordConfirmation)
     account.created = true
     account.password = ''
+    account.passwordConfirmation = ''
     await load()
   } catch (exception) {
     account.error = exception.message
@@ -117,6 +128,14 @@ onBeforeUnmount(() => window.clearTimeout(timer))
             type="password"
             autocomplete="new-password"
             :hint="t('orders.account.passwordHint')"
+          />
+          <FormField
+            ref="confirmation"
+            v-model="account.passwordConfirmation"
+            :label="t('orders.account.repeatPassword')"
+            type="password"
+            autocomplete="new-password"
+            :error="account.mismatch"
           />
           <div>
             <button class="btn btn-primary" type="submit" :disabled="account.saving">{{ t('orders.account.create') }}</button>

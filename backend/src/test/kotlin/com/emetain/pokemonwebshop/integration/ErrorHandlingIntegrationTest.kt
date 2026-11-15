@@ -18,7 +18,7 @@ class ErrorHandlingIntegrationTest : IntegrationTest() {
     fun `validation errors use the error format`() {
         mockMvc.perform(
             post("/v1/auth/register").with(fromRandomIp())
-                .json(mapOf("email" to "geen-email", "password" to "geheim123", "displayName" to "Ash")),
+                .json(mapOf("email" to "geen-email", "password" to "geheim123", "passwordConfirmation" to "geheim123", "displayName" to "Ash")),
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error").value("validation_failed"))
@@ -71,7 +71,7 @@ class ErrorHandlingIntegrationTest : IntegrationTest() {
         val attempt = {
             mockMvc.perform(
                 post("/v1/auth/register").with(sameIp)
-                    .json(mapOf("email" to uniqueEmail(), "password" to password, "displayName" to "Ash")),
+                    .json(mapOf("email" to uniqueEmail(), "password" to password, "passwordConfirmation" to password, "displayName" to "Ash")),
             )
         }
 
