@@ -60,6 +60,8 @@ const result = ref(null)
 const seriesDetail = ref(null)
 const loading = ref(true)
 const notFound = ref(false)
+/** A set logo that didn't load is left out, instead of showing a broken image. */
+const failedLogo = ref('')
 const error = ref('')
 
 const gameInfo = computed(() => (props.game ? findGame(props.game) : null))
@@ -253,8 +255,16 @@ usePageMeta(() =>
           <h1 class="title">{{ title }}</h1>
           <p v-if="intro" class="intro">{{ intro }}</p>
         </div>
-        <span v-if="currentSet?.logoUrl" class="logo-plate">
-          <img class="logo" :src="currentSet.logoUrl" alt="" decoding="async" />
+        <span v-if="currentSet?.logoUrl && failedLogo !== currentSet.logoUrl" class="logo-plate">
+          <img
+            class="logo"
+            :src="currentSet.logoUrl"
+            alt=""
+            width="144"
+            height="56"
+            decoding="async"
+            @error="failedLogo = currentSet.logoUrl"
+          />
         </span>
       </div>
       <nav v-if="chips.length > 2" class="chips" :aria-label="t('shop.nav.categories')">

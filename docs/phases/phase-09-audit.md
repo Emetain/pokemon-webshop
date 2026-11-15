@@ -421,10 +421,15 @@ Must be fixed before going live.
     no Flyway) won't get them; that only matters for speed on a large local database.
 - [ ] **N6. Lists without pages:** admin news, discount codes, drops and release calendar, "Mijn tickets", and the
   public pre-order list. They grow slowly. Page them when one passes a few hundred rows.
-- [ ] **N7. Eight images without `loading="lazy"`.** Most are at the top of the page, where it shouldn't be lazy
+- [x] **N7. Eight images without `loading="lazy"`.** Most are at the top of the page, where it shouldn't be lazy
   (logo, hero, banners). Check `views/catalog/SetView.vue:205`, `views/shop/ShopListView.vue:250` and
   `views/content/NewsArticleView.vue:49`, and add `width` and `height` where they are missing so the page doesn't
   jump.
+  - Done (9b): the eight are all at the top of their page or in admin, so none became lazy. The set logo in the
+    headers of `SetView.vue` and `ShopListView.vue` already had a fixed CSS box; it now also has `width`/`height`.
+    The news article picture (`NewsArticleView.vue`) had no size, so the text jumped when it loaded: it now has the
+    16:9 frame the news cards use (`aspect-ratio` with `object-fit: cover`). Only checked with the build; the demo
+    data has no news picture or set logo to look at.
 - [ ] **N8. Order and ticket keys are stored as plain text,** unlike session tokens. Someone who reads the database
   can open every order page. Hashing them needs a migration and a change to the mails; low priority.
 - [ ] **N9. A paid amount that differs from the order only writes a log line and a note** (`OrderPaymentService.kt:63`).
@@ -432,8 +437,12 @@ Must be fixed before going live.
   admin order list.
 - [ ] **N10. GitHub Actions are pinned to a version tag, not a commit** (`.github/workflows/deploy.yml`). A tag can
   be moved by the action's owner. Pin to commit hashes.
-- [ ] **N11. One broken set symbol:** `https://assets.tcgdex.net/univ/mc/2021swsh/symbol.webp` gives 404 on
+- [x] **N11. One broken set symbol:** `https://assets.tcgdex.net/univ/mc/2021swsh/symbol.webp` gives 404 on
   `/kaarten/pokemon`. Check that a broken symbol hides itself instead of showing a broken image.
+  - Done (9b): the set tiles on `/kaarten/pokemon` already fall back to the set code when a symbol or logo fails
+    (`SetTile.vue`, `@error`), so the broken symbol shows as its code. The two other places that show a set logo,
+    the headers of the set page and of a set's shop page, had no fallback; they now leave the logo out when it fails.
+    Not checked in a browser (no catalog in the demo data).
 - [x] **N12. Hibernate warns at every start** that `hibernate.dialect` doesn't need to be set
   (`application-prod.yml:13` and the other profiles). Remove it where Postgres is detected by itself.
   - Done (9b): `hibernate.dialect` removed from all profiles and the test config (Hibernate 7 detects

@@ -36,6 +36,8 @@ const router = useRouter()
 const session = useSession()
 
 const detail = ref(null)
+/** A logo that didn't load is left out, instead of showing a broken image. */
+const failedLogo = ref('')
 const cards = ref(null)
 const loadingSet = ref(true)
 const loadingCards = ref(true)
@@ -206,8 +208,16 @@ usePageMeta(() =>
             <span>{{ cardCountLabel(detail.set.cardCount) }}</span>
           </p>
         </div>
-        <span v-if="detail?.set.logoUrl" class="logo-plate">
-          <img class="logo" :src="detail.set.logoUrl" alt="" decoding="async" />
+        <span v-if="detail?.set.logoUrl && failedLogo !== detail.set.logoUrl" class="logo-plate">
+          <img
+            class="logo"
+            :src="detail.set.logoUrl"
+            alt=""
+            width="144"
+            height="56"
+            decoding="async"
+            @error="failedLogo = detail.set.logoUrl"
+          />
         </span>
       </div>
     </CatalogBand>

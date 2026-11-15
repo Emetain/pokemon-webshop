@@ -118,6 +118,10 @@ usePageMeta(() =>
 
 .picture {
   width: 100%;
+  height: auto;
+  /* The same frame as on the news cards, so the text below doesn't jump when the picture arrives. */
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
   margin-top: var(--space-5);
   border-radius: var(--radius-md);
 }
