@@ -8,12 +8,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.core.annotation.AnnotatedElementUtils
-import org.springframework.http.HttpMethod
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import org.springframework.web.method.HandlerMethod
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 import kotlin.test.assertTrue
 
@@ -27,27 +24,16 @@ class AdminEndpointsIntegrationTest : IntegrationTest() {
     @Qualifier("requestMappingHandlerMapping")
     private lateinit var handlerMapping: RequestMappingHandlerMapping
 
-    private data class Endpoint(val method: HttpMethod, val pattern: String, val handler: HandlerMethod) {
-        /** Any value will do for a path variable: the check happens before the handler reads it. */
-        val path: String = pattern.replace(Regex("\\{[^}]+}"), "1")
-        override fun toString() = "$method $pattern"
-    }
+    private fun Endpoint.isAdminOnly(): Boolean = isAnnotated(AdminOnly::class.java)
 
-    private fun HandlerMethod.isAdminOnly(): Boolean =
-        hasMethodAnnotation(AdminOnly::class.java) || AnnotatedElementUtils.hasAnnotation(beanType, AdminOnly::class.java)
-
-    private fun allEndpoints(): List<Endpoint> =
-        handlerMapping.handlerMethods.flatMap { (info, handler) ->
-            val methods = info.methodsCondition.methods.map { HttpMethod.valueOf(it.name) }.ifEmpty { listOf(HttpMethod.GET) }
-            info.patternValues.flatMap { pattern -> methods.map { Endpoint(it, pattern, handler) } }
-        }.sortedBy { it.toString() }
+    private fun allEndpoints(): List<Endpoint> = handlerMapping.endpoints()
 
     private fun adminEndpoints(): List<Endpoint> =
-        allEndpoints().filter { it.pattern.startsWith("/v1/admin") || it.handler.isAdminOnly() }
+        allEndpoints().filter { it.pattern.startsWith("/v1/admin") || it.isAdminOnly() }
 
     @Test
     fun `every endpoint under the admin path is admin only`() {
-        val unguarded = allEndpoints().filter { it.pattern.startsWith("/v1/admin") && !it.handler.isAdminOnly() }
+        val unguarded = allEndpoints().filter { it.pattern.startsWith("/v1/admin") && !it.isAdminOnly() }
 
         assertTrue(unguarded.isEmpty(), "Admin endpoints without @AdminOnly: $unguarded")
     }

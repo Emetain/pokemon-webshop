@@ -417,6 +417,22 @@ class CheckoutIntegrationTest : ShopTestSupport() {
     }
 
     @Test
+    fun `a paid order in one account doesn't show in another`() {
+        val productId = stocked(quantity = 5)["id"].asLong()
+        val owner = loggedInUser()
+        addToCart(productId, 1, session = owner).andExpect(status().isOk)
+        val number = checkout(session = owner).andExpect(status().isCreated).json()["orderNumber"].asText()
+        pay(number).andExpect(status().isOk)
+        val stranger = loggedInUser()
+
+        val list = mockMvc.perform(get("/v1/account/orders").cookie(stranger)).andExpect(status().isOk).json()
+        assertEquals(0, list["totalItems"].asInt())
+        mockMvc.perform(get("/v1/account/orders/$number").cookie(stranger)).andExpect(status().isNotFound)
+        mockMvc.perform(get("/v1/orders/$number").cookie(stranger)).andExpect(status().isNotFound)
+        mockMvc.perform(get("/v1/account/orders/$number").cookie(owner)).andExpect(status().isOk)
+    }
+
+    @Test
     fun `nobody else can see an order, not even with the number`() {
         val productId = stocked(quantity = 5)["id"].asLong()
         val started = checkout(guestCart(productId)).andExpect(status().isCreated).json()

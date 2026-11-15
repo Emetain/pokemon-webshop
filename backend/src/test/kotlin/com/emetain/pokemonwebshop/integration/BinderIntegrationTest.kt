@@ -234,6 +234,21 @@ class BinderIntegrationTest : CollectionTestSupport() {
     }
 
     @Test
+    fun `a selection belongs to one account`() {
+        choose("OWN_SELECTION")
+        val first = card(ids[0]).id
+        mockMvc.perform(put("/v1/binder/selection/$first").cookie(session)).andExpect(status().isNoContent)
+        val stranger = loggedInUser()
+
+        mockMvc.perform(get("/v1/binder/selection").cookie(stranger)).andExpect(jsonPath("$.length()").value(0))
+        mockMvc.perform(delete("/v1/binder/selection/$first").cookie(stranger)).andExpect(status().isNoContent)
+
+        mockMvc.perform(get("/v1/binder/selection").cookie(session))
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].id").value(first))
+    }
+
+    @Test
     fun `selecting a card twice keeps it once`() {
         val cardId = card(ids[0]).id
 

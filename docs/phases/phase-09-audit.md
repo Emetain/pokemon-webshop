@@ -237,12 +237,18 @@ Must be fixed before going live.
   - Fix: `Cache-Control: no-store` as the default for `/api/*` in Caddy (`header ?Cache-Control`, so the media
     endpoint keeps its own year-long header).
 
-- [ ] **S12. Tests for login-only endpoints, to go with the admin ones.**
+- [x] **S12. Tests for login-only endpoints, to go with the admin ones.**
   - Where: `AdminEndpointsIntegrationTest` covers admin. Nothing does the same for `@RequiresLogin`.
   - Why: the build prompt asks for authorization tests on every admin and account endpoint.
   - Fix: the same test for every `@RequiresLogin` endpoint (visitor gets 401), a check that everything under
     `/v1/account`, `/v1/collection` and `/v1/wishlist` has the annotation, and ownership tests: another customer's
     address, collection entry, order, ticket list and binder selection give 404 or nothing.
+  - Done (9b): `LoginEndpointsIntegrationTest` finds every `@RequiresLogin` endpoint from the request mappings (30
+    today) and checks a visitor gets 401, and that everything under `/v1/account`, `/v1/collection`, `/v1/wishlist`
+    and `/v1/binder/selection` has the annotation. The discovery moved to `Endpoints.kt`, shared with
+    `AdminEndpointsIntegrationTest`. Ownership: address, collection entry, ticket list and card wishlist already had
+    tests; added a paid order of another account (`CheckoutIntegrationTest`) and another account's binder selection
+    (`BinderIntegrationTest`).
 
 - [ ] **S13. The README needs its phase 9 update.**
   - Where: `README.md`. The first paragraph is still the first draft, with typos, and there is no overview of the
