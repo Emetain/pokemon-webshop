@@ -42,6 +42,17 @@ interface ProductRepository : JpaRepository<Product, Long>, JpaSpecificationExec
 
     fun existsBySlug(slug: String): Boolean
 
+    /** For the sitemap: every product with a page in the shop. */
+    @Query("select new com.emetain.pokemonwebshop.repository.SlugRow(p.slug, p.updatedAt) from Product p where p.status = :status")
+    fun sitemapRows(status: ProductStatus = ProductStatus.ACTIVE): List<SlugRow>
+
+    /** For the sitemap: which kinds of product each game has, such as Pokémon booster boxes. */
+    @Query(
+        "select distinct new com.emetain.pokemonwebshop.repository.GameTypeRow(p.game, p.type) from Product p " +
+            "where p.status = :status and p.game is not null",
+    )
+    fun gameTypes(status: ProductStatus = ProductStatus.ACTIVE): List<GameTypeRow>
+
     /** A duplicated product shares its images, so a file may only go when nothing uses it any more. */
     @Query("select count(p) from Product p join p.images i where i = :url")
     fun countUsingImage(url: String): Long

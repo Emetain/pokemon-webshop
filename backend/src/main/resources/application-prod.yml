@@ -18,6 +18,11 @@ spring:
     console:
       enabled: false
 
+app:
+  seo:
+    # deploy/backend.Dockerfile copies the built frontend's index.html here.
+    index-file: ${SEO_INDEX_FILE:/app/index.html}
+
 # The API documentation is for development only. The shop is reachable from the internet in prod.
 springdoc:
   api-docs:

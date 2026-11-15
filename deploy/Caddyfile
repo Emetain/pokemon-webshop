@@ -35,6 +35,23 @@ Disallow: /
 			{$PREVIEW_USER} {$PREVIEW_PASSWORD_HASH}
 		}
 
+		# For search engines and link previews, which don't run JavaScript: the sitemap, robots.txt, and the product,
+		# drop and news pages with their own title, text and picture, come from the backend. While the preview runs,
+		# robots.txt is answered above.
+		handle /sitemap.xml {
+			rewrite * /api/v1/seo/sitemap.xml
+			reverse_proxy backend:8080
+		}
+		handle /robots.txt {
+			rewrite * /api/v1/seo/robots.txt
+			reverse_proxy backend:8080
+		}
+		@sharePage path_regexp ^/(product|drops|nieuws)/[^/]+$
+		handle @sharePage {
+			rewrite * /api/v1/seo/pages{path}
+			reverse_proxy backend:8080
+		}
+
 		handle /api/* {
 			# The shop has its own login with a cookie. The preview login stays here.
 			request_header -Authorization

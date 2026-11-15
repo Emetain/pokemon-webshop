@@ -24,7 +24,16 @@ data class AppProperties(
     val newsletter: Newsletter = Newsletter(),
     val openai: OpenAi = OpenAi(),
     val http: Http = Http(),
+    val seo: Seo = Seo(),
 ) {
+    data class Seo(
+        /**
+         * The built `index.html` of the frontend, for link previews of product, drop and news pages. The backend
+         * image carries it at /app/index.html. Empty: those pages answer 404 and Caddy isn't sent there.
+         */
+        val indexFile: String = "",
+    )
+
     data class Http(
         /**
          * The largest request body the API reads. Uploads are multipart and have their own limit in

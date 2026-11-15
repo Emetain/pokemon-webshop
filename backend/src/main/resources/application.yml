@@ -81,6 +81,10 @@ app:
     # The largest request body the API reads; larger ones get 413. Uploads are multipart and limited by
     # spring.servlet.multipart above. The longest text an admin can save is 50,000 characters. Caddy has the same limit.
     max-body-size: 256KB
+  seo:
+    # The built index.html of the frontend, for link previews of product, drop and news pages (SeoController). The
+    # prod profile uses the copy in the backend image. Empty: those pages answer 404, which only matters behind Caddy.
+    index-file: ${SEO_INDEX_FILE:}
   mail:
     from: ${MAIL_FROM:noreply@example.com}
   auth:

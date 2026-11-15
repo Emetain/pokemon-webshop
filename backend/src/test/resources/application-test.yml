@@ -26,6 +26,8 @@ app:
     max-attempts: 5
   media:
     directory: build/test-media
+  seo:
+    index-file: classpath:seo/index.html
   catalog:
     sync-cron: "-"
     import-pokedex-on-start: false

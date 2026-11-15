@@ -18,6 +18,10 @@ interface CardSetRepository : JpaRepository<CardSet, Long> {
 
     fun countByGame(game: Game): Long
 
+    /** For the sitemap: every set has a page with its cards. */
+    @Query("select new com.emetain.pokemonwebshop.repository.SetRow(s.game, s.code) from CardSet s")
+    fun sitemapRows(): List<SetRow>
+
     /** Sets the card sources already list but that aren't out yet, for the release calendar suggestions. */
     fun findByReleaseDateAfter(date: java.time.LocalDate): List<CardSet>
 }

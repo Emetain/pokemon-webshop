@@ -170,7 +170,7 @@ Must be fixed before going live.
     (the legal pages) get `noindex`. `index.html` has a default title and description for crawlers without
     JavaScript.
 
-- [ ] **S4. No Open Graph tags for products and drops.**
+- [x] **S4. No Open Graph tags for products and drops.**
   - Where: nowhere in the repository.
   - Why: a shared link in WhatsApp, Discord or Facebook shows no picture or name. Those services don't run
     JavaScript, so tags set by Vue (S3) don't reach them.
@@ -178,8 +178,16 @@ Must be fixed before going live.
     `og:description`, `og:image`, `og:url` and `og:type` filled in for `/product/:slug`, `/drops/:slug` and
     `/nieuws/:slug`, and Caddy sending those three paths to it. Escape every value. A drop has no price and no stock
     in these tags.
+  - Done (9b): `GET /api/v1/seo/pages/{product|drops|nieuws}/{slug}` returns the built `index.html` with the
+    block between `<!-- page-meta -->` markers replaced by the title, description, canonical link, `og:*` tags and
+    `twitter:card`, every value HTML-escaped. An unknown or unpublished slug gets the plain `index.html` with 404,
+    so the app shows its 404 page and search engines get the right status. A drop's tags have its name, text and
+    banner (or a product photo): no price, no stock. The backend image carries the index file
+    (`COPY frontend/dist/index.html` in `deploy/backend.Dockerfile`, `app.seo.index-file`, `/app/index.html` in
+    `prod`); CI builds the frontend before that image. Caddy sends `^/(product|drops|nieuws)/[^/]+$` there. Tests
+    in `SeoIntegrationTest` (escaping, 404s, no drop price).
 
-- [ ] **S5. No `sitemap.xml`, no real `robots.txt`, and nothing keeps private pages out of search engines.**
+- [x] **S5. No `sitemap.xml`, no real `robots.txt`, and nothing keeps private pages out of search engines.**
   - Where: `frontend/public/` is empty. `deploy/Caddyfile` only has the preview's "keep everyone out" robots file
     and the preview's `X-Robots-Tag`. Phase 10 removes both, and then nothing is left.
   - Why: the build prompt asks for a sitemap, a robots file, and shared collection pages that are `noindex` and
@@ -190,6 +198,17 @@ Must be fixed before going live.
     `/klantenservice/ticket` and `/collectie/gedeeld`. A `noindex` meta tag from the S3 composable on those pages,
     on the search page and on the 404 page. Leave the lines marked "preview" in the Caddyfile alone: phase 10
     removes them.
+  - Done (9b): `GET /api/v1/seo/sitemap.xml` (`SeoController` → `SeoOrchestrator` → `SeoService`) lists home,
+    the fixed shop pages, every game's shop and card pages, the game/type pages that have active products, active
+    products, published drops, published news, info pages that aren't drafts (so not the unchecked legal pages) and
+    every card set, with `lastmod` where known. `GET /api/v1/seo/robots.txt` disallows the private paths (the
+    audit's list plus `/drops/*/afrekenen`, `/verlanglijst` and `/nieuwsbrief`), and `/api/` except
+    `/api/v1/media/`, and names the sitemap with `APP_BASE_URL`. I served robots.txt from the backend instead of a
+    static file because it needs the shop's absolute address, which isn't known at build time. Caddy sends
+    `/sitemap.xml` and `/robots.txt` there, inside the preview login; the preview's own robots handle comes first
+    while it exists, so nothing changes until phase 10 removes the "preview" lines. `noindex` comes from the route
+    meta of S3 (account, cart, checkout, orders, tickets, shared collections, wishlist, search, login pages, admin)
+    and from the 404 page. Tests in `SeoIntegrationTest` and `SeoServiceTest`.
 
 - [x] **S6. An unknown address goes to the home page.**
   - Where: `frontend/src/router.js:309` (`redirect: '/'`).

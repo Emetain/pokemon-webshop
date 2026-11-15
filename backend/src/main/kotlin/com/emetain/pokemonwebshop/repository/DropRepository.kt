@@ -13,6 +13,9 @@ interface DropRepository : JpaRepository<Drop, Long> {
 
     fun existsBySlug(slug: String): Boolean
 
+    @Query("select new com.emetain.pokemonwebshop.repository.SlugRow(d.slug, d.updatedAt) from Drop d where d.status <> :draft")
+    fun sitemapRows(draft: DropStatus = DropStatus.DRAFT): List<SlugRow>
+
     @EntityGraph(attributePaths = ["products", "products.product"])
     @Query("select d from Drop d where d.status in :statuses order by d.startsAt desc, d.id desc")
     fun findAllWithProducts(statuses: Collection<DropStatus>): List<Drop>

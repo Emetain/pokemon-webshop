@@ -27,6 +27,12 @@ interface NewsArticleRepository : JpaRepository<NewsArticle, Long> {
 
     fun existsBySlug(slug: String): Boolean
 
+    @Query(
+        "select new com.emetain.pokemonwebshop.repository.SlugRow(a.slug, a.updatedAt) from NewsArticle a " +
+            "where a.published = true and a.publishedAt <= :now",
+    )
+    fun sitemapRows(now: Instant): List<SlugRow>
+
     @Query("select a from NewsArticle a order by coalesce(a.publishedAt, a.createdAt) desc, a.id desc")
     fun findAllForAdmin(): List<NewsArticle>
 }
@@ -35,6 +41,10 @@ interface InfoPageRepository : JpaRepository<InfoPage, Long> {
     fun findBySlug(slug: String): InfoPage?
 
     fun findAllByOrderBySlug(): List<InfoPage>
+
+    /** Pages that were checked: a draft, such as a legal page before the check, stays out of the sitemap. */
+    @Query("select new com.emetain.pokemonwebshop.repository.SlugRow(p.slug, p.updatedAt) from InfoPage p where p.draft = false")
+    fun sitemapRows(): List<SlugRow>
 }
 
 interface NewsletterSubscriberRepository : JpaRepository<NewsletterSubscriber, Long> {
