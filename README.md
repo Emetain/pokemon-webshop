@@ -78,9 +78,12 @@ Keep API keys on the backend. Anything in a `VITE_` variable ends up in the brow
 | `AUTH_COOKIE_SECURE` | off locally, on in `prod` | `Secure` flag of the session cookie |
 | `FORWARD_HEADERS_STRATEGY` | `none` | `native` behind a proxy, so rate limits see the visitor's address |
 | `SEO_INDEX_FILE` | empty; `/app/index.html` in `prod` | The built `index.html` the backend fills in for link previews |
+| `SHOP_ACCESS` | `preview` | `preview` or `open`: the one switch that opens the shop, see [Preview server and deploys](#preview-server-and-deploys). The backend only takes a Stripe test key with `preview` and a live key with `open` |
+| `COMPANY_LEGAL_NAME`, `COMPANY_ADDRESS`, `COMPANY_KVK_NUMBER`, `COMPANY_VAT_NUMBER` | empty | The business details in the footer; empty shows nothing |
+| `CHECKOUT_MAX_OPEN_PER_CUSTOMER`, `CHECKOUT_MAX_OPEN_PER_IP` | `2`, `5` | Checkouts waiting for payment at once, see [Orders and payments](#orders-and-payments) |
 
-The server has a few more in `deploy/server/env.example`: `SITE_ADDRESS`, the preview login, `BACKEND_HEAP` and the
-ports.
+The server has a few more in `deploy/server/env.example`: `SITE_ADDRESS`, `SITE_ALIASES`, the preview login,
+`BACKEND_HEAP` and the ports, and the root-only `deploy/server/ops.env.example` for backups elsewhere and monitoring.
 
 ### Mail
 
@@ -187,11 +190,15 @@ Without `STRIPE_SECRET_KEY` the shop works, but checkout says online payment isn
 If checkout says "We konden de betaalpagina niet openen", switch off Managed Payments in the Stripe dashboard (Settings > Managed payments). Newer accounts have it on by default, and it refuses the payment methods the shop asks for. More tips, such as installing the CLI without Homebrew, are under "Testing a payment" in [docs/phases/phase-05.md](docs/phases/phase-05.md).
 
 A cart line holds at most 10 of a product (`CartRules.MAX_PER_LINE`), and the cart never looks at the stock, so it
-can't tell how many are left. Checkout tells the customer when there isn't enough, without a number. One email address
-or IP address can have at most 2 checkouts waiting for payment (`app.checkout.max-open-checkouts`), and checkout takes
-5 tries per 10 minutes per IP address (`app.rate-limit.buckets.checkout`). The owner chose these numbers in phase 9.
+can't tell how many are left. Checkout tells the customer when there isn't enough, without a number. A customer can
+have at most 2 checkouts waiting for payment (`CHECKOUT_MAX_OPEN_PER_CUSTOMER`): counted by account when logged in, so
+guest checkouts on their address can't block them, and by email address for a guest. An IP address can have at most 5
+(`CHECKOUT_MAX_OPEN_PER_IP`), more because a phone network, school or office puts many customers behind one address;
+that refusal has its own message. Checkout takes 5 tries per 10 minutes per IP address
+(`app.rate-limit.buckets.checkout`). The owner chose 2 and the rate limit in phase 9; 5 per IP address is a default
+from phase 10. All are defaults the owner can change.
 
-In production, add a webhook endpoint in the Stripe dashboard for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`, pointing at `https://<your domain>/api/v1/payments/stripe/webhook`, and use its signing secret. Managed Payments must be off in the live account too.
+In production, add a webhook endpoint in the Stripe dashboard for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`, pointing at `https://<your domain>/api/v1/payments/stripe/webhook`, and use its signing secret. Managed Payments must be off in the live account too. The backend only uses a live key (`sk_live_...`) once `SHOP_ACCESS=open`, and only a test key before that: the other kind keeps online payment off, and the admin dashboard says why. The steps are in [docs/phases/phase-10.md](docs/phases/phase-10.md).
 
 ## Drops
 
@@ -215,7 +222,8 @@ Every page sets its own title, description and canonical link; private pages, se
 search engines and link previews, which don't run JavaScript, the backend serves `/api/v1/seo/sitemap.xml`,
 `/api/v1/seo/robots.txt`, and the product, drop and news pages as `index.html` with their title, text and picture
 filled in. Caddy sends `/sitemap.xml`, `/robots.txt`, `/product/…`, `/drops/…` and `/nieuws/…` there. A drop's preview
-never shows a price or stock. While the preview runs, Caddy's own robots.txt keeps everyone out; phase 10 removes it.
+never shows a price or stock. When the backend doesn't answer, those pages get Caddy's own `index.html` with 503, so the
+app still loads. While `SHOP_ACCESS=preview`, Caddy's own robots.txt keeps everyone out; `open` uses the backend's.
 
 ## Limits
 
@@ -231,14 +239,21 @@ All limits are under `app` in `application.yml`.
 The shop runs as a closed preview on the owner's server: every page asks for a shared login, search engines are kept
 out, and online payment is off. Every push to `main` runs the backend tests and the frontend build in GitHub Actions.
 When both pass, the images go to GitHub's container registry and the server starts them, going back to the previous
-version by itself when the new one doesn't get healthy.
+version by itself when the new one doesn't get healthy or a product page doesn't come back as the app.
+
+Opening the shop is one switch, `SHOP_ACCESS` in the server's `.env`: `preview` (the default) keeps the login, the
+`X-Robots-Tag: noindex` header and the "keep out" robots.txt; `open` drops all three. Any other value stops Caddy
+instead of opening the shop. Change it only with `/opt/poketopia/bin/shop-access.sh open`, which refuses while the
+domain, a live Stripe key, real mail or the KVK number are missing and asks to confirm the legal check. Everything the
+owner still has to bring for that, in order, is in [docs/phases/phase-10.md](docs/phases/phase-10.md).
 
 - `deploy/compose.yml` and `deploy/Caddyfile`: Postgres, the backend on the `prod` profile, Caddy with HTTPS, Mailpit.
-- `deploy/server/`: the scripts on the server (deploy, backup, restore check, make an account admin) and the template
-  of the server's `.env`.
+- `deploy/server/`: the scripts on the server (deploy, backup with an optional copy elsewhere, restore check, make an
+  account admin, open or close the shop, disk check) and the templates of the server's `.env` and `ops.env`.
 - `.github/workflows/deploy.yml`: needs the secrets `DEPLOY_HOST`, `DEPLOY_SSH_KEY` and `DEPLOY_KNOWN_HOSTS`.
 
-How to deploy, roll back, restore a backup and where every secret lives: [docs/phases/phase-07.md](docs/phases/phase-07.md).
+How to deploy, roll back, restore a backup and where every secret lives: [docs/phases/phase-07.md](docs/phases/phase-07.md),
+and for going live [docs/phases/phase-10.md](docs/phases/phase-10.md).
 
 ## Profiles
 
@@ -282,7 +297,7 @@ The shop was built in phases, each with notes on what was built, checked and dec
 | 7. Online preview and automatic deploys | [phase-07.md](docs/phases/phase-07.md) |
 | 8. Extras | [phase-08.md](docs/phases/phase-08.md) |
 | 9. Polish and hardening | [phase-09-audit.md](docs/phases/phase-09-audit.md): the audit, and what phase 9b fixed |
-| 10. Go live | not started |
+| 10. Go live | [phase-10.md](docs/phases/phase-10.md): prepared, waiting for the domain, the KVK number and the legal check ([HANDOVER.md](docs/HANDOVER.md)) |
 
 The plan for every phase is in [docs/build-prompt.md](docs/build-prompt.md).
 

@@ -565,7 +565,7 @@ address and counts for the limit of 5 per 10 minutes. This was the owner's choic
 
 Nothing Critical. Two things to decide before the shop opens, the rest is small.
 
-- [ ] **R1. The cap on open checkouts per IP address also hits customers who share an address.** (Should decide)
+- [x] **R1. The cap on open checkouts per IP address also hits customers who share an address.** (Should decide)
   - Where: `service/OpenCheckoutService.kt` (`requireRoom`), and the `checkout` bucket of 5 per 10 minutes in
     `application.yml`.
   - Why: a phone network, a school or an office puts many people behind one address; the drop limits in the same
@@ -575,14 +575,27 @@ Nothing Critical. Two things to decide before the shop opens, the rest is small.
   - Fix: a higher cap per IP than per email address (for example 5), and its own message for the IP case ("Er wordt
     vanaf jouw netwerk veel tegelijk afgerekend, probeer het over een paar minuten opnieuw"). Owner decision: the
     numbers.
-- [ ] **R2. Someone who knows a customer's email address can keep them from checking out.** (Should decide)
+  - Done (phase 10): `app.checkout.max-open-per-customer` (2) and `max-open-per-ip` (5), from
+    `CHECKOUT_MAX_OPEN_PER_CUSTOMER` and `CHECKOUT_MAX_OPEN_PER_IP`, passed through both compose files and described in
+    both env templates as defaults the owner can change. The IP case answers `too_many_checkouts_from_network`: "Er
+    wordt vanaf jouw netwerk op dit moment veel tegelijk afgerekend. Probeer het over een paar minuten opnieuw.",
+    without a word about the customer's own orders. Test in `CheckoutIntegrationTest` (the test profile sets the IP cap
+    to 3, below the checkout rate limit, so a test can reach it; `ProdProfileIntegrationTest` checks the real defaults).
+    To know: the checkout rate limit of 5 tries per 10 minutes per IP address (phase 9, the owner's number) is still
+    the tighter of the two for a shared network; raise it too if customers get refused after a release.
+- [x] **R2. Someone who knows a customer's email address can keep them from checking out.** (Should decide)
   - Where: the same check, per email address.
   - Why: two guest checkouts with the customer's address fill their cap for 15 minutes, and it can be repeated. The
     refusal also tells that the address has open orders. This is the same kind of price as the login lock of S1,
     but it wasn't written down for S2.
   - Fix: count a logged-in customer by account instead of by email address, so guest checkouts on their address
     don't block them. For guests, accept it or count email address and IP together.
-- [ ] **R3. Product, drop and news pages now depend on the backend for every visitor.** (Nice to have)
+  - Done (phase 10): a logged-in customer is counted by account (`OrderRepository.countOpenShopCheckoutsOfUser`), a
+    guest by email address as before. For guests I accepted the risk instead of counting email and IP together: it
+    needs someone who knows a guest's address, blocks for at most 15 minutes, and the cap per IP address and the rate
+    limit already do the work against one visitor holding the stock. Tests in `CheckoutIntegrationTest`: guest
+    checkouts on a customer's address don't block them, and an account's own open checkouts count.
+- [x] **R3. Product, drop and news pages now depend on the backend for every visitor.** (Nice to have)
   - Where: `deploy/Caddyfile` (`@sharePage`), `SeoService.indexHtml`.
   - Why: before 9b these pages loaded from Caddy and showed their own error when the backend was away. Now a direct
     link or a refresh gets Caddy's 502 while the backend restarts in a deploy, and an empty 404 when the backend
@@ -590,13 +603,28 @@ Nothing Critical. Two things to decide before the shop opens, the rest is small.
     (checked in the workflow).
   - Fix: in Caddy, fall back to the plain `index.html` when the backend doesn't answer (`handle_errors` or
     `lb_try_duration` with a fallback), and let the deploy check one product page besides the health endpoint.
-- [ ] **R4. A chunked form body above 2 MB answers 500 and writes a stack trace.** (Nice to have)
+  - Done (phase 10): `handle_errors 502 503 504` in `deploy/Caddyfile` serves Caddy's own `index.html` for product,
+    drop and news pages with 503, `Retry-After: 60` and the security headers, so the app loads and search engines come
+    back later. A 404 from the backend (an unknown page, or an empty one when it can't read its `index.html`) gets
+    Caddy's `index.html` with 404 through `handle_response`. Checked through the real Caddyfile in `caddy:2.11-alpine`:
+    with the backend stopped, product and news pages gave 503 with the app, other pages 200, the API 502, and the login
+    still came first. `deploy.sh` now also asks the backend for `/api/v1/seo/pages/product/deploy-check` after the
+    health check and goes back to the previous version when the answer isn't the app (dry run with stubs in phase 10).
+- [x] **R4. A chunked form body above 2 MB answers 500 and writes a stack trace.** (Nice to have)
   `Content-Type: application/x-www-form-urlencoded` with `Transfer-Encoding: chunked`: Tomcat stops it at its own
   2 MB, so memory is safe, but the answer is `internal_error` and every try logs an ERROR. Fix: map Tomcat's
   `InvalidParameterException` to 413 without a stack trace. Caddy already stops these at 256 kB.
-- [ ] **R5. Caddy's own 413 has no body.** (Nice to have) A too large request stopped by Caddy gets an empty answer
+  - Done (phase 10): `GlobalExceptionHandler.handleInvalidParameters` answers 413 `request_too_large` for Tomcat's
+    error code 413 and 400 `bad_request` otherwise, with one INFO line and no stack trace. Test with a real Tomcat in
+    `ProdProfileIntegrationTest` (a 3 MB chunked form to `/api/v1/auth/login`), and again by hand on the `prod` jar.
+- [x] **R5. Caddy's own 413 has no body.** (Nice to have) A too large request stopped by Caddy gets an empty answer
   instead of the JSON error. Check that the frontend shows a readable message for it, for example for an admin who
   uploads a picture above 7 MB.
+  - Done (phase 10): it showed the generic "Er ging iets mis". `services/api.js` now gives an answer without a body
+    a message by status: 413 "Dit bestand is te groot. Kies een bestand tot 5 MB." for uploads and "Dit is te veel om in
+    één keer te versturen…" otherwise, and 502, 503 or 504 "De shop is even niet bereikbaar, bijvoorbeeld door een
+    update…". A message from the backend still wins. Checked in Node with a stubbed `fetch` (no frontend test setup
+    exists); most upload forms also refuse a file above 5 MB before sending it.
 - [ ] **R6. A multipart body is read before the login check.** (Nice to have, not new in 9b) A visitor can send up
   to 6 MB of multipart to an admin path; it is written to a temporary file and then refused with 401. Bounded, and
   not in memory. Caddy limits multipart outside `/api/v1/admin` to 256 kB.
@@ -605,11 +633,15 @@ Nothing Critical. Two things to decide before the shop opens, the rest is small.
   `stringValue()` on anything that isn't text. Every call site was checked and is fine with the data the sources
   send today, and the mapper tests pass. But no sync of all five games ran after the upgrade. Look at the sync page
   in admin after the first night on the preview.
-- [ ] **R8. No index on `orders.email_key`.** (Nice to have) Every checkout now counts open orders by it. Fine while
+- [x] **R8. No index on `orders.email_key`.** (Nice to have) Every checkout now counts open orders by it. Fine while
   the table is small; add it with the next migration.
-- [ ] **R9. Pages with a fixed title use the general description.** (Nice to have) Drops, news, the collection, the
+  - Done (phase 10): `V14__orders_email_key_index.sql` adds `idx_orders_email_key_status (email_key, status)`, and
+    `Order` declares the same index. Checked: `FlywayMigrationTest`, and the `prod` jar on an empty Postgres 16
+    database applied 15 migrations with Hibernate validation passing and the index in `pg_indexes`.
+- [x] **R9. Pages with a fixed title use the general description.** (Nice to have) Drops, news, the collection, the
   Pokédex, pre-orders and the release calendar have their own title but the shop's default description. Add a
   `description` key to their route `meta`.
+  - Done (phase 10): `meta.pages.*` in `nl.js` and a `description` on those six routes.
 - **Note on the notes.** C1 and S11 refer to "the Caddy test run under S4", but S4 doesn't describe one. 9c ran it
   again; the results are in the table above.
 
