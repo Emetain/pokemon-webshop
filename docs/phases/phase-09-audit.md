@@ -460,7 +460,8 @@ Must be fixed before going live.
 - [x] **N12. Hibernate warns at every start** that `hibernate.dialect` doesn't need to be set
   (`application-prod.yml:13` and the other profiles). Remove it where Postgres is detected by itself.
   - Done (9b): `hibernate.dialect` removed from all profiles and the test config (Hibernate 7 detects
-    PostgreSQL and H2 by itself). No HHH90000025 in the test run.
+    PostgreSQL and H2 by itself). No HHH90000025 in the test run, and no WARN line at all in the final `prod`
+    start.
 
 ## For the owner, not for 9b
 
@@ -492,3 +493,18 @@ Must be fixed before going live.
 18. S13: README.
 19. Nice to have, as far as time allows: N1, N2, N5, N7, N11, N12 first.
 20. Done when: `./gradlew test`, `npm run build`, and the `prod` profile starting cleanly on an empty database.
+
+## 9b results
+
+Final checks on 2026-11-15, after the last code change (commit `aa93d13`):
+
+- `./gradlew clean test bootJar`: BUILD SUCCESSFUL, 1024 tests, 0 failures, 0 errors, 0 skipped (952 before 9b).
+- `npm run build`: passes with Vite 8.3.8 in a copy of the frontend with the same sources and lockfile, and with
+  the Vite 5 that `frontend/node_modules` still has (see S9).
+- `npm audit`: found 0 vulnerabilities.
+- `prod` on an empty Postgres 16 database (Spring Boot 4.1.2): Flyway validated and applied 14 migrations (V1 to V13
+  and the repeatable one), Hibernate validation passed, 0 ERROR and 0 WARN lines, started in 6.5 s,
+  `/api/actuator/health` answered 200 `{"status":"UP"}`, and SIGTERM gave "Graceful shutdown complete".
+- Open: N4, N6, N8 and N9, each with its reason above. For the owner: run `npm install` in `frontend/` once after
+  stopping the dev server (S9).
+
