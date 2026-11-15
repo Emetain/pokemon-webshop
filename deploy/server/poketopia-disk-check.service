@@ -1,0 +1,8 @@
+[Unit]
+Description=Poketopia warning when a disk is almost full
+
+[Service]
+Type=oneshot
+# Optional: DISK_PING_URL and DISK_WARN_PERCENT. The "-" lets it run without the file.
+EnvironmentFile=-/opt/poketopia/ops.env
+ExecStart=/opt/poketopia/bin/disk-check.sh

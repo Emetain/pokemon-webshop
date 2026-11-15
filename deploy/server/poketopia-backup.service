@@ -5,6 +5,8 @@ After=docker.service
 
 [Service]
 Type=oneshot
+# Optional: the copy elsewhere (RESTIC_*) and BACKUP_PING_URL. The "-" lets it run without the file.
+EnvironmentFile=-/opt/poketopia/ops.env
 ExecStart=/opt/poketopia/bin/backup.sh
 # Gives way to Minecraft and the shop.
 Nice=10

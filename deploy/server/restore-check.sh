@@ -57,7 +57,7 @@ docker run --detach --name "$CHECK" --network poketopia_default --memory 1g \
 for _ in $(seq 60); do
   if docker exec "$CHECK" curl --fail --silent http://localhost:8080/api/actuator/health >/dev/null 2>&1; then
     log "The backend started on the restored database (Flyway and schema validation passed)."
-    for game in pokemon magic lorcana one-piece; do
+    for game in pokemon magic lorcana one-piece riftbound; do
       sets=$(docker exec "$CHECK" curl --fail --silent "http://localhost:8080/api/v1/catalog/$game/sets" | { grep -o '"code"' || true; } | wc -l)
       printf '  %-10s %5s sets through the API\n' "$game" "$sets"
     done
