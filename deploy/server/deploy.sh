@@ -109,6 +109,15 @@ start() {
   compose "$1" up --detach --wait --wait-timeout "$WAIT_SECONDS" --remove-orphans
 }
 
+# Besides the health check: a product page as Caddy asks the backend for it. It must be the app's index.html, also for
+# a product that doesn't exist, or links to products, drops and news would show an empty page.
+pages_work() {
+  local body
+  body=$(compose "$1" exec -T backend curl --silent --max-time 10 \
+    http://localhost:8080/api/v1/seo/pages/product/deploy-check 2>/dev/null) || return 1
+  [[ $body == *'<div id="app">'* ]]
+}
+
 prune() {
   local live old
   live=$(live_version)
@@ -127,14 +136,17 @@ prepare_release
 dump_database
 
 if start "$tag"; then
-  ln -sfn "$tag" "$RELEASES/current.new"
-  mv -T "$RELEASES/current.new" "$RELEASES/current"
-  log "Version $tag is live."
-  prune
-  exit 0
+  if pages_work "$tag"; then
+    ln -sfn "$tag" "$RELEASES/current.new"
+    mv -T "$RELEASES/current.new" "$RELEASES/current"
+    log "Version $tag is live."
+    prune
+    exit 0
+  fi
+  log "Version $tag started, but a product page didn't come back as the app: the backend can't read its index.html."
 fi
 
-log "Version $tag did not start. The last lines of its backend log:"
+log "Version $tag did not work. The last lines of its backend log:"
 compose "$tag" logs --no-color --tail 80 backend || true
 if [[ -n $previous && $previous != "$tag" ]]; then
   log "Going back to version $previous"
