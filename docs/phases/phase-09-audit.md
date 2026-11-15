@@ -1,0 +1,279 @@
+# Phase 9a: Audit
+
+Read-only audit of the whole repository on 2026-11-15, on branch `feature/phase-9-polish` (commit `6b2e490`, the
+phase 8 handover). No code was changed. Phase 9b works through the checklist at the bottom and ticks items off here.
+
+## How it was checked
+
+- Read the security layer, every controller's annotations, checkout, stock, payment, drop stock, auth, media and
+  mail code, the deploy files and the CI workflow.
+- `./gradlew test` and `npm run build` (results under "What is in good shape").
+- Started the `prod` profile on an empty Postgres database, and a second backend on a copy of the local database
+  (142,588 cards, 3,124 products) with a customer and an admin test account. Both were removed afterwards.
+- Opened 49 pages (24 as a visitor, 5 as a customer, 20 as an admin) at 360, 768 and 1280 px in headless Chromium.
+  Measured horizontal overflow, console errors, failed requests, titles and headings, and ran axe-core
+  (WCAG 2 A and AA) at 360 and 1280 px.
+- Called the API directly for wrong input, oversized bodies, rate limits, other customers' data and admin paths.
+- Searched the tree and the whole git history for keys and passwords.
+
+Not checked, so still open for 9b or 9c:
+
+- A keyboard walk-through by hand of the menus, dialogs and the checkout form. Only the automatic checks ran (axe,
+  the skip link, the `:focus-visible` style in `main.css:244`).
+- The live drop flow and a real Stripe payment. Both were tested in phases 5 and 6 and their code was only read here.
+- The preview server itself. Only the files in `deploy/` were read.
+- Single CVEs for the dependencies. Only the versions and `npm audit` were looked at.
+
+## What is in good shape
+
+Listed so 9b doesn't redo it and 9c knows what was already verified.
+
+- **Tests and build:** 952 backend tests, 0 failures. `npm run build` passes; the entry bundle is 222 kB (80 kB
+  gzipped) and every view is its own chunk.
+- **`prod` profile:** starts on an empty database in 10 seconds. Flyway applies all 13 migrations (V1 to V12 plus the repeatable
+  vendor one), Hibernate validation passes. Swagger, the API docs, the H2 console and `/actuator/env` answer 404.
+- **Admin endpoints:** every controller under `/v1/admin` has `@AdminOnly`. A customer gets 403, a visitor 401.
+  `AdminEndpointsIntegrationTest` finds the endpoints from the request mappings and tests each one.
+- **Other customers' data:** changing or deleting another account's address gives 404; so does another account's
+  order, an order without its key and an order with a wrong key. Addresses, collection entries, the binder, reviews
+  and tickets are all looked up by the logged-in user's id.
+- **Uploads:** all eight upload endpoints are admin only, limited to 5 MB, and accept only JPG, PNG and WebP by the
+  first bytes of the file. Files get a generated name, and the media endpoint only serves names it made itself.
+- **Stripe webhook:** signature checked on the raw body with a five-minute tolerance, the session is fetched from
+  Stripe again before an order is marked paid, and a second delivery changes nothing.
+- **Stock and drops:** the version on the stock row, the lock on the order and the lock on the drop are in place, with
+  concurrency tests for both.
+- **Secrets:** none in the tree or in any commit. Only `.env.example` files were ever committed.
+- **Sessions:** random 32-byte tokens stored as a hash, `HttpOnly`, `Secure` in `prod`, `SameSite=Lax`. A password
+  reset logs out every session. Login takes equally long for a known and an unknown address.
+- **Proxy headers:** HSTS, `nosniff`, `X-Frame-Options`, a Referrer-Policy, a Permissions-Policy and a strict
+  Content-Security-Policy are set in `deploy/Caddyfile`.
+- **Layout:** no page overflows sideways at 360, 768 or 1280 px. Every page has exactly one `h1`. All 23 images have
+  an `alt`. No console errors apart from the expected 401 of `/auth/me` for visitors.
+- **States:** every data view has loading and error handling.
+- **Speed on the full catalog:** product lists 30 to 130 ms, card search 120 to 135 ms, set pages 25 ms, the Pokédex
+  15 ms. Lists that grow are paged and the page size is capped. The big tables have the indexes their filters use.
+
+## Critical
+
+Must be fixed before going live.
+
+- [ ] **C1. Spring Boot 3.3.2 is more than two years old.**
+  - Where: `backend/build.gradle.kts:5` (`org.springframework.boot` 3.3.2, July 2024), with it Spring Framework,
+    Tomcat, Hibernate and Jackson of that time. Also `springdoc` 2.6.0 (line 35) and Kotlin 1.9.25 (lines 2 to 4).
+  - Why: the shop is on the internet and takes payments. Two years of security fixes in the web server and framework
+    are missing, and the 3.3 line no longer gets free patches.
+  - Fix: move to the newest patch of the newest supported Spring Boot 3.x line, with the matching
+    dependency-management plugin and springdoc. Keep `stripe-java` 29.2.0, because it pins the Stripe API version
+    the code was written for. Run all tests and the `prod` start on an empty database afterwards. If a move to the
+    newest line breaks too much, at least take the last 3.3.x patch and write down what blocked the rest.
+
+- [ ] **C2. A request body has no size limit.**
+  - Where: no limit in `deploy/Caddyfile` (the `handle /api/*` block), and none in the backend for JSON. Only
+    multipart uploads are limited (`application.yml:18`).
+  - Why: tested: a 20 MB JSON body to `/v1/auth/login` was read completely before it was refused. Anyone can send
+    many large bodies without logging in. The backend has 2 GB of heap on a server it shares with Minecraft, and
+    `-XX:+ExitOnOutOfMemoryError` restarts it when memory runs out, so this takes the shop down.
+  - Fix: in Caddy, `request_body { max_size ... }`: about 7 MB for the upload paths and the CSV import, 256 kB for
+    the rest of `/api`. Add the same guard in the backend for requests that don't come through Caddy, as a filter
+    that refuses a JSON body above the limit with 413 and the usual error format. Add a test.
+
+- [ ] **C3. Mail has no username, password or TLS settings.**
+  - Where: `backend/src/main/resources/application.yml:11` only has `MAIL_HOST` and `MAIL_PORT`. `deploy/compose.yml`,
+    `docker-compose.yml`, `.env.example` and `deploy/server/env.example` have no variables for them either.
+  - Why: Mailpit needs no login, a real mail provider does. Without this, phase 10 can't send order confirmations,
+    password resets or ticket answers.
+  - Fix: add `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SMTP_AUTH` and `MAIL_SMTP_STARTTLS` (default empty and `false`,
+    so Mailpit keeps working), map them to `spring.mail.*`, pass them through both compose files, and describe them
+    in both env examples and the README. Add connect and read timeouts, so a slow mail server can't hold a thread.
+
+- [ ] **C4. The cart gives away how many of a product are in stock.**
+  - Where: `backend/.../service/CartService.kt:48` and `:71` refuse a quantity above `stock.available`.
+  - Why: the owner's rule is that customers never learn the stock: not on a page, not in an API reply and not in a
+    message. Tested on a product with 10 in stock: adding 99, 50 and 20 was refused, adding 10 worked, adding one
+    more was refused. Five requests gave the exact number. It works for every product with fewer than 99.
+  - Fix: let the cart accept any quantity up to a fixed maximum per line without looking at the stock, as long as
+    the product can be bought. Checkout already refuses when there isn't enough, with a message without a number
+    (`CheckoutService.kt:82`); make that message tell the customer to lower the quantity. Lower the maximum per
+    line from 99 to 10, so a try at checkout says little. Together with S2 this turns five free requests into a few
+    slow, limited checkouts. Check the drop cart (`DropCartService`) for the same pattern. Update the cart tests.
+  - Owner decision: the maximum per line (10 is a suggestion), and whether a customer may only find out at checkout
+    that a quantity isn't available. That is the price of not showing stock in the cart.
+
+## Should fix
+
+- [ ] **S1. Logging in can be guessed per account, and reset mails can be sent in bulk.**
+  - Where: `AuthController.kt:36` and `:50`. The limit is 10 a minute per IP address (`application.yml`,
+    `app.rate-limit`). Tested: attempts 9 to 12 within a minute got 429.
+  - Why: nothing counts per account. An attacker with many addresses can keep guessing one customer's password, and
+    one address can send a customer 10 reset mails a minute.
+  - Fix: also count per email address with `RateLimitService`, for example 10 failed logins per 15 minutes and 3
+    reset mails per hour. Keep the answer the same for known and unknown addresses.
+
+- [ ] **S2. One visitor can hold the whole stock.**
+  - Where: `CheckoutController.kt:31` (`checkout` bucket, default 10 a minute per IP), `CheckoutService.createOrder`.
+  - Why: every checkout reserves its stock for 15 minutes, also for a guest without paying. Only an earlier checkout
+    of the same cart is closed. With a new guest cart each time, one address can reserve up to 99 of every product,
+    ten times a minute, and keep the shop "Uitverkocht".
+  - Fix: give `checkout` its own tight limit (for example 5 per 10 minutes per IP), and refuse a new checkout when
+    the same email address or IP already has 2 open ones. The lower maximum per line from C4 helps too.
+
+- [ ] **S3. Every page has the title "Poketopia" and no description.**
+  - Where: `frontend/index.html:6`. Nothing in `frontend/src` sets `document.title` or a meta tag. Measured: 147 of
+    147 page loads had the same title and no description.
+  - Why: search results and browser tabs all show the same word, and screen reader users don't hear which page
+    opened.
+  - Fix: a small composable that sets the title, description and canonical link. Static pages get theirs from the
+    route's `meta`; product, set, card, drop, news and info pages set theirs once their data is loaded. Format:
+    `<page> | Poketopia`.
+
+- [ ] **S4. No Open Graph tags for products and drops.**
+  - Where: nowhere in the repository.
+  - Why: a shared link in WhatsApp, Discord or Facebook shows no picture or name. Those services don't run
+    JavaScript, so tags set by Vue (S3) don't reach them.
+  - Fix: a backend endpoint that returns the built `index.html` with title, description, `og:title`,
+    `og:description`, `og:image`, `og:url` and `og:type` filled in for `/product/:slug`, `/drops/:slug` and
+    `/nieuws/:slug`, and Caddy sending those three paths to it. Escape every value. A drop has no price and no stock
+    in these tags.
+
+- [ ] **S5. No `sitemap.xml`, no real `robots.txt`, and nothing keeps private pages out of search engines.**
+  - Where: `frontend/public/` is empty. `deploy/Caddyfile` only has the preview's "keep everyone out" robots file
+    and the preview's `X-Robots-Tag`. Phase 10 removes both, and then nothing is left.
+  - Why: the build prompt asks for a sitemap, a robots file, and shared collection pages that are `noindex` and
+    stay out of the sitemap.
+  - Fix: a backend endpoint for `sitemap.xml` (home, game and type pages, active products, published drops, news,
+    published info pages, card sets) and Caddy sending `/sitemap.xml` to it. A `robots.txt` for the live shop that
+    points to it and disallows `/admin`, `/account`, `/afrekenen`, `/winkelwagen`, `/bestelling`,
+    `/klantenservice/ticket` and `/collectie/gedeeld`. A `noindex` meta tag from the S3 composable on those pages,
+    on the search page and on the 404 page. Leave the lines marked "preview" in the Caddyfile alone: phase 10
+    removes them.
+
+- [ ] **S6. An unknown address goes to the home page.**
+  - Where: `frontend/src/router.js:309` (`redirect: '/'`).
+  - Why: a mistyped or old link silently shows the home page. Search engines see a second copy of the home page
+    instead of a missing page.
+  - Fix: a `NotFoundView` with a message, a search field and a link home, `noindex`, at the catch-all route. Use it
+    for an unknown product, drop, set and article too, where the views now show their own error.
+
+- [ ] **S7. The admin menu fills the whole phone screen.**
+  - Where: `frontend/src/components/layout/AdminLayout.vue:37`. The sidebar only moves to the side from 900 px
+    (line 179).
+  - Why: at 360 px the 19 menu links come first on every admin page. The friend who adds pictures has to scroll past
+    all of them on a phone, every time.
+  - Fix: below 900 px, a top bar with a menu button that opens and closes the list, closed after a click on a link,
+    with `aria-expanded` and working with the keyboard.
+
+- [ ] **S8. A wrong query value shows Spring's own English error.**
+  - Where: `GlobalExceptionHandler.kt:58`. `GET /v1/products?page=abc` answers
+    `Failed to convert value of type 'java.lang.String' to required type 'int'; For input string: "abc"`.
+  - Why: it shows internals, and it isn't Dutch.
+  - Fix: for a field error with the code `typeMismatch`, answer "Dit verzoek klopt niet. Controleer de ingevulde
+    gegevens." Handle `MethodArgumentTypeMismatchException` the same way. Add a test in
+    `ErrorHandlingIntegrationTest`.
+
+- [ ] **S9. `npm audit` reports 1 high and 1 moderate.**
+  - Where: `frontend/package.json` (`vite` ^5.4.2, and `esbuild` through it).
+  - Why: both are in the development server, not in what customers get. They matter on a developer's computer:
+    any website open in the browser can read the dev server.
+  - Fix: move to the current Vite with the matching `@vitejs/plugin-vue`, then check `npm run build`, `npm run dev`
+    and the proxy. `npm audit` should report nothing.
+
+- [ ] **S10. Three accessibility findings from axe.**
+  - `color-contrast`: three links in the admin sidebar, among them "Kaartdata" and "Afbeeldingen"
+    (`AdminLayout.vue`, `.sidebar-link` at line 158, `--color-on-brand-soft` on the brand blue). 20 hits, all this
+    sidebar. Fix: a lighter text colour that reaches 4.5:1.
+  - `definition-list`: the `dl` on the order page and the admin order page has children that aren't `dt`/`dd`
+    groups (`components/order/OrderDetails.vue`, `views/admin/AdminOrderView.vue`). Fix: only `dt`, `dd` or a `div`
+    that wraps a pair.
+  - `scrollable-region-focusable`: the shipping rates table at 360 px can only be scrolled by touch
+    (`views/content/InfoPageView.vue:46`, `.rates-scroll`). Fix: `tabindex="0"`, `role="region"` and a label.
+  - Also do the keyboard walk-through that this audit skipped: main menu, search, cart, checkout, the chat widget
+    and the cookie notice. Write what you find below this item.
+
+- [ ] **S11. Personal API answers may be cached.**
+  - Where: `deploy/Caddyfile`, the `handle /api/*` block. The backend sends no `Cache-Control` except for media.
+  - Why: order, account and admin answers contain names and addresses. Without a header a browser or a proxy in
+    between may keep them.
+  - Fix: `Cache-Control: no-store` as the default for `/api/*` in Caddy (`header ?Cache-Control`, so the media
+    endpoint keeps its own year-long header).
+
+- [ ] **S12. Tests for login-only endpoints, to go with the admin ones.**
+  - Where: `AdminEndpointsIntegrationTest` covers admin. Nothing does the same for `@RequiresLogin`.
+  - Why: the build prompt asks for authorization tests on every admin and account endpoint.
+  - Fix: the same test for every `@RequiresLogin` endpoint (visitor gets 401), a check that everything under
+    `/v1/account`, `/v1/collection` and `/v1/wishlist` has the annotation, and ownership tests: another customer's
+    address, collection entry, order, ticket list and binder selection give 404 or nothing.
+
+- [ ] **S13. The README needs its phase 9 update.**
+  - Where: `README.md`. The first paragraph is still the first draft, with typos, and there is no overview of the
+    phases.
+  - Fix: as the build prompt says: what the app does, how to run it, the environment variables (with C3's new
+    ones), syncing card data for all five games, testing payments with the Stripe CLI, and a phase overview with
+    links to `docs/phases/`. Most sections exist; check each against the code rather than rewriting them.
+
+## Nice to have
+
+- [ ] **N1. Started without a profile, the backend runs `dev`.** `application.yml:10` (`profiles.default: dev`): an
+  in-memory database, the H2 console and demo accounts. `deploy/compose.yml` sets `prod`, so this only bites when
+  someone starts the jar another way on a server. Fix: refuse to start on `dev` when `APP_BASE_URL` is `https`.
+- [ ] **N2. A deploy cuts off requests that are running.** No `server.shutdown: graceful`. Stripe sends a webhook
+  again, a customer in checkout sees an error. Fix: graceful shutdown with a 20 second timeout (the container gets
+  30).
+- [ ] **N3. Registering doesn't check that the email address is yours.** Someone can make an account on another
+  person's address. That person gets it back with "wachtwoord vergeten", which logs the other out, and no orders or
+  tickets are tied to an account by email (checked). Registering also tells whether an address has an account
+  (`email_taken`). Owner decision: a confirmation mail before the account works.
+- [ ] **N4. No "change password" and no "delete my account" on the account page.** A password can only be changed
+  through the reset mail. Deleting can go through a ticket; say so in the privacy policy.
+- [ ] **N5. Foreign keys without an index:** `binder_selections(card_id)`, `card_wishlist_entries(card_id)`,
+  `drop_queue_entries(user_id)`, `product_reviews(user_id)`, `set_release_products(product_id)`,
+  `set_releases(set_id)`, `mystery_box_prizes(card_id)`, `support_messages(author_id)`, `ai_usage(user_id)`,
+  `order_status_changes(admin_user_id)`, `stock_movements(admin_user_id)`. All small tables today. A new migration
+  (V13) for the first six is enough; never change an old migration.
+- [ ] **N6. Lists without pages:** admin news, discount codes, drops and release calendar, "Mijn tickets", and the
+  public pre-order list. They grow slowly. Page them when one passes a few hundred rows.
+- [ ] **N7. Eight images without `loading="lazy"`.** Most are at the top of the page, where it shouldn't be lazy
+  (logo, hero, banners). Check `views/catalog/SetView.vue:205`, `views/shop/ShopListView.vue:250` and
+  `views/content/NewsArticleView.vue:49`, and add `width` and `height` where they are missing so the page doesn't
+  jump.
+- [ ] **N8. Order and ticket keys are stored as plain text,** unlike session tokens. Someone who reads the database
+  can open every order page. Hashing them needs a migration and a change to the mails; low priority.
+- [ ] **N9. A paid amount that differs from the order only writes a log line and a note** (`OrderPaymentService.kt:63`).
+  The amount comes from our own Stripe session, so it shouldn't happen. Show such orders with a warning in the
+  admin order list.
+- [ ] **N10. GitHub Actions are pinned to a version tag, not a commit** (`.github/workflows/deploy.yml`). A tag can
+  be moved by the action's owner. Pin to commit hashes.
+- [ ] **N11. One broken set symbol:** `https://assets.tcgdex.net/univ/mc/2021swsh/symbol.webp` gives 404 on
+  `/kaarten/pokemon`. Check that a broken symbol hides itself instead of showing a broken image.
+- [ ] **N12. Hibernate warns at every start** that `hibernate.dialect` doesn't need to be set
+  (`application-prod.yml:13` and the other profiles). Remove it where Postgres is detected by itself.
+
+## For the owner, not for 9b
+
+- Backups are on the same server as the shop (your choice in phase 7). Phase 10 can add a copy elsewhere.
+- Stripe's webhook can't get past the preview's shared login. That is fine while payments are off in the preview;
+  phase 10 opens it.
+- The decisions in C4 (maximum per cart line, finding out at checkout) and N3 (confirming an email address).
+
+## Checklist for 9b, in order
+
+1. C2: body size limit in Caddy and in the backend, with a test.
+2. C4: cart no longer reveals stock; maximum per line 10; drop cart checked; tests updated.
+3. S2: tight `checkout` limit and a cap on open checkouts per email and IP.
+4. S1: per-email limits for login and reset mails.
+5. C3: SMTP login, TLS and timeouts, through compose files and env examples.
+6. S8: Dutch answer for a wrong query value, with a test.
+7. S12: tests for login-only endpoints and ownership.
+8. S11: `no-store` for `/api/*` in Caddy.
+9. S3: page titles, descriptions and canonical links.
+10. S6: a real 404 page.
+11. S5: sitemap, robots file and `noindex` on private pages.
+12. S4: Open Graph tags from the backend for products, drops and news.
+13. S7: admin menu behind a button on small screens.
+14. S10: the three axe findings and the keyboard walk-through.
+15. S9: Vite upgrade until `npm audit` is clean.
+16. C1: Spring Boot upgrade. Last of the code changes, so everything above is tested on the version it was written
+    on, and then once more after the upgrade.
+17. S13: README.
+18. Nice to have, as far as time allows: N1, N2, N5, N7, N11, N12 first.
+19. Done when: `./gradlew test`, `npm run build`, and the `prod` profile starting cleanly on an empty database.
