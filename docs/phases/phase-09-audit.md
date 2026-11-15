@@ -355,12 +355,19 @@ Must be fixed before going live.
     tests; added a paid order of another account (`CheckoutIntegrationTest`) and another account's binder selection
     (`BinderIntegrationTest`).
 
-- [ ] **S13. The README needs its phase 9 update.**
+- [x] **S13. The README needs its phase 9 update.**
   - Where: `README.md`. The first paragraph is still the first draft, with typos, and there is no overview of the
     phases.
   - Fix: as the build prompt says: what the app does, how to run it, the environment variables (with C3's new
     ones), syncing card data for all five games, testing payments with the Stripe CLI, and a phase overview with
     links to `docs/phases/`. Most sections exist; check each against the code rather than rewriting them.
+  - Done (9b): new opening (what the shop does, the stack with Spring Boot 4, Java 21, Vite 8 and the Node
+    versions); a table of every environment variable with its default, including C3's mail settings (in their own
+    "Mail" section) and `SEO_INDEX_FILE`; the cart and checkout limits of C4/S2 under "Orders and payments"; new
+    sections "Search engines and link previews" and "Limits"; and a phase overview linking every phase note. The
+    sections on running, card data for all five games, the Stripe CLI, drops, the preview server and profiles were
+    checked against the code and still hold; the Swagger and H2 console paths were checked on the running `dev`
+    profile after the upgrade.
 
 - [x] **S14. Repeat the password when making an account.** (Added in 9b at the owner's request, instead of the
   confirmation mail of N3.)

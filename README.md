@@ -1,8 +1,13 @@
-# pokemon-webshop
+# Poketopia
 
-this is a pokemon webshop which i'm creating with a few friends of mine. here you can also collect cards, add them to certain lists and keep track of the price market what your cards are worth accoording to card market
+Poketopia (repository `pokemon-webshop`) is a webshop for Pokémon and four other trading card games: Disney Lorcana,
+Magic: The Gathering, One Piece Card Game and Riftbound. A few friends build it together. Customers buy sealed
+products, singles and accessories, join limited drops, and keep track of their own collection, Pokédex and wishlist,
+with what their cards are worth according to Cardmarket and TCGplayer. Admins manage products, stock, orders, drops,
+news, info pages and customer service.
 
-The repository has a Kotlin + Spring Boot backend in `backend/` and a Vue 3 + Vite frontend in `frontend/`.
+The repository has a Kotlin + Spring Boot 4 backend in `backend/` (Java 21), a Vue 3 + Vite 8 frontend in
+`frontend/` (Node 20.19 or newer, or 22.12 or newer), and the files for the server in `deploy/`.
 
 ## Running
 
@@ -54,6 +59,28 @@ To add a new API key:
 3. Pass it to the `backend` service in `docker-compose.yml`, because containers don't receive `.env` automatically.
 
 Keep API keys on the backend. Anything in a `VITE_` variable ends up in the browser.
+
+| Variable | Default | What it does |
+|----------|---------|--------------|
+| `APP_BASE_URL` | `http://localhost:5173` | The shop's public address: links in mails, Stripe's return page, the sitemap and link previews |
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | `pokemonwebshop` | The Postgres container |
+| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | per profile | The backend's database, see [Profiles](#profiles) |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SMTP_AUTH`, `MAIL_SMTP_STARTTLS` | Mailpit | Outgoing mail, see [Mail](#mail) |
+| `MAIL_FROM` | `noreply@example.com` | Sender of every mail |
+| `SHOP_EMAIL` | empty: `MAIL_FROM` | Where new tickets and replies are mailed |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | empty: no online payment | Stripe Checkout, see [Orders and payments](#orders-and-payments) |
+| `OPENAI_API_KEY` | empty: AI switched off | Hero slides written by AI and the chatbot |
+| `OPENAI_MONTHLY_LIMIT_USD`, `OPENAI_CHAT_MONTHLY_LIMIT_USD` | `5`, `3` | What each may spend per month |
+| `OPENAI_TEXT_MODEL`, `OPENAI_IMAGE_MODEL`, `OPENAI_CHAT_MODEL` | see `.env.example` | The OpenAI models |
+| `CATALOG_SYNC_CRON`, `RELEASE_SUGGESTION_CRON`, `COLLECTION_SNAPSHOT_CRON` | 03:00, 04:45, 07:00 | The nightly jobs; `-` switches one off |
+| `TCGDEX_BASE_URL` and the other `*_BASE_URL` | the public APIs | The card data sources, see [Card data](#card-data) |
+| `MEDIA_DIRECTORY` | `data/media` | Uploaded images |
+| `AUTH_COOKIE_SECURE` | off locally, on in `prod` | `Secure` flag of the session cookie |
+| `FORWARD_HEADERS_STRATEGY` | `none` | `native` behind a proxy, so rate limits see the visitor's address |
+| `SEO_INDEX_FILE` | empty; `/app/index.html` in `prod` | The built `index.html` the backend fills in for link previews |
+
+The server has a few more in `deploy/server/env.example`: `SITE_ADDRESS`, the preview login, `BACKEND_HEAP` and the
+ports.
 
 ### Mail
 
@@ -159,6 +186,11 @@ Without `STRIPE_SECRET_KEY` the shop works, but checkout says online payment isn
 
 If checkout says "We konden de betaalpagina niet openen", switch off Managed Payments in the Stripe dashboard (Settings > Managed payments). Newer accounts have it on by default, and it refuses the payment methods the shop asks for. More tips, such as installing the CLI without Homebrew, are under "Testing a payment" in [docs/phases/phase-05.md](docs/phases/phase-05.md).
 
+A cart line holds at most 10 of a product (`CartRules.MAX_PER_LINE`), and the cart never looks at the stock, so it
+can't tell how many are left. Checkout tells the customer when there isn't enough, without a number. One email address
+or IP address can have at most 2 checkouts waiting for payment (`app.checkout.max-open-checkouts`), and checkout takes
+5 tries per 10 minutes per IP address (`app.rate-limit.buckets.checkout`). The owner chose these numbers in phase 9.
+
 In production, add a webhook endpoint in the Stripe dashboard for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`, pointing at `https://<your domain>/api/v1/payments/stripe/webhook`, and use its signing secret. Managed Payments must be off in the live account too.
 
 ## Drops
@@ -176,6 +208,23 @@ How it runs:
 - The slide of a drop is black by default, or red, yellow or green as chosen per drop. It shows the drop's banner, or without one the pictures of up to three of its products. Product photos with a transparent background (PNG or WebP) look best on it.
 
 During the drop, `/admin/drops/{id}/live` shows the waiting room and sales, and has buttons to pause the line, change its speed or end the drop. After the drop the same page is the report. The timings are under `app.drops` in `application.yml`.
+
+## Search engines and link previews
+
+Every page sets its own title, description and canonical link; private pages, search and drafts get `noindex`. For
+search engines and link previews, which don't run JavaScript, the backend serves `/api/v1/seo/sitemap.xml`,
+`/api/v1/seo/robots.txt`, and the product, drop and news pages as `index.html` with their title, text and picture
+filled in. Caddy sends `/sitemap.xml`, `/robots.txt`, `/product/…`, `/drops/…` and `/nieuws/…` there. A drop's preview
+never shows a price or stock. While the preview runs, Caddy's own robots.txt keeps everyone out; phase 10 removes it.
+
+## Limits
+
+- Request bodies: 256 kB for JSON (`app.http.max-body-size`), 6 MB for an upload, in the backend and in Caddy.
+- Logins: 10 a minute per IP address, and 10 failed ones per 15 minutes per email address. Reset mails: 3 an hour per
+  email address. Known and unknown addresses get the same answers.
+- API answers carry `Cache-Control: no-store`, except uploaded images.
+
+All limits are under `app` in `application.yml`.
 
 ## Preview server and deploys
 
@@ -217,3 +266,23 @@ How to deploy, roll back, restore a backup and where every secret lives: [docs/p
 - All backend calls go through `services/api.js` with base URL `/api/v1`. Create that file when the first call is needed.
 - Stores are plain composables such as `useSession()` exported from `stores/session.js`.
 - Components use the CSS variables from `main.css`, never raw colours.
+
+## Phases
+
+The shop was built in phases, each with notes on what was built, checked and decided:
+
+| Phase | Notes |
+|-------|-------|
+| 1. Foundation | [phase-01.md](docs/phases/phase-01.md) |
+| 2. Card catalog | [phase-02.md](docs/phases/phase-02.md) |
+| 3. Collection and Pokédex | [phase-03.md](docs/phases/phase-03.md) |
+| 4. Shop products and stock | [phase-04.md](docs/phases/phase-04.md) |
+| 5. Cart, checkout and orders | [phase-05.md](docs/phases/phase-05.md) |
+| 6. Drops | [phase-06.md](docs/phases/phase-06.md) |
+| 7. Online preview and automatic deploys | [phase-07.md](docs/phases/phase-07.md) |
+| 8. Extras | [phase-08.md](docs/phases/phase-08.md) |
+| 9. Polish and hardening | [phase-09-audit.md](docs/phases/phase-09-audit.md): the audit, and what phase 9b fixed |
+| 10. Go live | not started |
+
+The plan for every phase is in [docs/build-prompt.md](docs/build-prompt.md).
+
