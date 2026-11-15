@@ -1,4 +1,4 @@
-# The shop on the preview server (phase 7), and later the live shop (phase 10).
+# The shop on the server: the closed preview of phase 7, and the live shop once SHOP_ACCESS=open (phase 10).
 #
 # Don't run this file by hand on the server: deploy.sh sets IMAGE_TAG to the commit, and compose.sh runs commands on
 # the version that is live. Every version carries its own copy of this file inside its web image, so a deploy and a
@@ -36,7 +36,8 @@ services:
     shm_size: 128m
     logging: *logging
 
-  # Catches every mail until phase 10 sets up real mail. Its page is only on the server itself: open an SSH tunnel.
+  # Catches every mail while MAIL_HOST is mailpit, until a real mail provider is set in the .env. Its page is only on
+  # the server itself: open an SSH tunnel.
   mailpit:
     image: axllent/mailpit:v1.33
     restart: unless-stopped
@@ -72,9 +73,20 @@ services:
       # Caddy sets X-Forwarded-For, so rate limits see the visitor's IP address instead of Caddy's.
       FORWARD_HEADERS_STRATEGY: native
       MEDIA_DIRECTORY: /app/media
+      # "preview" (the default) or "open", the same switch as for Caddy below. The backend only takes a Stripe test key
+      # in the preview and a live key once the shop is open.
+      SHOP_ACCESS: ${SHOP_ACCESS:-preview}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       SHOP_EMAIL: ${SHOP_EMAIL:-}
+      # The business details in the footer. Empty shows nothing.
+      COMPANY_LEGAL_NAME: ${COMPANY_LEGAL_NAME:-}
+      COMPANY_ADDRESS: ${COMPANY_ADDRESS:-}
+      COMPANY_KVK_NUMBER: ${COMPANY_KVK_NUMBER:-}
+      COMPANY_VAT_NUMBER: ${COMPANY_VAT_NUMBER:-}
+      # Checkouts waiting for payment at once, per customer and per IP address.
+      CHECKOUT_MAX_OPEN_PER_CUSTOMER: ${CHECKOUT_MAX_OPEN_PER_CUSTOMER:-2}
+      CHECKOUT_MAX_OPEN_PER_IP: ${CHECKOUT_MAX_OPEN_PER_IP:-5}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MONTHLY_LIMIT_USD: ${OPENAI_MONTHLY_LIMIT_USD:-5}
       OPENAI_TEXT_MODEL: ${OPENAI_TEXT_MODEL:-gpt-6.1-terra}
@@ -118,6 +130,11 @@ services:
     restart: unless-stopped
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env}
+      # Optional: more addresses that redirect to SITE_ADDRESS, such as www.<domain>.
+      SITE_ALIASES: ${SITE_ALIASES:-}
+      # Who gets in: "preview" (the shared login, the default) or "open". Anything else stops Caddy. See the Caddyfile.
+      SHOP_ACCESS: ${SHOP_ACCESS:-preview}
+      # The preview login. Keep them in the .env after opening, so going back to the preview is one switch.
       PREVIEW_USER: ${PREVIEW_USER:?set PREVIEW_USER in .env}
       PREVIEW_PASSWORD_HASH: ${PREVIEW_PASSWORD_HASH:?set PREVIEW_PASSWORD_HASH in .env}
     ports:

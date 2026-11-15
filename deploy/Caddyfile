@@ -1,12 +1,18 @@
 # Caddy in front of the shop: HTTPS with a Let's Encrypt certificate that renews by itself, a redirect from HTTP,
 # the built frontend, and /api to the backend. The values come from the server's .env through compose.yml.
 #
-# Closed preview (phase 7): every page asks for one shared login, and search engines are kept out. Phase 10 opens the
-# shop by removing the lines marked "preview".
+# Who gets in is one switch, SHOP_ACCESS in the server's .env:
+#
+#   preview  (the default) The closed preview of phase 7: one shared login for every page, and search engines are
+#            kept out with an X-Robots-Tag header and a robots.txt that disallows everything.
+#   open     The live shop: no login, and search engines get the shop's own robots.txt and sitemap.
+#
+# Open the shop only after the legal check, with /opt/poketopia/bin/shop-access.sh (see docs/phases/phase-10.md).
+# Any other value stops Caddy from starting, so a typo never opens the shop. The lines that differ between the two
+# are the snippets marked "preview" below; everything else is the same for both.
 
-{$SITE_ADDRESS} {
-	encode zstd gzip
-
+# Security headers. Also used for the error pages below, because Caddy doesn't add them to an error by itself.
+(headers) {
 	header {
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
@@ -17,10 +23,19 @@
 		# from any https address. Scripts, styles, fonts and API calls only from the shop itself.
 		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 		-Server
-		# preview: keep search engines out
-		X-Robots-Tag "noindex, nofollow"
 	}
+	import {$SHOP_ACCESS:preview}_headers
+}
 
+# preview: keep search engines out
+(preview_headers) {
+	header X-Robots-Tag "noindex, nofollow"
+}
+
+(open_headers) {
+}
+
+(preview_gate) {
 	# preview: readable without the login, so search engines can see they aren't welcome
 	handle /robots.txt {
 		header Content-Type "text/plain; charset=utf-8"
@@ -29,11 +44,30 @@ Disallow: /
 "
 	}
 
+	# preview: one shared login for every other page
+	@login not path /robots.txt
+	basic_auth @login {
+		{$PREVIEW_USER} {$PREVIEW_PASSWORD_HASH}
+	}
+}
+
+(open_gate) {
+}
+
+# SITE_ALIASES (optional): more addresses, such as www.<domain> or the old preview address, that redirect to
+# SITE_ADDRESS. Caddy gets a certificate for each of them too.
+{$SITE_ADDRESS} {$SITE_ALIASES} {
+	encode zstd gzip
+	import headers
+
+	@alias not host {$SITE_ADDRESS}
+	redir @alias https://{$SITE_ADDRESS}{uri} 308
+
+	import {$SHOP_ACCESS:preview}_gate
+
 	handle {
-		# preview: one shared login for every page
-		basic_auth {
-			{$PREVIEW_USER} {$PREVIEW_PASSWORD_HASH}
-		}
+		# The shop has its own login with a cookie: the backend never sees the preview login.
+		request_header -Authorization
 
 		# For search engines and link previews, which don't run JavaScript: the sitemap, robots.txt, and the product,
 		# drop and news pages with their own title, text and picture, come from the backend. While the preview runs,
@@ -49,15 +83,23 @@ Disallow: /
 		@sharePage path_regexp ^/(product|drops|nieuws)/[^/]+$
 		handle @sharePage {
 			rewrite * /api/v1/seo/pages{path}
-			reverse_proxy backend:8080
+			reverse_proxy backend:8080 {
+				# An unknown page: the app shows its own 404 page. Caddy's copy of index.html also covers a backend
+				# that can't read its own, which would otherwise answer an empty page.
+				@notFound status 404
+				handle_response @notFound {
+					root * /srv
+					rewrite * /index.html
+					file_server {
+						status 404
+					}
+				}
+			}
 		}
 
 		handle /api/* {
-			# The shop has its own login with a cookie. The preview login stays here.
-			request_header -Authorization
-
 			# Request bodies: uploads and the CSV import in admin are multipart, up to 6 MB in the backend. Everything
-			# else is JSON, 256 kB at most (app.http.max-body-size). Larger bodies get 413 before they reach the backend.
+			# else is JSON, 256 kB at most (app.http.max-body-size). Larger ones get 413 before they reach the backend.
 			@upload {
 				path /api/v1/admin/*
 				header Content-Type multipart/form-data*
@@ -89,6 +131,23 @@ Disallow: /
 			# Routes of the Vue app, such as /kaarten/pokemon, all get index.html.
 			try_files {path} /index.html
 			file_server
+		}
+	}
+
+	# While the backend restarts (a deploy takes about a minute) or is down, a product, drop or news page still gets
+	# the app, as every other page does, without its link preview. 503 tells search engines to come back later.
+	handle_errors 502 503 504 {
+		# The error route sees the address as the visitor asked for it, before the rewrite above.
+		@sharePage path_regexp ^/(product|drops|nieuws)/[^/]+$
+		handle @sharePage {
+			import headers
+			header Cache-Control "no-cache"
+			header Retry-After "60"
+			root * /srv
+			rewrite * /index.html
+			file_server {
+				status 503
+			}
 		}
 	}
 }
