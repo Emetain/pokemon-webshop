@@ -242,12 +242,21 @@ Must be fixed before going live.
     `MethodArgumentTypeMismatchException` (a single `@RequestParam` or path variable) already went through
     `handleExceptionInternal` to the same answer; the test covers all three in `ErrorHandlingIntegrationTest`.
 
-- [ ] **S9. `npm audit` reports 1 high and 1 moderate.**
+- [x] **S9. `npm audit` reports 1 high and 1 moderate.**
   - Where: `frontend/package.json` (`vite` ^5.4.2, and `esbuild` through it).
   - Why: both are in the development server, not in what customers get. They matter on a developer's computer:
     any website open in the browser can read the dev server.
   - Fix: move to the current Vite with the matching `@vitejs/plugin-vue`, then check `npm run build`, `npm run dev`
     and the proxy. `npm audit` should report nothing.
+  - Done (9b): `vite` ^8.3.8 and `@vitejs/plugin-vue` ^6.0.11, the current versions on npm on 2026-11-15 (plugin-vue
+    6 supports Vite 5 to 8; Vite 8 needs Node 20.19+ or 22.12+, CI uses Node 22). Vite 8 builds with Rolldown and
+    Lightning CSS instead of Rollup and esbuild, so esbuild is gone. `vite.config.js` needed no change. Checked in a
+    copy of the frontend with the same sources and lockfile: `npm audit` "found 0 vulnerabilities", `npm run build`
+    passes (the entry plus the shared chunk are about the same size as before), the dev server answers and its
+    `/api` proxy works, and the browser checks of S3, S7, S10 and S14 pass against it. Only `package.json` and
+    `package-lock.json` changed in the repository: `frontend/node_modules` still has Vite 5, because the owner's
+    dev server on 5173 runs from it and replacing Vite under a running server can break it. Stop it and run
+    `npm install` in `frontend/` once.
 
 - [x] **S10. Three accessibility findings from axe.**
   - `color-contrast`: three links in the admin sidebar, among them "Kaartdata" and "Afbeeldingen"
