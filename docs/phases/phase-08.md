@@ -23,7 +23,7 @@ without one, release calendar suggestions, and changes to drops after a test wit
 - **Discount codes** (`/admin/kortingscodes`): percentage or amount, a minimum order, from and to dates, a maximum
   number of uses, once per customer, only for some games or product types, and drops only when "ook op drops" is on.
   Products only, never shipping; free shipping goes by the subtotal after the discount. Stripe gets a one-off coupon,
-  so its page shows the same total. Uses are counted under a lock on the code.
+  so its page shows the same total. Uses count the orders that aren't cancelled, checked under a lock on the code.
 - **Pre-order page** (`/pre-order`) and **release calendar** (`/releasekalender`), managed at
   `/admin/releasekalender`. A release links to its pre-orders and gets a hero slide in one click.
 - **Hero slides written by AI** (`/admin/hero`): a prompt gives a title, text, button and optionally a picture, as a
@@ -109,6 +109,25 @@ They are in `.env.example`, both compose files and `deploy/server/env.example`. 
 | Picture search, copy of the real database, real TCGplayer (133 s) | Pokémon 1,151 of 1,762 cards and 831 of 1,470 products filled, 660 to review; Magic 931 of 1,451 products, 289 to review; One Piece 21 cards and 48 products, 46 to review, 25 non-English skipped; Lorcana 97 of 107 products, 3 to review. Screenshots of blisters, collection boxes and boxes: every automatic picture matched |
 | Release suggestions on real data | 8 upcoming sets (One Piece, Riftbound, Lorcana, Magic); "Toevoegen" fills the form in |
 | Browser | Every new page at 360 and 1280 px: no script errors, no sideways scrolling. Fixed along the way: the cookie notice covered the chat button on phones, the chat panel slid under the header, and review pictures were cut to a square |
+
+## Sources and research
+
+- **Riftbound through tcgcsv.com** (TCGplayer category 89): groups are sets, products with a `Number` are cards,
+  prices come per group (`marketPrice` in USD, `Normal`/`Foil`). Pictures are
+  `tcgplayer-cdn.tcgplayer.com/product/{id}_200w.jpg` and `_in_1000x1000.jpg` (716x1000, the official render).
+  tcgcsv's FAQ: no key, an identifiable User-Agent, a pause between calls, a thank-you link appreciated, and "careful
+  if you seek to profit" (on the legal check). Riftcodex (api.riftcodex.com) didn't have Radiance (2026-10-23) yet.
+  The set code `RXK/DA` broke URLs and became `RXK-DA`.
+- **Riftbound products** from Cardmarket's `products_nonsingles_22.json`: 122 products in the categories Riftbound
+  Booster, Display, Champion Decks, Riftbound Box Sets and RB Set.
+- **Picture matching**, tuned on the owner's data: sets match by name without the code in front, by abbreviation, or
+  by one name containing the other (166 of 183 Pokémon sets, 189 of 191 Magic sets). Sealed products match by a word
+  score with synonyms ("Halve"/"Half", "1-Pack"/"Single Pack", Magic's "Display" = box, "Fat Pack Bundle" = "Bundle");
+  cases, displays, code cards and "[Set of N]" never match, and products in another language are skipped. Magic's
+  162 cards without a picture are all signed Art Series cards ("37s"), which TCGplayer doesn't list.
+- **OpenAI prices**, from OpenAI's pricing page: `gpt-6.1-terra` $1 in / $5 out per million tokens (2026-11-12),
+  `gpt-image-2.6-flare` at 1536x1024 medium about $0.05 a picture, `gpt-6-luna` $0.10 / $0.50 (2026-11-13). The real
+  chatbot answer used 1,322 tokens in and 108 out.
 
 ## Decisions
 
