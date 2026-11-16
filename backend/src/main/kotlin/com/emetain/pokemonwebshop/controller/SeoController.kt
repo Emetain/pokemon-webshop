@@ -23,6 +23,9 @@ class SeoController(
     @GetMapping("/robots.txt")
     fun robots(): ResponseEntity<String> = seoOrchestrator.robots()
 
+    @GetMapping("/ads.txt")
+    fun adsTxt(): ResponseEntity<String> = seoOrchestrator.adsTxt()
+
     @GetMapping("/pages/product/{slug}")
     fun productPage(@PathVariable slug: String): ResponseEntity<String> = seoOrchestrator.productPage(slug)
 

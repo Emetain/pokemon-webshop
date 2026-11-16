@@ -1,4 +1,5 @@
 <script setup>
+import AdSlot from '../../components/AdSlot.vue'
 import { ref, watch } from 'vue'
 import { Newspaper } from 'lucide-vue-next'
 import FormMessage from '../../components/FormMessage.vue'
@@ -45,6 +46,7 @@ watch(() => [props.game, props.page], load, { immediate: true })
       </ul>
       <PageLinks :page="news.page + 1" :total-pages="news.totalPages" />
     </template>
+    <AdSlot place="content" />
   </div>
 </template>
 

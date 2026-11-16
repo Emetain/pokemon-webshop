@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { ChevronLeft } from 'lucide-vue-next'
 import FormMessage from '../../components/FormMessage.vue'
 import RichText from '../../components/content/RichText.vue'
+import AdSlot from '../../components/AdSlot.vue'
 import { findGame } from '../../data/games'
 import { contentApi } from '../../services/api'
 import { formatDate } from '../../utils/format'
@@ -60,6 +61,7 @@ usePageMeta(() =>
       <p v-if="article.summary" class="summary">{{ article.summary }}</p>
       <img v-if="article.imageUrl" class="picture" :src="article.imageUrl" alt="" decoding="async" />
       <RichText class="body" :text="article.body" />
+      <AdSlot place="content" />
     </article>
   </div>
 </template>

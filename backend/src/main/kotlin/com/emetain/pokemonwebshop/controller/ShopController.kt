@@ -1,9 +1,11 @@
 package com.emetain.pokemonwebshop.controller
 
+import com.emetain.pokemonwebshop.dto.AdsDto
 import com.emetain.pokemonwebshop.dto.CompanyDto
 import com.emetain.pokemonwebshop.dto.HeroSlideDto
 import com.emetain.pokemonwebshop.dto.ShopSeriesDetailDto
 import com.emetain.pokemonwebshop.dto.ShopSeriesDto
+import com.emetain.pokemonwebshop.orchestration.AdsOrchestrator
 import com.emetain.pokemonwebshop.orchestration.CompanyOrchestrator
 import com.emetain.pokemonwebshop.orchestration.HeroSlideOrchestrator
 import com.emetain.pokemonwebshop.orchestration.ShopNavigationOrchestrator
@@ -22,6 +24,7 @@ class ShopController(
     private val navigationOrchestrator: ShopNavigationOrchestrator,
     private val heroSlideOrchestrator: HeroSlideOrchestrator,
     private val companyOrchestrator: CompanyOrchestrator,
+    private val adsOrchestrator: AdsOrchestrator,
 ) {
 
     @GetMapping("/{game}/series")
@@ -39,4 +42,9 @@ class ShopController(
     @GetMapping("/company")
     fun company(): CompanyDto =
         companyOrchestrator.company()
+
+    /** Whether the free card pages show ads, and which ad units. */
+    @GetMapping("/ads")
+    fun ads(): AdsDto =
+        adsOrchestrator.ads()
 }

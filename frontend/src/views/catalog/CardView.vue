@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import AdSlot from '../../components/AdSlot.vue'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CardImage from '../../components/catalog/CardImage.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
@@ -203,6 +204,7 @@ usePageMeta(() =>
           <p v-else class="source">{{ t('catalog.card.noPrices') }}</p>
         </section>
       </div>
+      <AdSlot place="catalog" />
     </div>
   </article>
 </template>

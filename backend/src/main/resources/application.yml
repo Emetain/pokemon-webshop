@@ -96,6 +96,14 @@ app:
     address: ${COMPANY_ADDRESS:}
     kvk-number: ${COMPANY_KVK_NUMBER:}
     vat-number: ${COMPANY_VAT_NUMBER:}
+  # Ads from Google AdSense on the free card and news pages, never on shop, cart, checkout, drop or account pages.
+  # "off" (the default) or "adsense". Caddy reads the same ADS for the Content-Security-Policy. The publisher id
+  # (ca-pub-...) and the ids of the ad units come from the AdSense account; a place without an ad unit shows nothing.
+  ads:
+    mode: ${ADS:off}
+    adsense-client: ${ADSENSE_CLIENT:}
+    slot-catalog: ${ADSENSE_SLOT_CATALOG:}
+    slot-content: ${ADSENSE_SLOT_CONTENT:}
   http:
     # The largest request body the API reads; larger ones get 413. Uploads are multipart and limited by
     # spring.servlet.multipart above. The longest text an admin can save is 50,000 characters. Caddy has the same limit.

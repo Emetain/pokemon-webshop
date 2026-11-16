@@ -84,6 +84,11 @@ services:
       COMPANY_ADDRESS: ${COMPANY_ADDRESS:-}
       COMPANY_KVK_NUMBER: ${COMPANY_KVK_NUMBER:-}
       COMPANY_VAT_NUMBER: ${COMPANY_VAT_NUMBER:-}
+      # Ads on the free card and news pages: "off" (the default) or "adsense", the same switch as for Caddy below.
+      ADS: ${ADS:-off}
+      ADSENSE_CLIENT: ${ADSENSE_CLIENT:-}
+      ADSENSE_SLOT_CATALOG: ${ADSENSE_SLOT_CATALOG:-}
+      ADSENSE_SLOT_CONTENT: ${ADSENSE_SLOT_CONTENT:-}
       # Checkouts waiting for payment at once, per customer and per IP address.
       CHECKOUT_MAX_OPEN_PER_CUSTOMER: ${CHECKOUT_MAX_OPEN_PER_CUSTOMER:-2}
       CHECKOUT_MAX_OPEN_PER_IP: ${CHECKOUT_MAX_OPEN_PER_IP:-5}
@@ -134,6 +139,9 @@ services:
       SITE_ALIASES: ${SITE_ALIASES:-}
       # Who gets in: "preview" (the shared login, the default) or "open". Anything else stops Caddy. See the Caddyfile.
       SHOP_ACCESS: ${SHOP_ACCESS:-preview}
+      # "off" (the default) or "adsense": lets Google's ad scripts through the Content-Security-Policy. Anything else
+      # stops Caddy.
+      ADS: ${ADS:-off}
       # The preview login. Keep them in the .env after opening, so going back to the preview is one switch.
       PREVIEW_USER: ${PREVIEW_USER:?set PREVIEW_USER in .env}
       PREVIEW_PASSWORD_HASH: ${PREVIEW_PASSWORD_HASH:?set PREVIEW_PASSWORD_HASH in .env}

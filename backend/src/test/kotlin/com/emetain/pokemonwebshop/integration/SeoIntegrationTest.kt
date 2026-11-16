@@ -6,6 +6,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.test.assertContains
@@ -135,5 +136,14 @@ class SeoIntegrationTest : DropTestSupport() {
         mockMvc.perform(get("/v1/seo/sitemap.xml")).andExpect(status().isOk)
         mockMvc.perform(get("/v1/seo/robots.txt")).andExpect(status().isOk)
         assertTrue(body("/v1/seo/pages/product/bestaat-niet").contains("<!doctype html>"))
+    }
+
+    @Test
+    fun `without ads there is no ads txt, and the frontend is told ads are off`() {
+        mockMvc.perform(get("/v1/seo/ads.txt")).andExpect(status().isNotFound)
+        mockMvc.perform(get("/v1/shop/ads"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.enabled").value(false))
+            .andExpect(jsonPath("$.client").doesNotExist())
     }
 }

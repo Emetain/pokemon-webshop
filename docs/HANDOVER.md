@@ -14,7 +14,8 @@ are in [phases/phase-10.md](phases/phase-10.md).
 - **Built and tested:** the `SHOP_ACCESS` switch (Caddy and the Stripe key rules in the backend, off by default),
   `shop-access.sh` to open the shop as one checked step, `SITE_ALIASES` for `www` and the old address, the business
   details in the footer, backups elsewhere with restic, monitoring pings and the disk check, automatic security
-  updates, and the 9c findings R1 to R5, R8 and R9. 1035 backend tests pass, the frontend builds, the Caddyfile is
+  updates, the 9c findings R1 to R5, R8 and R9, and ads through Google AdSense behind the `ADS` switch (off; they need
+  an approved AdSense account, step 10 of the checklist). 1042 backend tests pass, the frontend builds, the Caddyfile is
   valid in both modes, and the `prod` profile starts cleanly on an empty Postgres with migration V14.
 
 ## On your own computer

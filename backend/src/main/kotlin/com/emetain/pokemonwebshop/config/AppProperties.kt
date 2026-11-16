@@ -13,6 +13,12 @@ import java.time.LocalDate
  */
 enum class ShopAccess { PREVIEW, OPEN }
 
+/**
+ * Whether the free card pages show other companies' ads: not at all (the default), or through Google AdSense. Caddy
+ * reads the same ADS for the Content-Security-Policy, which has to let Google's scripts in.
+ */
+enum class AdsMode { OFF, ADSENSE }
+
 @ConfigurationProperties(prefix = "app")
 data class AppProperties(
     val baseUrl: String,
@@ -33,7 +39,22 @@ data class AppProperties(
     val seo: Seo = Seo(),
     val shopAccess: ShopAccess = ShopAccess.PREVIEW,
     val company: Company = Company(),
+    val ads: Ads = Ads(),
 ) {
+    /**
+     * Ads from Google AdSense on the free card and news pages. Never on shop, cart, checkout, drop or account pages.
+     * Off until the owner has an AdSense account: the values come from that account.
+     */
+    data class Ads(
+        val mode: AdsMode = AdsMode.OFF,
+        /** The publisher id of the AdSense account, `ca-pub-` and 16 digits. */
+        val adsenseClient: String = "",
+        /** The id of the ad unit under card lists and card pages. Empty: no ad there. */
+        val slotCatalog: String = "",
+        /** The id of the ad unit on news pages. Empty: no ad there. */
+        val slotContent: String = "",
+    )
+
     /**
      * The business details the site must show: iDEAL's rules and Dutch law ask for the KVK number. Empty until the
      * shop is registered; the footer shows only what is filled in.

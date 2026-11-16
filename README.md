@@ -79,6 +79,7 @@ Keep API keys on the backend. Anything in a `VITE_` variable ends up in the brow
 | `FORWARD_HEADERS_STRATEGY` | `none` | `native` behind a proxy, so rate limits see the visitor's address |
 | `SEO_INDEX_FILE` | empty; `/app/index.html` in `prod` | The built `index.html` the backend fills in for link previews |
 | `SHOP_ACCESS` | `preview` | `preview` or `open`: the one switch that opens the shop, see [Preview server and deploys](#preview-server-and-deploys). The backend only takes a Stripe test key with `preview` and a live key with `open` |
+| `ADS`, `ADSENSE_CLIENT`, `ADSENSE_SLOT_CATALOG`, `ADSENSE_SLOT_CONTENT` | `off`, empty | Google AdSense on the free card and news pages: `off` or `adsense`, the publisher id and the ad units |
 | `COMPANY_LEGAL_NAME`, `COMPANY_ADDRESS`, `COMPANY_KVK_NUMBER`, `COMPANY_VAT_NUMBER` | empty | The business details in the footer; empty shows nothing |
 | `CHECKOUT_MAX_OPEN_PER_CUSTOMER`, `CHECKOUT_MAX_OPEN_PER_IP` | `2`, `5` | Checkouts waiting for payment at once, see [Orders and payments](#orders-and-payments) |
 

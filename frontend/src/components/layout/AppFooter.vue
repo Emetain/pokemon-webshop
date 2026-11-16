@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import NewsletterForm from '../content/NewsletterForm.vue'
 import { footerInfoLinks, footerShopLinks } from '../../data/navigation'
 import { shopApi } from '../../services/api'
+import { useAds } from '../../stores/ads'
 import { t } from '../../utils/i18n'
 
 // The KVK number and the rest, once the owner has filled them in on the server. Nothing shows until then.
@@ -19,7 +20,11 @@ const companyParts = computed(() => {
   ].filter(Boolean)
 })
 
+// With ads on: a way back to Google's consent message, to change the choice.
+const ads = useAds()
+
 onMounted(async () => {
+  ads.load()
   try {
     company.value = await shopApi.company()
   } catch {
@@ -67,6 +72,9 @@ onMounted(async () => {
     <div class="container">
       <p v-if="companyParts.length" class="company">
         <span v-for="part in companyParts" :key="part" class="company-part">{{ part }}</span>
+      </p>
+      <p v-if="ads.state.enabled">
+        <button class="ad-choices" type="button" @click="ads.showChoices()">{{ t('ads.choices') }}</button>
       </p>
       <div class="attribution">
         <p v-for="line in t('footer.attribution')" :key="line">{{ line }}</p>
@@ -151,6 +159,16 @@ onMounted(async () => {
   color: var(--color-on-brand);
   font-size: var(--text-xs);
   font-weight: 600;
+}
+
+.ad-choices {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .company {

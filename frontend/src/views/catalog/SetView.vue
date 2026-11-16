@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import AdSlot from '../../components/AdSlot.vue'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CardFilters from '../../components/catalog/CardFilters.vue'
 import CardGrid from '../../components/catalog/CardGrid.vue'
@@ -279,6 +280,7 @@ usePageMeta(() =>
           <PageLinks :page="currentPage" :total-pages="cards.totalPages" />
         </template>
       </template>
+      <AdSlot place="catalog" />
     </div>
   </div>
 </template>

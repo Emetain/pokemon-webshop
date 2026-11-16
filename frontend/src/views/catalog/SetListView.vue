@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import AdSlot from '../../components/AdSlot.vue'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
@@ -125,6 +126,7 @@ usePageMeta(() =>
           </ul>
         </section>
       </template>
+      <AdSlot place="catalog" />
     </div>
   </div>
 </template>

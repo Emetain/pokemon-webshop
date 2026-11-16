@@ -7,6 +7,9 @@
 #            kept out with an X-Robots-Tag header and a robots.txt that disallows everything.
 #   open     The live shop: no login, and search engines get the shop's own robots.txt and sitemap.
 #
+# Ads are a second switch, ADS: "off" (the default) or "adsense". It only changes the Content-Security-Policy, which
+# has to let Google's ad scripts and frames in. The backend reads the same value and tells the app whether to show ads.
+#
 # Open the shop only after the legal check, with /opt/poketopia/bin/shop-access.sh (see docs/phases/phase-10.md).
 # Any other value stops Caddy from starting, so a typo never opens the shop. The lines that differ between the two
 # are the snippets marked "preview" below; everything else is the same for both.
@@ -19,12 +22,23 @@
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=(), usb=()"
-		# Card images come from the card sources (TCGdex, Scryfall, Lorcast, OPTCG) and uploads, so images may come
-		# from any https address. Scripts, styles, fonts and API calls only from the shop itself.
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 		-Server
 	}
+	import {$ADS:off}_csp
 	import {$SHOP_ACCESS:preview}_headers
+}
+
+# Without ads. Card images come from the card sources (TCGdex, Scryfall, Lorcast, OPTCG) and uploads, so images may
+# come from any https address. Scripts, styles, fonts and API calls only from the shop itself.
+(off_csp) {
+	header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+}
+
+# With Google AdSense: the same, plus Google's ad scripts, frames and calls. Google publishes no list of its
+# addresses, so this one comes from what AdSense is known to use. When ads are first switched on, open a card page
+# with the browser console open: a blocked address shows there as a Content-Security-Policy error, and belongs here.
+(adsense_csp) {
+	header Content-Security-Policy "default-src 'self'; script-src 'self' https://*.googlesyndication.com https://*.googletagservices.com https://*.doubleclick.net https://*.google.com https://*.gstatic.com https://*.adtrafficquality.google; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google; frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google; fenced-frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 }
 
 # preview: keep search engines out
@@ -78,6 +92,11 @@ Disallow: /
 		}
 		handle /robots.txt {
 			rewrite * /api/v1/seo/robots.txt
+			reverse_proxy backend:8080
+		}
+		# For ad networks: which account may sell ads on this site. The backend answers 404 while there are no ads.
+		handle /ads.txt {
+			rewrite * /api/v1/seo/ads.txt
 			reverse_proxy backend:8080
 		}
 		@sharePage path_regexp ^/(product|drops|nieuws)/[^/]+$

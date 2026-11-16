@@ -74,6 +74,40 @@ default settings the preview behaves as before. Opening it is one deliberate ste
   promised it never would; 9b's new routes had let it through).
 - The 401 and 413 answers in the preview now carry `X-Robots-Tag: noindex` too. Stricter than before, nothing looser.
 
+### Ads (Google AdSense), added on 2026-11-16
+
+The owner asked for ads from other companies through Google AdSense. Built, and off until there is an AdSense account
+(which needs the domain and an open shop first).
+
+- **One switch, `ADS`:** `off` (the default) or `adsense`, read by Caddy and the backend. Any other value stops Caddy.
+  With `off` nothing changes: no request to Google, the same Content-Security-Policy and the same cookie notice.
+- **Where ads show:** only on the free pages: the set list of a game, a set page, a card page (ad unit `catalog`), and
+  the news list and a news article (ad unit `content`). Never on the home page, shop lists, product pages, the cart,
+  checkout, drops, the collection, account or admin pages, so an ad never sits next to something the shop sells or
+  where a customer pays. `components/AdSlot.vue` is the only place that shows one; it keeps 250 px of room so the page
+  doesn't jump, and says "Advertentie" above it.
+- **Google's script loads only when a page with an ad opens** (`stores/ads.js`), so someone who only shops never
+  talks to Google.
+- **Consent:** Google's own consent message does this, not a banner of ours. Google only serves full ads in the EEA
+  through a consent tool it has certified, and its own message (AdSense → Privacy & messaging → European regulations)
+  is one. It comes with the same script. The shop's cookie notice gets a second text that says ads are from Google,
+  and the footer gets "Advertentievoorkeuren", which opens Google's message again.
+- **`/ads.txt`** comes from the backend (`GET /api/v1/seo/ads.txt`), built from the publisher id; 404 without ads.
+- **Content-Security-Policy with ads:** the shop's own policy plus Google's ad addresses for scripts, frames and
+  calls (`(adsense_csp)` in `deploy/Caddyfile`). Google publishes no list, so this one is from what AdSense is known
+  to use.
+- **Settings:** `ADSENSE_CLIENT` (the publisher id, checked: `ca-pub-` and 16 digits) and `ADSENSE_SLOT_CATALOG`,
+  `ADSENSE_SLOT_CONTENT` (ids of ad units; an empty one shows no ad there). A wrong value keeps ads off and logs why.
+- **In development** (`npm run dev`) an ad place shows a dashed box instead of loading Google.
+
+Checked: 1042 backend tests pass (7 new: `AdsOrchestratorTest`, one in `SeoIntegrationTest`), `npm run build` passes,
+`caddy validate` passes for `off` and `adsense` in both access modes and fails for a typo. With `ADS=adsense` and a
+made-up publisher id, through the real Caddyfile on a copy of the database, in headless Chromium: an ad place on
+`/kaarten/pokemon` and on a set page, Google's script loaded and picked the place up, no Content-Security-Policy
+error in the console; no ad place and no Google script on a shop list, product page, cart, checkout or drops page;
+`/ads.txt` and the second cookie text as described. Not checked: a real ad and Google's consent message, which need an
+approved account.
+
 ## Main files
 
 | Area | Files |
@@ -93,6 +127,7 @@ default settings the preview behaves as before. Opening it is one deliberate ste
 | `SITE_ALIASES` | server `.env` | empty | Addresses that redirect to `SITE_ADDRESS` |
 | `COMPANY_LEGAL_NAME`, `COMPANY_ADDRESS`, `COMPANY_KVK_NUMBER`, `COMPANY_VAT_NUMBER` | server `.env`, `.env.example` | empty | Business details in the footer |
 | `CHECKOUT_MAX_OPEN_PER_CUSTOMER`, `CHECKOUT_MAX_OPEN_PER_IP` | server `.env`, `.env.example` | `2`, `5` | Open checkouts per customer and per IP address |
+| `ADS`, `ADSENSE_CLIENT`, `ADSENSE_SLOT_CATALOG`, `ADSENSE_SLOT_CONTENT` | server `.env`, `.env.example` | `off`, empty | Google AdSense on the free card and news pages |
 | `RESTIC_REPOSITORY`, `RESTIC_PASSWORD_FILE`, the storage login (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` for S3), `BACKUP_OFFSITE_KEEP` | `/opt/poketopia/ops.env` | empty, `/root/restic-password`, `30d` | The copy of the backups elsewhere |
 | `BACKUP_PING_URL`, `DISK_PING_URL`, `DISK_WARN_PERCENT` | `/opt/poketopia/ops.env` | empty, empty, `80` | Monitoring pings |
 
@@ -146,7 +181,9 @@ Cleaned up afterwards: the test databases `phase10_prod_check` and `phase10_copy
 11. **Security updates daily, no automatic reboot**, because Minecraft runs on the same server.
 12. **Business details from the server's `.env`** instead of in the code or a page, so filling in the KVK number needs
     no release. The legal pages keep their `[nummer]` placeholders, which you fill in at `/admin/paginas`.
-13. **HSTS stays one year without `includeSubDomains` or `preload`**, so other subdomains (for example for mail) are
+13. **Ads only on the free card and news pages**, never where the shop sells or a customer pays, and Google's own
+    consent message instead of a banner of ours (2026-11-16). Say so if you want them in more places.
+14. **HSTS stays one year without `includeSubDomains` or `preload`**, so other subdomains (for example for mail) are
     never forced onto HTTPS by the shop.
 
 ## Still open, and why
@@ -198,6 +235,12 @@ Before registering the domain or the trade name, and before opening. From phase 
   N4), and that Caddy keeps no access logs.
 - Mystery boxes and the Dutch gambling law (Kansspelwet). Generated hero images must not show Pokémon or other
   characters, logos or card art (OpenAI's terms too). The cookie notice is for functional cookies only.
+- Ads (only if you switch them on): Google's AdSense program policies, in particular whether pages that mostly show
+  other companies' card images and data may carry ads, and whether the card sources allow ads next to their data
+  (TCGdex, Scryfall's and Wizards' fan content rules, Lorcast, OPTCG, TCGplayer). The Dutch cookie rules
+  (Telecommunicatiewet): ad cookies need consent first, which Google's message asks. And an "Advertenties" section
+  in the privacy policy: that Google places cookies and receives the visitor's IP address and the page they are on,
+  for which purposes, and how to change the choice.
 
 **Check:** you're done when you'd type `legal check done` in step 9 with a clear conscience.
 
@@ -384,7 +427,24 @@ If anything is wrong: `/opt/poketopia/bin/shop-access.sh preview` closes it agai
    `https://<domain>/sitemap.xml`.
 2. Raise the TTL of the DNS records back to an hour or a day.
 3. Look at `/admin/sync` after the night (R7), and at the backup and disk checks the next day.
-4. Delete leftovers on your Mac once they are in GitHub: `~/poketopia-github-secrets.txt` and `~/.ssh/poketopia_deploy`
+4. Ads, if you want them (they need the open shop, so they come last):
+   1. Make an AdSense account at https://adsense.google.com with the domain. Google reviews the site; that can take
+      days to weeks, and a new site with little own text is often refused the first time.
+   2. In AdSense: Privacy & messaging → European regulations → create and publish the consent message for the site,
+      in Dutch. Without it visitors here get no consent question. Keep "Auto ads" off: they would also put ads on
+      shop and checkout pages.
+   3. In AdSense: Ads → By ad unit → Display ads: make two responsive units, "kaartpagina's" and "nieuws". Note the
+      number of each (`data-ad-slot`), and the publisher id (`ca-pub-…`) from Account → Account information.
+   4. Add the "Advertenties" section to the privacy policy at `/admin/paginas`.
+   5. In the `.env`: `ADS=adsense`, `ADSENSE_CLIENT=ca-pub-…`, `ADSENSE_SLOT_CATALOG=…`, `ADSENSE_SLOT_CONTENT=…`, then
+      `/opt/poketopia/bin/compose.sh up -d`.
+
+   **Check:** `https://<domain>/ads.txt` shows one line with your publisher id. Open a set page in a private window
+   with the browser console open: Google's consent message comes up, an ad (or an empty place for the first hours)
+   shows under the cards, and the console has no "Content Security Policy" error. If it has one, the address it names
+   belongs in `(adsense_csp)` in `deploy/Caddyfile`. A product page and the checkout show no ad. `ADS=off` and
+   `compose.sh up -d` switches everything off again.
+5. Delete leftovers on your Mac once they are in GitHub: `~/poketopia-github-secrets.txt` and `~/.ssh/poketopia_deploy`
    (phase 7).
 
 ---
@@ -410,6 +470,7 @@ only).
 | `STRIPE_SECRET_KEY` | `.env` | Stripe dashboard, live mode, Developers > API keys (step 6) |
 | `STRIPE_WEBHOOK_SECRET` | `.env` | Stripe dashboard, the webhook endpoint's signing secret (step 6) |
 | `COMPANY_KVK_NUMBER`, `COMPANY_ADDRESS`, `COMPANY_LEGAL_NAME` | `.env` | The KVK registration (step 5) |
+| `ADS`, `ADSENSE_CLIENT`, `ADSENSE_SLOT_CATALOG`, `ADSENSE_SLOT_CONTENT` | `.env` | The AdSense account (step 10), optional |
 | `COMPANY_VAT_NUMBER` | `.env` | The btw-id from the Belastingdienst's letter (step 5) |
 | `CHECKOUT_MAX_OPEN_PER_CUSTOMER`, `CHECKOUT_MAX_OPEN_PER_IP` | `.env` | Defaults 2 and 5; your choice |
 | `OPENAI_API_KEY` | `.env` | OpenAI dashboard, optional; set a monthly limit there too |

@@ -27,6 +27,7 @@ import java.time.Clock
 @Component
 class SeoOrchestrator(
     private val seoService: SeoService,
+    private val adsOrchestrator: AdsOrchestrator,
     private val productRepository: ProductRepository,
     private val dropRepository: DropRepository,
     private val newsArticleRepository: NewsArticleRepository,
@@ -56,6 +57,11 @@ class SeoOrchestrator(
     }
 
     fun robots(): ResponseEntity<String> = text(seoService.robots(), MediaType(MediaType.TEXT_PLAIN, Charsets.UTF_8))
+
+    /** For ad networks: which account may sell ads here. 404 while the shop has no ads. */
+    fun adsTxt(): ResponseEntity<String> =
+        adsOrchestrator.adsTxt()?.let { text(it, MediaType(MediaType.TEXT_PLAIN, Charsets.UTF_8)) }
+            ?: ResponseEntity.notFound().build()
 
     /** With its own type, whatever the client asks for: search engines don't all send a fitting Accept header. */
     private fun text(body: String, type: MediaType): ResponseEntity<String> =

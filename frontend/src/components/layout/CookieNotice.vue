@@ -1,12 +1,17 @@
 <script setup>
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Cookie } from 'lucide-vue-next'
+import { useAds } from '../../stores/ads'
 import { t } from '../../utils/i18n'
 
 /**
- * Tells visitors once which cookies the shop uses. They are all functional, so nothing waits for consent and there
- * is nothing to choose. The "seen" mark lives in localStorage, not in another cookie.
+ * Tells visitors once which cookies the shop uses. The shop's own are all functional, so nothing waits for consent and
+ * there is nothing to choose. The "seen" mark lives in localStorage, not in another cookie. With ads on, the text
+ * says so: Google asks for consent itself, on the pages that have an ad.
  */
+const ads = useAds()
+onMounted(() => ads.load())
+
 const STORAGE_KEY = 'poketopia.cookie-notice'
 
 function seen() {
@@ -62,7 +67,7 @@ function close() {
   <section v-if="visible" ref="box" class="cookie-notice" :aria-label="t('cookies.label')">
     <Cookie class="icon" :size="22" aria-hidden="true" />
     <p class="text">
-      {{ t('cookies.text') }}
+      {{ ads.state.enabled ? t('cookies.textWithAds') : t('cookies.text') }}
       <router-link to="/info/privacybeleid">{{ t('cookies.more') }}</router-link>
     </p>
     <button class="btn btn-primary btn-small" type="button" @click="close">{{ t('cookies.ok') }}</button>

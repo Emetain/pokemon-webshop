@@ -832,9 +832,16 @@ export default {
       link: 'Naar de drop',
     },
   },
+  ads: {
+    label: 'Advertentie',
+    choices: 'Advertentievoorkeuren',
+    placeholder: 'Hier komt een advertentie ({place})',
+  },
   cookies: {
     label: 'Over cookies',
     text: 'We gebruiken alleen functionele cookies: om je ingelogd te houden, voor je winkelwagen en voor de wachtrij van een drop. Geen tracking en geen advertenties.',
+    textWithAds:
+      'Onze eigen cookies zijn functioneel: om je ingelogd te houden, voor je winkelwagen en voor de wachtrij van een drop. Op de kaart- en nieuwspagina’s staan advertenties van Google. Daarvoor vraagt Google apart je toestemming.',
     more: 'Meer in ons privacybeleid',
     ok: 'Oké',
   },
