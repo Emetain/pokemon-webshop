@@ -65,10 +65,19 @@ defineEmits(['increase', 'decrease'])
   background: transparent;
   color: inherit;
   cursor: pointer;
+  transition: transform var(--press-out);
 }
 
-.step:hover:not(:disabled) {
-  background: var(--color-tint);
+@media (hover: hover) {
+  .step:hover:not(:disabled) {
+    background: var(--color-tint);
+  }
+}
+
+.step:active:not(:disabled) {
+  background: var(--color-tint-strong);
+  transform: scale(0.9);
+  transition: transform var(--press-in);
 }
 
 .step:disabled {

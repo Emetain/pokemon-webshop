@@ -240,8 +240,10 @@ function onWished(product, wished) {
   line-height: var(--leading-tight);
 }
 
-.game-tile:hover .game-name {
-  text-decoration: underline;
+@media (hover: hover) {
+  .game-tile:hover .game-name {
+    text-decoration: underline;
+  }
 }
 
 .game-text {

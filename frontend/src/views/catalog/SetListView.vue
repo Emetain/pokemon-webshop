@@ -164,8 +164,10 @@ usePageMeta(() =>
   text-decoration: none;
 }
 
-.series-link:hover {
-  background: var(--color-tint-strong);
+@media (hover: hover) {
+  .series-link:hover {
+    background: var(--color-tint-strong);
+  }
 }
 
 .series {

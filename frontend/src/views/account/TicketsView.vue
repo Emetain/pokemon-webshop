@@ -105,8 +105,10 @@ onMounted(async () => {
   text-decoration: none;
 }
 
-.ticket:hover {
-  border-color: var(--color-brand);
+@media (hover: hover) {
+  .ticket:hover {
+    border-color: var(--color-brand);
+  }
 }
 
 .info {

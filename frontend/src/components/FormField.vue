@@ -62,8 +62,10 @@ defineExpose({ focus: () => input.value?.focus() })
   background: var(--color-surface);
 }
 
-.field-input:hover {
-  border-color: var(--color-ink);
+@media (hover: hover) {
+  .field-input:hover {
+    border-color: var(--color-ink);
+  }
 }
 
 .field-input.invalid {

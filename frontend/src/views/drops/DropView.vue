@@ -351,8 +351,10 @@ usePageMeta(() =>
   text-decoration: none;
 }
 
-.back:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .back:hover {
+    text-decoration: underline;
+  }
 }
 
 .status {

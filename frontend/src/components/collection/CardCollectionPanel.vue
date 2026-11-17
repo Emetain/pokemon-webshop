@@ -20,8 +20,12 @@ const session = useSession()
 const id = useId()
 
 const state = ref(null)
-const busy = ref(false)
 const error = ref('')
+// Copies tapped on per variant that the shop hasn't saved yet: the number shows them at once.
+const pending = ref({})
+// The wishlist, binder and condition controls wait for their own change to be saved.
+const working = ref(0)
+const busy = computed(() => working.value > 0)
 
 const rows = computed(() =>
   props.card.variants.map((variant) => ({
@@ -34,6 +38,7 @@ const binderHint = computed(() => state.value?.inBinder && session.state.user?.b
 
 async function load() {
   state.value = null
+  pending.value = {}
   if (!session.isLoggedIn.value) return
   try {
     state.value = await collectionApi.card(props.card.id)
@@ -42,36 +47,70 @@ async function load() {
   }
 }
 
-async function run(action) {
-  busy.value = true
+/*
+ * Every change goes to the shop in turn, so each one works on what the one before it saved. The + and - never wait:
+ * a tap counts at once and the next tap can follow straight away.
+ */
+let queue = Promise.resolve()
+
+function enqueue(action, settled) {
   error.value = ''
-  try {
-    await action()
-  } catch (exception) {
-    error.value = exception.message
-  } finally {
-    busy.value = false
-  }
+  queue = queue.then(async () => {
+    try {
+      await action()
+    } catch (exception) {
+      error.value = exception.message
+    } finally {
+      settled()
+    }
+  })
 }
 
-function applyChange(change) {
-  state.value.entries = change.entries
+function run(action) {
+  working.value++
+  enqueue(action, () => working.value--)
 }
 
-const add = (variant) =>
-  run(async () => applyChange(await collectionApi.add({ cardId: props.card.id, variant })))
+const entryOf = (variant) => state.value?.entries.find((entry) => entry.variant === variant)
 
-const decrease = (entry) =>
-  run(async () => {
-    const change =
-      entry.quantity > 1
-        ? await collectionApi.update(entry.id, { quantity: entry.quantity - 1, condition: entry.condition })
-        : await collectionApi.remove(entry.id)
-    applyChange(change)
+/** Applies what the shop saved, unless the page has moved on to another card in the meantime. */
+function applyChange(cardId, change) {
+  if (props.card.id === cardId && state.value) state.value.entries = change.entries
+}
+
+function step(variant, delta, action) {
+  const cardId = props.card.id
+  pending.value[variant] = (pending.value[variant] ?? 0) + delta
+  enqueue(
+    async () => {
+      const change = await action()
+      if (change) applyChange(cardId, change)
+    },
+    () => {
+      if (props.card.id === cardId) pending.value[variant] -= delta
+    },
+  )
+}
+
+const add = (variant) => step(variant, 1, () => collectionApi.add({ cardId: props.card.id, variant }))
+
+const decrease = (variant) =>
+  step(variant, -1, () => {
+    const entry = entryOf(variant)
+    if (!entry) return null
+    return entry.quantity > 1
+      ? collectionApi.update(entry.id, { quantity: entry.quantity - 1, condition: entry.condition })
+      : collectionApi.remove(entry.id)
   })
 
-const setCondition = (entry, condition) =>
-  run(async () => applyChange(await collectionApi.update(entry.id, { quantity: entry.quantity, condition: condition || null })))
+const setCondition = (variant, condition) => {
+  const cardId = props.card.id
+  run(async () => {
+    const entry = entryOf(variant)
+    if (!entry) return
+    applyChange(cardId, await collectionApi.update(entry.id, { quantity: entry.quantity, condition: condition || null }))
+  })
+}
 
 const toggleWishlist = () =>
   run(async () => {
@@ -106,11 +145,10 @@ watch(() => props.card.id, load, { immediate: true })
         <li v-for="row in rows" :key="row.variant" class="row">
           <span class="variant">{{ variantLabel(row.variant) }}</span>
           <QuantityStepper
-            :quantity="row.entry?.quantity ?? 0"
+            :quantity="(row.entry?.quantity ?? 0) + (pending[row.variant] ?? 0)"
             :name="`${card.name}, ${variantLabel(row.variant)}`"
-            :disabled="busy"
             @increase="add(row.variant)"
-            @decrease="decrease(row.entry)"
+            @decrease="decrease(row.variant)"
           />
           <div v-if="row.entry" class="condition">
             <label class="condition-label" :for="`${id}-${row.variant}`">{{ t('collection.card.condition') }}</label>
@@ -119,7 +157,7 @@ watch(() => props.card.id, load, { immediate: true })
               class="condition-input"
               :value="row.entry.condition ?? ''"
               :disabled="busy"
-              @change="setCondition(row.entry, $event.target.value)"
+              @change="setCondition(row.variant, $event.target.value)"
             >
               <option value="">{{ t('collection.card.noCondition') }}</option>
               <option v-for="condition in CONDITIONS" :key="condition" :value="condition">
@@ -221,8 +259,10 @@ watch(() => props.card.id, load, { immediate: true })
   font-weight: 600;
 }
 
-.toggle:hover:not(:disabled) {
-  text-decoration: underline;
+@media (hover: hover) {
+  .toggle:hover:not(:disabled) {
+    text-decoration: underline;
+  }
 }
 
 .hint {

@@ -352,8 +352,10 @@ usePageMeta(() =>
   font-weight: 600;
 }
 
-.add-page:hover:not(:disabled) {
-  text-decoration: underline;
+@media (hover: hover) {
+  .add-page:hover:not(:disabled) {
+    text-decoration: underline;
+  }
 }
 
 .add-page:disabled {

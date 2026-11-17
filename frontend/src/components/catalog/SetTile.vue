@@ -51,11 +51,15 @@ const isSymbol = computed(() => !props.set.logoUrl)
   background: var(--color-surface);
   color: var(--color-ink);
   text-decoration: none;
-  transition: border-color 0.2s;
+  transition:
+    border-color 0.2s,
+    opacity 0.25s;
 }
 
-.tile:hover {
-  border-color: var(--accent);
+@media (hover: hover) {
+  .tile:hover {
+    border-color: var(--accent);
+  }
 }
 
 .art {
@@ -104,8 +108,10 @@ const isSymbol = computed(() => !props.set.logoUrl)
   line-height: 1.3;
 }
 
-.tile:hover .name {
-  color: var(--accent);
+@media (hover: hover) {
+  .tile:hover .name {
+    color: var(--accent);
+  }
 }
 
 .details {
@@ -126,5 +132,13 @@ const isSymbol = computed(() => !props.set.logoUrl)
   .code {
     font-size: var(--text-2xl);
   }
+}
+
+/* Pressed, the set dims under the finger. A moment's wait first, so starting to scroll a list doesn't flash it. */
+.tile:active {
+  opacity: 0.7;
+  transition:
+    border-color 0.2s,
+    opacity 0s 0.05s;
 }
 </style>

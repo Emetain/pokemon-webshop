@@ -130,9 +130,11 @@ watch(() => props.page, load, { immediate: true })
   text-decoration: none;
 }
 
-.order:hover .number {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .order:hover .number {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 .thumb {

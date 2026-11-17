@@ -226,7 +226,9 @@ watch(() => [filters.value, currentPage.value], load, { immediate: true })
   font-weight: 550;
 }
 
-.remove:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .remove:hover {
+    text-decoration: underline;
+  }
 }
 </style>

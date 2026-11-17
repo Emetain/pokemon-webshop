@@ -123,8 +123,10 @@ const sets = computed(() => props.seriesDetail?.sets.filter((set) => set.product
   text-decoration: none;
 }
 
-.back:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .back:hover {
+    text-decoration: underline;
+  }
 }
 
 .heading {
@@ -153,8 +155,10 @@ const sets = computed(() => props.seriesDetail?.sets.filter((set) => set.product
   text-decoration: none;
 }
 
-.link:hover {
-  color: var(--color-brand);
+@media (hover: hover) {
+  .link:hover {
+    color: var(--color-brand);
+  }
 }
 
 .link.current {

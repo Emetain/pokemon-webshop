@@ -50,24 +50,26 @@ onMounted(() => chat.loadStatus())
 
 <template>
   <div v-if="shown" class="widget">
-    <section
-      v-show="open"
-      id="chat-panel"
-      ref="panel"
-      class="panel"
-      role="dialog"
-      aria-labelledby="chat-panel-title"
-      @keydown.esc="close"
-    >
-      <header class="head">
-        <h2 id="chat-panel-title">{{ t('support.widget.title') }}</h2>
-        <button class="close" type="button" :aria-label="t('support.widget.close')" @click="close">
-          <X :size="20" aria-hidden="true" />
-        </button>
-      </header>
-      <SupportChat fill @ticket="toTicket" />
-      <button class="link-button ticket-link" type="button" @click="toTicket">{{ t('support.widget.toTicket') }}</button>
-    </section>
+    <Transition name="panel">
+      <section
+        v-show="open"
+        id="chat-panel"
+        ref="panel"
+        class="panel"
+        role="dialog"
+        aria-labelledby="chat-panel-title"
+        @keydown.esc="close"
+      >
+        <header class="head">
+          <h2 id="chat-panel-title">{{ t('support.widget.title') }}</h2>
+          <button class="close" type="button" :aria-label="t('support.widget.close')" @click="close">
+            <X :size="20" aria-hidden="true" />
+          </button>
+        </header>
+        <SupportChat fill @ticket="toTicket" />
+        <button class="link-button ticket-link" type="button" @click="toTicket">{{ t('support.widget.toTicket') }}</button>
+      </section>
+    </Transition>
     <button
       ref="launcher"
       class="launcher"
@@ -88,12 +90,14 @@ onMounted(() => chat.loadStatus())
 .widget {
   position: fixed;
   right: var(--gutter);
-  /* Above the cookie notice while that is open. */
-  bottom: calc(var(--gutter) + var(--cookie-notice-space, 0px));
+  bottom: var(--gutter);
   z-index: calc(var(--header-layer) - 1);
   display: grid;
   justify-items: end;
   gap: var(--space-3);
+  /* Above the cookie notice while that is open, and back down along with it when it goes. */
+  transform: translateY(calc(-1 * var(--cookie-notice-space, 0px)));
+  transition: transform 0.4s var(--ease-spring);
 }
 
 .launcher {
@@ -110,10 +114,19 @@ onMounted(() => chat.loadStatus())
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  transition: transform var(--press-out);
 }
 
-.launcher:hover {
+@media (hover: hover) {
+  .launcher:hover {
+    background: var(--color-brand-hover);
+  }
+}
+
+.launcher:active {
   background: var(--color-brand-hover);
+  transform: scale(var(--press-scale));
+  transition: transform var(--press-in);
 }
 
 /* Fits between the header and the button: only the messages scroll. */
@@ -129,6 +142,37 @@ onMounted(() => chat.loadStatus())
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-panel);
+  /* It grows out of the chat button below it, and shrinks back into it. */
+  transform-origin: bottom right;
+}
+
+.panel-enter-active {
+  transition:
+    opacity 0.18s ease-out,
+    transform 0.4s var(--ease-spring);
+}
+
+.panel-leave-active {
+  transition:
+    opacity 0.15s ease-in,
+    transform 0.2s ease-in;
+}
+
+.panel-enter-from,
+.panel-leave-to {
+  opacity: 0;
+  transform: translateY(0.75rem) scale(0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget {
+    transition: none;
+  }
+
+  .panel-enter-from,
+  .panel-leave-to {
+    transform: none;
+  }
 }
 
 .head,
@@ -160,7 +204,13 @@ onMounted(() => chat.loadStatus())
   cursor: pointer;
 }
 
-.close:hover {
+@media (hover: hover) {
+  .close:hover {
+    background: var(--color-tint);
+  }
+}
+
+.close:active {
   background: var(--color-tint);
 }
 

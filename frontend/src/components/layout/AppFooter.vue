@@ -141,9 +141,11 @@ onMounted(async () => {
   text-decoration: none;
 }
 
-.link-list a:hover {
-  color: var(--color-on-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .link-list a:hover {
+    color: var(--color-on-brand);
+    text-decoration: underline;
+  }
 }
 
 .payment-list {

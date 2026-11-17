@@ -44,6 +44,8 @@ function open(key) {
 
 function close() {
   clearTimers()
+  // Closing always shows the way out, also right after switching from one menu to the next.
+  switching.value = false
   openKey.value = null
   pinned.value = false
 }
@@ -246,9 +248,14 @@ onBeforeUnmount(() => {
   transition: color 0.2s;
 }
 
-.mega-top:hover,
 .mega-top.is-open {
   color: var(--color-brand);
+}
+
+@media (hover: hover) {
+  .mega-top:hover {
+    color: var(--color-brand);
+  }
 }
 
 /* The bar under the open or current item, in the colour of its game. */
@@ -262,7 +269,7 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-xs) var(--radius-xs) 0 0;
   background: var(--accent);
   transform: scaleX(0);
-  transition: transform 0.2s;
+  transition: transform 0.3s var(--ease-spring);
 }
 
 .mega-top.is-open::after,
@@ -271,7 +278,7 @@ onBeforeUnmount(() => {
 }
 
 .mega-chevron {
-  transition: transform 0.2s;
+  transition: transform 0.3s var(--ease-spring);
 }
 
 .mega-top.is-open .mega-chevron {
@@ -290,13 +297,22 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-panel);
 }
 
+/* The panel drops down out of the bar, and folds back up into it the same way when it closes. */
 .mega-enter-active {
   transition:
     opacity 0.16s ease-out,
-    transform 0.16s ease-out;
+    transform 0.3s var(--ease-spring);
 }
 
-.mega-enter-from {
+.mega-leave-active {
+  transition:
+    opacity 0.12s ease-in,
+    transform 0.12s ease-in;
+  pointer-events: none;
+}
+
+.mega-enter-from,
+.mega-leave-to {
   opacity: 0;
   transform: translateY(-0.5rem);
 }
@@ -324,8 +340,10 @@ onBeforeUnmount(() => {
   text-decoration: none;
 }
 
-.mega-all:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .mega-all:hover {
+    text-decoration: underline;
+  }
 }
 
 .mega-grid {
@@ -362,8 +380,10 @@ onBeforeUnmount(() => {
   transition: color 0.2s;
 }
 
-.mega-link:hover {
-  color: var(--color-brand);
+@media (hover: hover) {
+  .mega-link:hover {
+    color: var(--color-brand);
+  }
 }
 
 .mega-feature {
@@ -439,12 +459,18 @@ onBeforeUnmount(() => {
   transition: color 0.2s;
 }
 
-.mega-close:hover {
-  color: var(--color-brand);
+@media (hover: hover) {
+  .mega-close:hover {
+    color: var(--color-brand);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mega-enter-active,
+  .mega-enter-from,
+  .mega-leave-to {
+    transform: none;
+  }
+
   .mega-top::after,
   .mega-chevron {
     transition: none;

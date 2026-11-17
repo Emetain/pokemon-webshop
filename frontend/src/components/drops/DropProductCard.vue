@@ -129,9 +129,11 @@ const showPrice = computed(() => props.shopping && props.price?.priceCents != nu
   text-decoration: none;
 }
 
-.name a:hover {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .name a:hover {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 .price {
@@ -197,8 +199,10 @@ const showPrice = computed(() => props.shopping && props.price?.priceCents != nu
   cursor: pointer;
 }
 
-.step:hover:not(:disabled) {
-  background: var(--color-brand-hover);
+@media (hover: hover) {
+  .step:hover:not(:disabled) {
+    background: var(--color-brand-hover);
+  }
 }
 
 .step:disabled {

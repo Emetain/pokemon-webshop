@@ -187,8 +187,10 @@ onMounted(load)
   font-weight: 550;
 }
 
-.generation:hover {
-  background: var(--color-tint-strong);
+@media (hover: hover) {
+  .generation:hover {
+    background: var(--color-tint-strong);
+  }
 }
 
 .generation[aria-pressed='true'] {
@@ -235,8 +237,10 @@ onMounted(load)
   background: var(--color-tint);
 }
 
-.slot:hover .pocket:not(.filled) {
-  border-color: var(--color-brand);
+@media (hover: hover) {
+  .slot:hover .pocket:not(.filled) {
+    border-color: var(--color-brand);
+  }
 }
 
 .pocket.filled {
@@ -265,9 +269,11 @@ onMounted(load)
   overflow-wrap: anywhere;
 }
 
-.slot:hover .name {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .slot:hover .name {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 @media (min-width: 560px) {

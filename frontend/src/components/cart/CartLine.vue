@@ -8,7 +8,12 @@ import { useCart } from '../../stores/cart'
 import { formatDate, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
-/** One product in the cart, with its quantity. Lowering always works, raising up to the maximum per line. */
+/**
+ * One product in the cart, with its quantity. Lowering always works, raising up to the maximum per line.
+ *
+ * The number changes on the tap itself and the buttons stay ready for the next tap. The taps go to the shop one after
+ * the other; prices and totals follow once it has answered, and a tap it refuses is taken back off the number.
+ */
 const props = defineProps({
   item: { type: Object, required: true },
   compact: { type: Boolean, default: false },
@@ -17,7 +22,10 @@ const props = defineProps({
 const emit = defineEmits(['error', 'navigate'])
 
 const cart = useCart()
-const busy = ref(false)
+const removing = ref(false)
+// Taps on - and + that the shop hasn't saved yet.
+const pending = ref(0)
+const quantity = computed(() => props.item.quantity + pending.value)
 
 const accent = computed(() => (props.item.game ? findGame(props.item.game)?.accent : null))
 const link = computed(() => ({ name: 'product', params: { slug: props.item.slug } }))
@@ -26,21 +34,40 @@ const problem = computed(() =>
   props.item.problem ? t(`cart.problems.${props.item.problem}`, { max: MAX_PER_LINE }) : '',
 )
 
-async function change(call) {
-  busy.value = true
+let queue = Promise.resolve()
+
+function enqueue(call, settled = () => {}) {
   emit('error', '')
-  try {
-    await call()
-  } catch (exception) {
-    emit('error', exception.message)
-  } finally {
-    busy.value = false
-  }
+  queue = queue.then(async () => {
+    try {
+      await call()
+    } catch (exception) {
+      emit('error', exception.message)
+    } finally {
+      settled()
+    }
+  })
 }
 
-const decrease = () => change(() => cart.setQuantity(props.item.productId, props.item.quantity - 1))
-const increase = () => change(() => cart.setQuantity(props.item.productId, props.item.quantity + 1))
-const remove = () => change(() => cart.remove(props.item.productId))
+/** Each step sets the quantity the shop has by then, one higher or lower, so taps add up instead of overwriting. */
+function step(delta) {
+  pending.value += delta
+  enqueue(
+    () => cart.setQuantity(props.item.productId, props.item.quantity + delta),
+    () => (pending.value -= delta),
+  )
+}
+
+const decrease = () => step(-1)
+const increase = () => step(1)
+
+function remove() {
+  removing.value = true
+  enqueue(
+    () => cart.remove(props.item.productId),
+    () => (removing.value = false),
+  )
+}
 </script>
 
 <template>
@@ -70,24 +97,24 @@ const remove = () => change(() => cart.remove(props.item.productId))
           <button
             class="step"
             type="button"
-            :disabled="busy || item.quantity <= 1"
+            :disabled="removing || quantity <= 1"
             :aria-label="t('cart.decrease', { name: item.name })"
             @click="decrease"
           >
             <Minus :size="16" aria-hidden="true" />
           </button>
-          <output class="quantity" :aria-label="t('cart.quantity')">{{ item.quantity }}</output>
+          <output class="quantity" :aria-label="t('cart.quantity')">{{ quantity }}</output>
           <button
             class="step"
             type="button"
-            :disabled="busy || item.quantity >= item.maxQuantity"
+            :disabled="removing || quantity >= item.maxQuantity"
             :aria-label="t('cart.increase', { name: item.name })"
             @click="increase"
           >
             <Plus :size="16" aria-hidden="true" />
           </button>
         </div>
-        <button class="remove" type="button" :disabled="busy" :aria-label="t('cart.removeLabel', { name: item.name })" @click="remove">
+        <button class="remove" type="button" :disabled="removing" :aria-label="t('cart.removeLabel', { name: item.name })" @click="remove">
           <Trash2 :size="16" aria-hidden="true" />
           <span v-if="!compact">{{ t('cart.remove') }}</span>
         </button>
@@ -135,9 +162,11 @@ const remove = () => change(() => cart.remove(props.item.productId))
   overflow-wrap: anywhere;
 }
 
-.name:hover {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .name:hover {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 .each,
@@ -186,10 +215,25 @@ const remove = () => change(() => cart.remove(props.item.productId))
   background: transparent;
   color: var(--color-ink);
   cursor: pointer;
+  transition: transform var(--press-out);
 }
 
-.step:hover:not(:disabled) {
+@media (hover: hover) {
+  .step:hover:not(:disabled) {
+    color: var(--color-brand);
+  }
+}
+
+.step:active:not(:disabled),
+.remove:active:not(:disabled) {
   color: var(--color-brand);
+  transform: scale(0.88);
+  transition: transform var(--press-in);
+}
+
+.remove:active:not(:disabled) {
+  color: var(--color-danger);
+  transform: scale(var(--press-scale));
 }
 
 .step:disabled {
@@ -216,10 +260,13 @@ const remove = () => change(() => cart.remove(props.item.productId))
   cursor: pointer;
   font-size: var(--text-xs);
   font-weight: 600;
+  transition: transform var(--press-out);
 }
 
-.remove:hover:not(:disabled) {
-  color: var(--color-danger);
+@media (hover: hover) {
+  .remove:hover:not(:disabled) {
+    color: var(--color-danger);
+  }
 }
 
 .line-total {

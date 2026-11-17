@@ -508,8 +508,10 @@ usePageMeta(() =>
   cursor: pointer;
 }
 
-.step:hover:not(:disabled) {
-  color: var(--color-brand);
+@media (hover: hover) {
+  .step:hover:not(:disabled) {
+    color: var(--color-brand);
+  }
 }
 
 .step:disabled {

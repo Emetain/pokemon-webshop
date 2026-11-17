@@ -110,9 +110,11 @@ async function addToCart() {
   -webkit-line-clamp: 3;
 }
 
-.tile-link:hover .name {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .tile-link:hover .name {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 .facts {
@@ -154,10 +156,20 @@ async function addToCart() {
   box-shadow: inset 0 -3px 0 var(--color-brand-edge);
   color: var(--color-on-brand);
   cursor: pointer;
+  transition: transform var(--press-out);
 }
 
-.cart:hover:not(:disabled) {
+.cart:active:not(:disabled) {
   background: var(--color-brand-hover);
+  box-shadow: inset 0 -1px 0 var(--color-brand-edge);
+  transform: scale(0.92);
+  transition: transform var(--press-in);
+}
+
+@media (hover: hover) {
+  .cart:hover:not(:disabled) {
+    background: var(--color-brand-hover);
+  }
 }
 
 .spin {
@@ -181,5 +193,15 @@ async function addToCart() {
   box-shadow: none;
   color: var(--color-ink-soft);
   cursor: not-allowed;
+}
+
+/* Pressed, the product dims under the finger. A moment's wait first, so starting to scroll a list doesn't flash it. */
+.tile-link {
+  transition: opacity 0.25s;
+}
+
+.tile-link:active {
+  opacity: 0.7;
+  transition: opacity 0s 0.05s;
 }
 </style>

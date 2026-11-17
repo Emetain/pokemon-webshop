@@ -112,9 +112,11 @@ const owned = computed(() => tracking.value && props.card.owned.length > 0)
   overflow-wrap: anywhere;
 }
 
-.tile-link:hover .name {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .tile-link:hover .name {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 .detail {
@@ -181,7 +183,19 @@ const owned = computed(() => tracking.value && props.card.owned.length > 0)
   text-decoration: none;
 }
 
-.for-sale:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .for-sale:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Pressed, the card dims under the finger. A moment's wait first, so starting to scroll a list doesn't flash it. */
+.tile-link {
+  transition: opacity 0.25s;
+}
+
+.tile-link:active {
+  opacity: 0.7;
+  transition: opacity 0s 0.05s;
 }
 </style>

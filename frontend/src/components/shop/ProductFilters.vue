@@ -234,8 +234,10 @@ function toggle(name, checked) {
   font-weight: 550;
 }
 
-.clear:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .clear:hover {
+    text-decoration: underline;
+  }
 }
 
 /* In the sidebar on wide screens, everything shows at once and stacks. */

@@ -7,15 +7,22 @@ import CartTotals from './CartTotals.vue'
 import FreeShippingBar from './FreeShippingBar.vue'
 import FormMessage from '../FormMessage.vue'
 import { useCart } from '../../stores/cart'
+import { useDrawer } from '../../utils/drawer'
 import { t } from '../../utils/i18n'
 
-/** The cart sliding in from the right, after adding a product or from the cart button in the header. */
+/**
+ * The cart sliding in from the right, after adding a product or from the cart button in the header. A swipe to the
+ * right closes it again.
+ */
 const cart = useCart()
 const route = useRoute()
 
 const dialog = ref(null)
-const closing = ref(false)
+const panel = ref(null)
+const scrim = ref(null)
 const error = ref('')
+
+const drawer = useDrawer({ dialog, panel, scrim, side: 'right', onDismiss: () => cart.closeDrawer() })
 
 const items = computed(() => cart.state.cart?.items ?? [])
 const added = computed(() => {
@@ -41,14 +48,8 @@ onBeforeUnmount(() => document.removeEventListener('focusin', rememberFocus))
 
 function open() {
   error.value = ''
-  closing.value = false
-  returnTo = lastFocused
-  if (!dialog.value.open) dialog.value.showModal()
-}
-
-function finishClose() {
-  closing.value = false
-  dialog.value?.close()
+  if (!dialog.value.open) returnTo = lastFocused
+  drawer.open()
 }
 
 function onClosed() {
@@ -58,40 +59,24 @@ function onClosed() {
   if (target?.isConnected && !target.disabled) target.focus()
 }
 
-function close() {
-  if (!dialog.value?.open) return
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) finishClose()
-  else closing.value = true
-}
-
-function onAnimationEnd() {
-  if (closing.value) finishClose()
-}
-
 watch(
   () => cart.state.drawerOpen,
-  (isOpen) => (isOpen ? open() : close()),
+  (isOpen) => (isOpen ? open() : drawer.close()),
 )
 
 watch(() => route.fullPath, () => cart.closeDrawer())
-
-function onClick(event) {
-  if (event.target === dialog.value) cart.closeDrawer()
-}
 </script>
 
 <template>
   <dialog
     ref="dialog"
     class="drawer"
-    :class="{ closing }"
     :aria-label="t('cart.drawerTitle')"
-    @click="onClick"
     @cancel.prevent="cart.closeDrawer()"
     @close="onClosed"
-    @animationend.self="onAnimationEnd"
   >
-    <div class="panel">
+    <div ref="scrim" class="scrim" @click="cart.closeDrawer()"></div>
+    <div ref="panel" class="panel">
       <header class="head">
         <h2 class="title">
           {{ t('cart.drawerTitle') }}
@@ -160,56 +145,54 @@ function onClick(event) {
 </template>
 
 <style scoped>
+/* The dialog covers the screen. The scrim and the panel inside it are moved by useDrawer. */
 .drawer {
   position: fixed;
-  inset: 0 0 0 auto;
-  width: min(28rem, 100vw);
+  inset: 0;
+  width: 100%;
   max-width: none;
   height: 100dvh;
   max-height: none;
   margin: 0;
   padding: 0;
+  /* Clip, not hidden: a hidden overflow can still scroll, and the browser would scroll the dialog sideways to the
+     close button it focuses while the panel is still off screen. */
+  overflow: clip;
   border: 0;
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-ink);
 }
 
-.drawer[open] {
-  animation: slide-in 220ms ease-out;
-}
-
-.drawer.closing {
-  animation: slide-out 160ms ease-in forwards;
-}
-
 .drawer::backdrop {
+  background: transparent;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
   background: var(--color-brand-deep);
-  opacity: 0.5;
-}
-
-@keyframes slide-in {
-  from {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes slide-out {
-  to {
-    transform: translateX(100%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .drawer[open],
-  .drawer.closing {
-    animation: none;
-  }
+  opacity: 0;
 }
 
 .panel {
+  position: absolute;
+  inset: 0 0 0 auto;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  width: min(28rem, 100vw);
+  background: var(--color-surface);
+  transform: translate3d(100%, 0, 0);
+  /* Up and down scroll the cart and two fingers zoom; sideways is the swipe that closes it. */
+  touch-action: pan-y pinch-zoom;
+}
+
+/* Pulled further in than open, the panel shows no gap at the edge of the screen. */
+.panel::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 100%;
+  width: 4rem;
+  background: inherit;
 }
 
 .head {
@@ -245,13 +228,17 @@ function onClick(event) {
   cursor: pointer;
 }
 
-.close:hover {
-  color: var(--color-brand);
+@media (hover: hover) {
+  .close:hover {
+    color: var(--color-brand);
+  }
 }
 
 .body {
   flex: 1;
   overflow-y: auto;
+  /* A scrolling box decides on touches itself: it has to leave sideways swipes to the panel as well. */
+  touch-action: pan-y pinch-zoom;
   padding: var(--space-4);
 }
 
@@ -324,5 +311,15 @@ function onClick(event) {
 
 .btn.disabled {
   opacity: 0.6;
+}
+
+.close {
+  transition: transform var(--press-out);
+}
+
+.close:active {
+  color: var(--color-brand);
+  transform: scale(0.92);
+  transition: transform var(--press-in);
 }
 </style>

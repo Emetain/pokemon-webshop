@@ -143,9 +143,11 @@ const shipmentText = computed(() => {
   overflow-wrap: anywhere;
 }
 
-a.name:hover {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  a.name:hover {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 .meta {

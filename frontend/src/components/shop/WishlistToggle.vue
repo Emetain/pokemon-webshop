@@ -6,7 +6,12 @@ import { productWishlistApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { t } from '../../utils/i18n'
 
-/** A heart that puts a product on the wishlist. A visitor who isn't logged in goes to the login page first. */
+/**
+ * A heart that puts a product on the wishlist. A visitor who isn't logged in goes to the login page first.
+ *
+ * The heart changes at once, before the shop has answered, and changes back if saving fails. Taps in quick succession
+ * are sent one after the other, so the last one wins.
+ */
 const props = defineProps({
   product: { type: Object, required: true },
   withText: { type: Boolean, default: false },
@@ -17,29 +22,44 @@ const emit = defineEmits(['change', 'error'])
 const route = useRoute()
 const router = useRouter()
 const session = useSession()
-const busy = ref(false)
 
-const wished = computed(() => props.product.wished === true)
+// What the heart shows while the shop is still saving, or null when it shows what the product says.
+const optimistic = ref(null)
+// Set when a tap fills the heart, for its small pop. Not on load: then nothing happened.
+const popped = ref(false)
+
+const wished = computed(() => optimistic.value ?? props.product.wished === true)
 const label = computed(() =>
   wished.value
     ? t('shop.wishlistRemoveLabel', { name: props.product.name })
     : t('shop.wishlistAddLabel', { name: props.product.name }),
 )
 
-async function toggle() {
+let queue = Promise.resolve()
+let pending = 0
+
+function toggle() {
   if (!session.isLoggedIn.value) {
     router.push({ path: '/inloggen', query: { redirect: route.fullPath } })
     return
   }
-  busy.value = true
+  const next = !wished.value
+  optimistic.value = next
+  popped.value = next
+  pending++
+  queue = queue.then(() => save(next))
+}
+
+async function save(next) {
   try {
-    if (wished.value) await productWishlistApi.remove(props.product.id)
-    else await productWishlistApi.add(props.product.id)
-    emit('change', !wished.value)
+    if (next) await productWishlistApi.add(props.product.id)
+    else await productWishlistApi.remove(props.product.id)
+    emit('change', next)
   } catch (exception) {
     emit('error', exception.message)
   } finally {
-    busy.value = false
+    pending--
+    if (pending === 0) optimistic.value = null
   }
 }
 </script>
@@ -51,10 +71,16 @@ async function toggle() {
     type="button"
     :aria-label="withText ? undefined : label"
     :aria-pressed="wished"
-    :disabled="busy"
     @click="toggle"
   >
-    <Heart :size="20" :fill="wished ? 'currentColor' : 'none'" aria-hidden="true" />
+    <Heart
+      class="heart"
+      :class="{ popped }"
+      :size="20"
+      :fill="wished ? 'currentColor' : 'none'"
+      aria-hidden="true"
+      @animationend="popped = false"
+    />
     <span v-if="withText">{{ wished ? t('shop.wishlistRemove') : t('shop.wishlistAdd') }}</span>
   </button>
 </template>
@@ -74,11 +100,24 @@ async function toggle() {
   background: var(--color-surface);
   color: var(--color-ink-soft);
   cursor: pointer;
+  transition: transform var(--press-out);
 }
 
-.wishlist-toggle:hover:not(:disabled) {
-  border-color: var(--color-brand);
-  color: var(--color-brand);
+@media (hover: hover) {
+  .wishlist-toggle:hover {
+    border-color: var(--color-brand);
+    color: var(--color-brand);
+  }
+}
+
+.wishlist-toggle:active {
+  transform: scale(0.92);
+  transition: transform var(--press-in);
+}
+
+/* A wide button with text gives way less, like the other buttons with text. */
+.wishlist-toggle.with-text:active {
+  transform: scale(var(--press-scale));
 }
 
 .wishlist-toggle.wished {
@@ -86,9 +125,21 @@ async function toggle() {
   color: var(--color-brand);
 }
 
-.wishlist-toggle:disabled {
-  cursor: progress;
-  opacity: 0.6;
+/* The heart swells a little as it fills, and settles with a small bounce: the tap gave it a push. */
+.heart.popped {
+  animation: pop 0.45s var(--ease-spring-bounce);
+}
+
+@keyframes pop {
+  30% {
+    transform: scale(1.3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heart.popped {
+    animation: none;
+  }
 }
 
 .with-text {

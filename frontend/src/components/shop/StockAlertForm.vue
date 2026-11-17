@@ -99,7 +99,9 @@ async function submit() {
   background: var(--color-surface);
 }
 
-.input:hover {
-  border-color: var(--color-ink);
+@media (hover: hover) {
+  .input:hover {
+    border-color: var(--color-ink);
+  }
 }
 </style>

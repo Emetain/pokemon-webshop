@@ -81,7 +81,9 @@ function search() {
   background: var(--color-surface);
 }
 
-.input:hover {
-  border-color: var(--color-ink);
+@media (hover: hover) {
+  .input:hover {
+    border-color: var(--color-ink);
+  }
 }
 </style>

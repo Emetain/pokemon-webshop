@@ -120,6 +120,19 @@
   /* The frame around an owned card: a line and the white gap between that line and the image. */
   --frame-width: 2.5px;
   --frame-gap: 3px;
+
+  /* Motion. Things move like springs: fast at first, then easing into place. These curves are a spring without
+     bounce and one with a small bounce, so CSS transitions match the drawers and the carousel (utils/spring.js).
+     The bounce is only for something that follows a flick or a press. */
+  --ease-spring: linear(0, 0.0446, 0.1443, 0.2642, 0.3849, 0.4963, 0.594, 0.6768, 0.7452, 0.8009, 0.8454, 0.8807,
+    0.9084, 0.93, 0.9467, 0.9596, 0.9694, 0.9769, 0.9826, 0.987, 0.9902, 0.9927, 0.9946, 0.9959, 1);
+  --ease-spring-bounce: linear(0, 0.0273, 0.0955, 0.1875, 0.2909, 0.3965, 0.4982, 0.5921, 0.6759, 0.7488, 0.8104,
+    0.8615, 0.9028, 0.9355, 0.9607, 0.9796, 0.9933, 1.0029, 1.0091, 1.0129, 1.0147, 1.0152, 1.0147, 1.0136, 1.0122,
+    1.0107, 1.0091, 1.0075, 1.0061, 1.0048, 1.0038, 1.0028, 1);
+  /* A press shows at once and lets go with a spring. */
+  --press-scale: 0.97;
+  --press-in: 0.08s ease-out;
+  --press-out: 0.3s var(--ease-spring);
 }
 
 [data-game='pokemon'] {
@@ -191,6 +204,19 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Buttons and links show their own pressed state, instead of the grey flash of the browser. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* No waiting for a possible double tap: a tap on a control counts straight away. */
+a,
+button,
+input,
+label,
+select,
+summary,
+textarea {
+  touch-action: manipulation;
 }
 
 body {
@@ -283,6 +309,17 @@ main:focus {
   text-align: center;
   text-decoration: none;
   cursor: pointer;
+  transition:
+    transform var(--press-out),
+    background-color 0.15s,
+    box-shadow 0.15s;
+}
+
+/* Pressed, a button gives way under the finger at once, and springs back when it lets go. */
+.btn:active:not(:disabled, .disabled) {
+  transform: scale(var(--press-scale));
+  transition-duration: 0.08s;
+  transition-timing-function: ease-out;
 }
 
 .btn:disabled {
@@ -297,9 +334,12 @@ main:focus {
   color: var(--color-on-brand);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-brand-hover);
-  box-shadow: inset 0 -5px 0 var(--color-brand-edge);
+/* Only where there is a real hover: on a phone it would stick after a tap. */
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-brand-hover);
+    box-shadow: inset 0 -5px 0 var(--color-brand-edge);
+  }
 }
 
 .btn-primary:active:not(:disabled) {
@@ -313,8 +353,10 @@ main:focus {
   color: var(--color-brand);
 }
 
-.btn-on-brand:hover {
-  background: var(--color-tint);
+@media (hover: hover) {
+  .btn-on-brand:hover {
+    background: var(--color-tint);
+  }
 }
 
 .btn-outline-on-brand {
@@ -323,8 +365,10 @@ main:focus {
   color: var(--color-on-brand);
 }
 
-.btn-outline-on-brand:hover {
-  box-shadow: inset 0 0 0 2px var(--color-on-brand);
+@media (hover: hover) {
+  .btn-outline-on-brand:hover {
+    box-shadow: inset 0 0 0 2px var(--color-on-brand);
+  }
 }
 
 .btn-secondary {
@@ -333,8 +377,10 @@ main:focus {
   color: var(--color-ink);
 }
 
-.btn-secondary:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 2px var(--color-ink);
+@media (hover: hover) {
+  .btn-secondary:hover:not(:disabled) {
+    box-shadow: inset 0 0 0 2px var(--color-ink);
+  }
 }
 
 .btn-block {
@@ -396,8 +442,10 @@ main:focus {
   font-size: var(--text-sm);
 }
 
-.admin-input:hover:not(:disabled) {
-  border-color: var(--color-ink);
+@media (hover: hover) {
+  .admin-input:hover:not(:disabled) {
+    border-color: var(--color-ink);
+  }
 }
 
 .admin-input:disabled {
@@ -493,8 +541,14 @@ textarea.admin-input {
   text-align: left;
 }
 
-.link-button:hover:not(:disabled) {
-  text-decoration: underline;
+@media (hover: hover) {
+  .link-button:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+}
+
+.link-button:active:not(:disabled) {
+  opacity: 0.6;
 }
 
 .link-button:disabled {

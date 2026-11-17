@@ -415,8 +415,10 @@ usePageMeta(() =>
   white-space: nowrap;
 }
 
-.chip:hover {
-  box-shadow: inset 0 0 0 2px var(--accent-ink);
+@media (hover: hover) {
+  .chip:hover {
+    box-shadow: inset 0 0 0 2px var(--accent-ink);
+  }
 }
 
 .chip.current {
@@ -466,8 +468,10 @@ usePageMeta(() =>
   text-decoration: none;
 }
 
-.to-cards:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .to-cards:hover {
+    text-decoration: underline;
+  }
 }
 
 @media (min-width: 640px) {

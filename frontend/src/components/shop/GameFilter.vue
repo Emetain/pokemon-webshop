@@ -52,8 +52,10 @@ const to = (game) => ({ path: route.path, query: game ? { ...route.query, game }
   text-decoration: none;
 }
 
-.chip:hover {
-  border-color: var(--accent);
+@media (hover: hover) {
+  .chip:hover {
+    border-color: var(--accent);
+  }
 }
 
 .chip.active {

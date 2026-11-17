@@ -49,8 +49,10 @@ const id = useId()
   text-decoration: none;
 }
 
-.all:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .all:hover {
+    text-decoration: underline;
+  }
 }
 
 /* Positioned, so hidden labels inside the tiles scroll with the row instead of widening the page. */

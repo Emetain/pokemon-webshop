@@ -6,6 +6,7 @@ import LiveBadge from '../drops/LiveBadge.vue'
 import { mainNav, menuColumns } from '../../data/navigation'
 import { useShopNavigation } from '../../stores/shopNavigation'
 import { useSession } from '../../stores/session'
+import { useDrawer } from '../../utils/drawer'
 import { t } from '../../utils/i18n'
 
 const { seriesByGame, loadSeries } = useShopNavigation()
@@ -17,39 +18,39 @@ const route = useRoute()
 const session = useSession()
 
 const dialog = ref(null)
-const closing = ref(false)
+const panel = ref(null)
+const scrim = ref(null)
+const body = ref(null)
 // The item whose sub-menu is showing. Null shows the main list.
 const activeItem = shallowRef(null)
+// A sub-menu comes in from the right and goes back out to the right, like pages pushed onto a stack.
+const direction = ref('forward')
+
+const drawer = useDrawer({ dialog, panel, scrim, side: 'left', onDismiss: () => drawer.close() })
 
 function open() {
-  closing.value = false
+  direction.value = 'forward'
   activeItem.value = null
-  dialog.value.showModal()
+  drawer.open()
 }
 
-function close() {
-  if (!dialog.value?.open) return
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (reducedMotion) {
-    dialog.value.close()
-  } else {
-    closing.value = true
-  }
+function showSub(item) {
+  direction.value = 'forward'
+  activeItem.value = item
+  body.value.scrollTop = 0
 }
 
-function onAnimationEnd() {
-  if (closing.value) {
-    closing.value = false
-    dialog.value.close()
-  }
+function showMain() {
+  direction.value = 'back'
+  activeItem.value = null
+  body.value.scrollTop = 0
 }
 
 function onClick(event) {
-  const clickedBackdrop = event.target === dialog.value
-  if (clickedBackdrop || event.target.closest('a')) close()
+  if (event.target.closest('a')) drawer.close()
 }
 
-watch(() => route.fullPath, close)
+watch(() => route.fullPath, () => drawer.close())
 
 defineExpose({ open })
 </script>
@@ -58,53 +59,56 @@ defineExpose({ open })
   <dialog
     ref="dialog"
     class="mobile-menu"
-    :class="{ closing }"
     :aria-label="t('layout.menu')"
     @click="onClick"
-    @cancel.prevent="close"
-    @animationend.self="onAnimationEnd"
+    @cancel.prevent="drawer.close()"
   >
-    <div class="panel">
+    <div ref="scrim" class="scrim" @click="drawer.close()"></div>
+    <div ref="panel" class="panel">
       <div class="panel-head">
-        <button v-if="activeItem" class="back-button" type="button" @click="activeItem = null">
+        <button v-if="activeItem" class="back-button" type="button" @click="showMain">
           <ChevronLeft :size="20" aria-hidden="true" />
           {{ t('layout.back') }}
         </button>
         <span v-else class="panel-title">{{ t('layout.menu') }}</span>
-        <button class="close-button" type="button" :aria-label="t('layout.closeMenu')" @click="close">
+        <button class="close-button" type="button" :aria-label="t('layout.closeMenu')" @click="drawer.close()">
           <X :size="24" aria-hidden="true" />
         </button>
       </div>
 
-      <nav class="panel-body" :aria-label="t('layout.mainNavigation')">
-        <ul v-if="!activeItem" class="rows">
-          <li v-for="item in mainNav" :key="item.key">
-            <button v-if="item.columns" class="row" type="button" @click="activeItem = item">
-              <span class="tile" :data-game="item.game"><component :is="item.icon" class="tile-icon" /></span>
-              <span class="row-label">{{ t(item.labelKey) }}</span>
-              <ChevronRight class="row-chevron" :size="18" aria-hidden="true" />
-            </button>
-            <router-link v-else class="row" :to="item.to">
-              <span class="tile"><component :is="item.icon" class="tile-icon" /></span>
-              <span class="row-label">{{ t(item.labelKey) }}</span>
-              <LiveBadge v-if="item.key === 'drops'" />
-            </router-link>
-          </li>
-        </ul>
-
-        <div v-else :key="activeItem.key" class="sub">
-          <div class="sub-head">
-            <h2 class="sub-title">{{ t(activeItem.labelKey) }}</h2>
-            <router-link class="sub-all" :to="activeItem.to">{{ t('nav.viewAll') }}</router-link>
-          </div>
-          <section v-for="column in columnsOf(activeItem)" :key="column.titleKey" class="sub-group">
-            <h3 class="sub-group-title">{{ t(column.titleKey) }}</h3>
-            <ul class="sub-links">
-              <li v-for="link in column.links" :key="link.to">
-                <router-link class="sub-link" :to="link.to">{{ link.label ?? t(link.labelKey) }}</router-link>
+      <nav ref="body" class="panel-body" :aria-label="t('layout.mainNavigation')">
+        <div class="pages">
+          <Transition :name="direction">
+            <ul v-if="!activeItem" class="rows">
+              <li v-for="item in mainNav" :key="item.key">
+                <button v-if="item.columns" class="row" type="button" @click="showSub(item)">
+                  <span class="tile" :data-game="item.game"><component :is="item.icon" class="tile-icon" /></span>
+                  <span class="row-label">{{ t(item.labelKey) }}</span>
+                  <ChevronRight class="row-chevron" :size="18" aria-hidden="true" />
+                </button>
+                <router-link v-else class="row" :to="item.to">
+                  <span class="tile"><component :is="item.icon" class="tile-icon" /></span>
+                  <span class="row-label">{{ t(item.labelKey) }}</span>
+                  <LiveBadge v-if="item.key === 'drops'" />
+                </router-link>
               </li>
             </ul>
-          </section>
+
+            <div v-else :key="activeItem.key" class="sub">
+              <div class="sub-head">
+                <h2 class="sub-title">{{ t(activeItem.labelKey) }}</h2>
+                <router-link class="sub-all" :to="activeItem.to">{{ t('nav.viewAll') }}</router-link>
+              </div>
+              <section v-for="column in columnsOf(activeItem)" :key="column.titleKey" class="sub-group">
+                <h3 class="sub-group-title">{{ t(column.titleKey) }}</h3>
+                <ul class="sub-links">
+                  <li v-for="link in column.links" :key="link.to">
+                    <router-link class="sub-link" :to="link.to">{{ link.label ?? t(link.labelKey) }}</router-link>
+                  </li>
+                </ul>
+              </section>
+            </div>
+          </Transition>
         </div>
       </nav>
 
@@ -127,55 +131,54 @@ defineExpose({ open })
 </template>
 
 <style scoped>
+/* The dialog covers the screen. The scrim and the panel inside it are moved by useDrawer. */
 .mobile-menu {
   position: fixed;
-  inset: 0 auto 0 0;
-  width: min(26rem, 100vw);
+  inset: 0;
+  width: 100%;
   max-width: none;
   height: 100dvh;
   max-height: none;
   margin: 0;
   padding: 0;
+  /* Clip, not hidden: a hidden overflow can still scroll, and the browser would scroll the dialog sideways to the
+     close button it focuses while the panel is still off screen. */
+  overflow: clip;
   border: 0;
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-ink);
 }
 
-.mobile-menu[open] {
-  animation: slide-in 220ms ease-out;
-}
-
-.mobile-menu.closing {
-  animation: slide-out 160ms ease-in forwards;
-}
-
 .mobile-menu::backdrop {
+  background: transparent;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
   background: var(--color-brand-deep);
-  opacity: 0.5;
-}
-
-@keyframes slide-in {
-  from {
-    transform: translateX(-100%);
-  }
-}
-
-@keyframes slide-out {
-  to {
-    transform: translateX(-100%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mobile-menu[open] {
-    animation: none;
-  }
+  opacity: 0;
 }
 
 .panel {
+  position: absolute;
+  inset: 0 auto 0 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  width: min(26rem, 100vw);
+  background: var(--color-surface);
+  transform: translate3d(-100%, 0, 0);
+  /* Up and down scroll the menu and two fingers zoom; sideways is the swipe that closes it. */
+  touch-action: pan-y pinch-zoom;
+}
+
+/* Pulled further in than open, the panel shows no gap at the edge of the screen. */
+.panel::after {
+  content: '';
+  position: absolute;
+  inset: 0 100% 0 auto;
+  width: 4rem;
+  background: inherit;
 }
 
 .panel-head {
@@ -223,8 +226,50 @@ defineExpose({ open })
 
 .panel-body {
   flex: 1;
+  overflow-x: hidden;
   overflow-y: auto;
+  /* A scrolling box decides on touches itself: it has to leave sideways swipes to the panel as well. */
+  touch-action: pan-y pinch-zoom;
   padding: var(--space-2) var(--space-4);
+}
+
+/* The page going and the page coming share one cell while they pass each other. */
+.pages {
+  display: grid;
+}
+
+.pages > * {
+  grid-area: 1 / 1;
+}
+
+/*
+ * Forward, the sub-menu comes in from the right while the list makes way to the left. Back is the same path in
+ * reverse, so the sub-menu leaves the way it came. Without motion, the two just cross-fade.
+ */
+.forward-enter-active,
+.forward-leave-active,
+.back-enter-active,
+.back-leave-active {
+  transition:
+    transform 0.32s var(--ease-spring),
+    opacity 0.2s ease-out;
+}
+
+.forward-enter-from,
+.back-leave-to {
+  opacity: 0;
+  transform: translateX(40%);
+}
+
+.forward-leave-to,
+.back-enter-from {
+  opacity: 0;
+  transform: translateX(-25%);
+}
+
+.forward-leave-active,
+.back-leave-active {
+  pointer-events: none;
 }
 
 .rows {
@@ -276,20 +321,12 @@ defineExpose({ open })
   color: var(--color-ink-soft);
 }
 
-.sub {
-  animation: sub-in 180ms ease-out;
-}
-
-@keyframes sub-in {
-  from {
-    opacity: 0;
-    transform: translateX(1rem);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .sub {
-    animation: none;
+  .forward-enter-from,
+  .forward-leave-to,
+  .back-enter-from,
+  .back-leave-to {
+    transform: none;
   }
 }
 
@@ -359,5 +396,31 @@ defineExpose({ open })
   font-size: var(--text-xs);
   font-weight: 550;
   text-decoration: none;
+}
+
+/* A row lights up under the finger, the way a list on a phone does. */
+.row,
+.sub-link,
+.foot-link {
+  -webkit-touch-callout: none;
+  transition: background-color 0.25s;
+}
+
+.row:active,
+.sub-link:active,
+.foot-link:active {
+  background: var(--color-tint);
+  transition: none;
+}
+
+.back-button,
+.close-button {
+  transition: transform var(--press-out);
+}
+
+.back-button:active,
+.close-button:active {
+  transform: scale(0.92);
+  transition: transform var(--press-in);
 }
 </style>

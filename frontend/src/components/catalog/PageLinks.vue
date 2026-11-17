@@ -92,9 +92,11 @@ function pageLink(number) {
   text-decoration: none;
 }
 
-.page:hover {
-  background: var(--color-tint);
-  color: var(--color-brand);
+@media (hover: hover) {
+  .page:hover {
+    background: var(--color-tint);
+    color: var(--color-brand);
+  }
 }
 
 .page.current {

@@ -1,22 +1,30 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-vue-next'
 import BallMark from '../BallMark.vue'
 import DropCountdown from '../drops/DropCountdown.vue'
 import { findGame } from '../../data/games'
 import { formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { createSpring, project } from '../../utils/spring'
+import { trackSwipe } from '../../utils/swipe'
 
 /**
  * The hero as a carousel. The default slot is always the first slide: the hero with the binder. The slides
  * from admin follow. It turns by itself, but stops while the pointer or focus is on it, after a click on
  * pause, while the tab is hidden or the hero is scrolled out of view, and for visitors who prefer reduced motion.
+ *
+ * The slides lie side by side, like a strip: the next one comes in from the right. On a touch screen the strip follows
+ * the finger, and a flick turns it one slide on. Visitors who prefer reduced motion get a cross-fade instead.
  */
 const props = defineProps({
   slides: { type: Array, default: () => [] },
 })
 
 const INTERVAL_MS = 8000
+// Turning by itself is slower and calmer than turning on a click or a swipe.
+const AUTO = { damping: 1, response: 0.6 }
+const MANUAL = { damping: 1, response: 0.45 }
 
 const current = ref(0)
 const hovering = ref(false)
@@ -24,7 +32,11 @@ const focused = ref(false)
 const paused = ref(false)
 const reducedMotion = ref(false)
 const inView = ref(true)
+const dragging = ref(false)
 const root = ref(null)
+const track = ref(null)
+// The slide elements, in order, for moving them while the strip turns.
+const slideEls = []
 
 const total = computed(() => props.slides.length + 1)
 const turning = computed(() => total.value > 1 && !paused.value && !reducedMotion.value)
@@ -51,15 +63,90 @@ function onDropStarted(slide) {
   started.value = new Set([...started.value, slide.key])
 }
 
-function go(index) {
-  current.value = (index + total.value) % total.value
+const wrap = (index) => ((index % total.value) + total.value) % total.value
+
+/*
+ * Where the strip is, in slides: 1 shows the second slide, 1.5 is halfway the second and the third. It counts on past
+ * the last slide, so going round from the last to the first is one more step to the right, not a run back.
+ */
+const position = createSpring(0, render)
+
+/** How far slide `index` is from the middle at `at`, the shortest way round: -0.5 is half off to the left. */
+function offsetOf(index, at) {
+  const n = total.value
+  let offset = (index - at) % n
+  if (offset < -n / 2) offset += n
+  if (offset >= n / 2) offset -= n
+  return offset
 }
+
+function render(at) {
+  slideEls.length = total.value
+  slideEls.forEach((element, index) => {
+    if (!element) return
+    if (reducedMotion.value || total.value < 2) {
+      element.style.transform = ''
+      element.style.visibility = ''
+      return
+    }
+    const offset = offsetOf(index, at)
+    const visible = Math.abs(offset) < 1
+    element.style.visibility = visible ? 'visible' : 'hidden'
+    element.style.transform = visible && offset !== 0 ? `translate3d(${offset * 100}%, 0, 0)` : ''
+  })
+}
+
+/** Turns the strip `steps` slides on, from wherever it is or is going. */
+function turn(steps, motion = MANUAL) {
+  if (total.value < 2) return
+  const to = (position.moving ? position.target : Math.round(position.value)) + steps
+  current.value = wrap(to)
+  if (reducedMotion.value) position.set(to)
+  else position.to(to, motion)
+}
+
+const next = () => turn(1)
+const previous = () => turn(-1)
+// A dot to the right of the current one turns the strip forward, one to the left back.
+const choose = (index) => turn(index - current.value)
 
 let timer = null
 
 function tick() {
-  if (turning.value && inView.value && !hovering.value && !focused.value && !document.hidden) go(current.value + 1)
+  const resting = inView.value && !hovering.value && !focused.value && !dragging.value && !document.hidden
+  if (turning.value && resting) turn(1, AUTO)
 }
+
+// Following a finger.
+let startPosition = 0
+let width = 0
+let stopSwipe = null
+
+const swipe = {
+  // A part of a slide with a swipe of its own, like the binder, keeps it.
+  canStart: (event) => total.value > 1 && !event.target.closest('[data-own-swipe]'),
+  onStart() {
+    dragging.value = true
+    width = track.value.offsetWidth
+    position.stop()
+    startPosition = position.value
+  },
+  onMove(dx) {
+    if (!reducedMotion.value) position.set(startPosition - dx / width)
+  },
+  onEnd({ dx, velocity }) {
+    dragging.value = false
+    // Where the flick would carry the strip, but never more than one slide on from where the swipe began.
+    const landing = startPosition - (dx + project(velocity)) / width
+    const from = Math.round(startPosition)
+    const to = Math.min(Math.max(Math.round(landing), from - 1), from + 1)
+    current.value = wrap(to)
+    if (reducedMotion.value) position.set(to)
+    else position.to(to, { ...MANUAL, velocity: -velocity / width })
+  },
+}
+
+watch([total, reducedMotion], () => render(position.value), { flush: 'post' })
 
 function onFocusOut(event) {
   if (!event.currentTarget.contains(event.relatedTarget)) focused.value = false
@@ -67,7 +154,11 @@ function onFocusOut(event) {
 
 let motionQuery = null
 let observer = null
-const onMotionChange = () => (reducedMotion.value = motionQuery.matches)
+const onMotionChange = () => {
+  reducedMotion.value = motionQuery.matches
+  // Settle on the current slide, so a change of setting halfway a turn leaves nothing half-way.
+  position.set(Math.round(position.value))
+}
 
 onMounted(() => {
   motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -77,10 +168,14 @@ onMounted(() => {
   observer = new IntersectionObserver(([entry]) => (inView.value = entry.isIntersecting), { threshold: 0.5 })
   observer.observe(root.value)
   timer = setInterval(tick, INTERVAL_MS)
+  // The whole hero, the dots and arrows included: a swipe that starts there should turn the strip too.
+  stopSwipe = trackSwipe(root.value, swipe)
 })
 
 onBeforeUnmount(() => {
   clearInterval(timer)
+  stopSwipe?.()
+  position.stop()
   observer?.disconnect()
   motionQuery?.removeEventListener('change', onMotionChange)
 })
@@ -90,6 +185,7 @@ onBeforeUnmount(() => {
   <section
     ref="root"
     class="carousel"
+    :class="{ strip: !reducedMotion }"
     :data-game="currentAccent"
     :data-drop-colour="currentColour"
     :aria-label="t('home.hero.label')"
@@ -103,8 +199,9 @@ onBeforeUnmount(() => {
       From 768px all slides share one grid cell, so the hero keeps the height of the tallest and never jumps.
       On a phone the binder slide is far taller than the others, so there the hero follows the current slide.
     -->
-    <div class="track" :aria-live="turning ? 'off' : 'polite'">
+    <div ref="track" class="track" :aria-live="turning ? 'off' : 'polite'">
       <div
+        :ref="(element) => (slideEls[0] = element)"
         class="slide"
         :class="{ active: current === 0 }"
         role="group"
@@ -117,6 +214,7 @@ onBeforeUnmount(() => {
       <div
         v-for="(slide, index) in slides"
         :key="slide.key ?? slide.id"
+        :ref="(element) => (slideEls[index + 1] = element)"
         class="slide promo"
         :class="{ active: current === index + 1, 'with-pictures': picturesOf(slide).length }"
         :data-game="accentOf(slide)"
@@ -170,7 +268,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-if="total > 1" class="container controls">
-      <button class="control" type="button" :aria-label="t('home.hero.previous')" @click="go(current - 1)">
+      <button class="control" type="button" :aria-label="t('home.hero.previous')" @click="previous">
         <ChevronLeft :size="20" aria-hidden="true" />
       </button>
       <ol class="dots">
@@ -180,11 +278,11 @@ onBeforeUnmount(() => {
             type="button"
             :aria-label="t('home.hero.choose', { number: index })"
             :aria-current="current === index - 1 ? 'true' : undefined"
-            @click="go(index - 1)"
+            @click="choose(index - 1)"
           ></button>
         </li>
       </ol>
-      <button class="control" type="button" :aria-label="t('home.hero.next')" @click="go(current + 1)">
+      <button class="control" type="button" :aria-label="t('home.hero.next')" @click="next">
         <ChevronRight :size="20" aria-hidden="true" />
       </button>
       <button
@@ -204,6 +302,8 @@ onBeforeUnmount(() => {
 .carousel {
   position: relative;
   overflow: hidden;
+  /* Up and down scroll the page and two fingers zoom; sideways turns the strip. */
+  touch-action: pan-y pinch-zoom;
   background: var(--accent);
   color: var(--accent-ink);
   transition: background-color 0.5s;
@@ -232,6 +332,22 @@ onBeforeUnmount(() => {
   transition:
     opacity 0.5s,
     visibility 0s;
+}
+
+/*
+ * As a strip, the script moves the slides and shows the ones in view, so they don't fade. Before it has moved them,
+ * the rules above still hide all but the current one.
+ */
+.strip .slide,
+.strip .slide.active {
+  opacity: 1;
+  transition: none;
+}
+
+/* A slide passing by keeps its own colour, also while the hero already takes that of the next one. */
+.slide:not([data-game], [data-drop-colour]) {
+  --accent: var(--color-brand);
+  --accent-ink: var(--color-on-brand);
 }
 
 /* The slides that aren't showing don't count for the height on a phone. */
@@ -454,14 +570,27 @@ onBeforeUnmount(() => {
   background: transparent;
   color: var(--accent-ink);
   cursor: pointer;
+  transition: transform var(--press-out);
 }
 
-.control:hover {
+.control:active {
   background: rgb(255 255 255 / 16%);
+  transform: scale(0.92);
+  transition: transform var(--press-in);
 }
 
-.carousel[data-drop-colour='yellow'] .control:hover {
+.carousel[data-drop-colour='yellow'] .control:active {
   background: rgb(0 0 0 / 8%);
+}
+
+@media (hover: hover) {
+  .control:hover {
+    background: rgb(255 255 255 / 16%);
+  }
+
+  .carousel[data-drop-colour='yellow'] .control:hover {
+    background: rgb(0 0 0 / 8%);
+  }
 }
 
 .dots {
@@ -492,7 +621,7 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-round);
   content: '';
   transform: translate(-50%, -50%);
-  transition: width 0.3s;
+  transition: width 0.3s var(--ease-spring);
 }
 
 .dot[aria-current='true']::after {
@@ -532,10 +661,21 @@ onBeforeUnmount(() => {
   }
 }
 
+/* Without motion the slides still cross-fade, briefly: a change you can follow, without anything moving. */
 @media (prefers-reduced-motion: reduce) {
+  .slide {
+    transition:
+      opacity 0.25s,
+      visibility 0s linear 0.25s;
+  }
+
+  .slide.active {
+    transition:
+      opacity 0.25s,
+      visibility 0s;
+  }
+
   .carousel,
-  .slide,
-  .slide.active,
   .dot::after {
     transition: none;
   }

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Heart, Menu, Search, ShoppingBag, Truck, User } from 'lucide-vue-next'
 import AppLogo from './AppLogo.vue'
@@ -15,6 +15,7 @@ const router = useRouter()
 const session = useSession()
 
 const mobileMenu = ref(null)
+const topBar = ref(null)
 const searchInput = ref(null)
 const searchOpen = ref(false)
 const searchQuery = ref('')
@@ -43,6 +44,20 @@ function submitSearch() {
   router.push({ name: 'search', query: { q } })
 }
 
+/*
+ * Once the top bar has scrolled away, the header sticks and the page scrolls under it. Only then does it get its edge,
+ * a soft shadow, to show where it floats above the page.
+ */
+const stuck = ref(false)
+let stuckObserver = null
+
+onMounted(() => {
+  stuckObserver = new IntersectionObserver(([entry]) => (stuck.value = !entry.isIntersecting))
+  stuckObserver.observe(topBar.value)
+})
+
+onBeforeUnmount(() => stuckObserver?.disconnect())
+
 // Keeps the field in step with the results, also after going back in the browser.
 watch(
   () => route.query.q,
@@ -54,12 +69,12 @@ watch(
 </script>
 
 <template>
-  <p class="top-bar">
+  <p ref="topBar" class="top-bar">
     <Truck :size="16" aria-hidden="true" />
     {{ t('layout.shippingNotice') }}
   </p>
 
-  <header class="site-header">
+  <header class="site-header" :class="{ stuck }">
     <div class="container bar">
       <button
         class="action menu-button"
@@ -137,12 +152,47 @@ watch(
   text-align: center;
 }
 
+/*
+ * A layer of frosted glass: the page shows through it, blurred, as it scrolls underneath. The blur and the stronger
+ * colour keep the logo and icons readable over any picture. A visitor who asks for less transparency or more
+ * contrast gets a solid bar.
+ */
 .site-header {
   position: sticky;
   top: 0;
   z-index: var(--header-layer);
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
   border-bottom: 1px solid var(--color-line);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  transition: box-shadow 0.2s;
+}
+
+.site-header.stuck {
+  box-shadow: 0 6px 16px -10px var(--color-shadow);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header {
+    background: var(--color-surface);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .site-header {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .site-header {
+    background: var(--color-surface);
+    border-bottom-color: var(--color-ink);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 .bar {
@@ -192,11 +242,21 @@ watch(
   color: var(--color-ink);
   cursor: pointer;
   text-decoration: none;
-  transition: color 0.2s;
+  transition:
+    color 0.2s,
+    transform var(--press-out);
 }
 
-.action:hover {
+@media (hover: hover) {
+  .action:hover {
+    color: var(--color-brand);
+  }
+}
+
+.action:active {
   color: var(--color-brand);
+  transform: scale(0.92);
+  transition: transform var(--press-in);
 }
 
 .action-label {
@@ -233,6 +293,27 @@ watch(
 
 .search.open {
   display: block;
+  animation: search-in 0.28s var(--ease-spring);
+}
+
+/* The field opens out of the bar, under the button that opened it. */
+@keyframes search-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search.open {
+    animation-name: fade-in;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
 }
 
 .search-input {
@@ -250,8 +331,10 @@ watch(
   opacity: 1;
 }
 
-.search-input:hover {
-  border-color: var(--color-line-strong);
+@media (hover: hover) {
+  .search-input:hover {
+    border-color: var(--color-line-strong);
+  }
 }
 
 .search-submit {
@@ -272,7 +355,13 @@ watch(
   transform: translateY(-50%);
 }
 
-.search-submit:hover {
+@media (hover: hover) {
+  .search-submit:hover {
+    color: var(--color-brand);
+  }
+}
+
+.search-submit:active {
   color: var(--color-brand);
 }
 
@@ -298,6 +387,7 @@ watch(
   .search.open {
     display: block;
     margin-top: 0;
+    animation: none;
   }
 
   .actions {

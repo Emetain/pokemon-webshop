@@ -7,6 +7,8 @@ import { binderApi } from '../services/api'
 import { useSession } from '../stores/session'
 import { dexLabel } from '../utils/catalog'
 import { t } from '../utils/i18n'
+import { createSpring, prefersReducedMotion, project, rubberband } from '../utils/spring'
+import { trackSwipe } from '../utils/swipe'
 
 const POCKETS = 9
 
@@ -17,6 +19,7 @@ const SPREAD_MIN_WIDTH = 560
 const session = useSession()
 
 const root = ref(null)
+const sheets = ref(null)
 const wide = ref(false)
 // The first page on show, counted from 0. With two pages open this is the left one, or the first page itself.
 const firstPage = ref(0)
@@ -24,6 +27,9 @@ const firstPage = ref(0)
 const pages = ref({})
 const meta = ref(null)
 const pending = ref(0)
+// Which way the binder last turned: 1 forward, -1 back, 0 not yet. The cards of a new page come in from that side,
+// and on the first page they drop into their pockets from above.
+const turned = ref(0)
 // Sources sometimes link to an image that doesn't exist. Such a card shows as an empty pocket with its name.
 const failedCards = ref(new Set())
 
@@ -99,31 +105,79 @@ function load() {
 }
 
 function forward() {
+  turned.value = 1
   firstPage.value = shownPages.value.at(-1) + 1
 }
 
 function back() {
+  turned.value = -1
   const first = shownPages.value[0]
   firstPage.value = wide.value ? Math.max(first - 2, 0) : first - 1
 }
 
+/*
+ * On a touch screen a swipe turns the page. While the finger moves, the cards give way under it with some
+ * resistance, and a lot of it on the first or last page, where there is nothing to turn to. Letting go turns the page
+ * if the swipe, flick included, went far enough; otherwise the cards spring back.
+ */
+const pull = createSpring(0, (x) => {
+  sheets.value?.querySelectorAll('.pockets').forEach((list) => {
+    list.style.transform = x ? `translate3d(${x}px, 0, 0)` : ''
+  })
+})
+
+let sheetsWidth = 0
+
+const swipe = {
+  canStart: () => totalPages.value > 1,
+  onStart() {
+    sheetsWidth = sheets.value.offsetWidth
+    pull.stop()
+  },
+  onMove(dx) {
+    if (prefersReducedMotion()) return
+    const canTurn = dx < 0 ? canGoForward.value : canGoBack.value
+    pull.set(rubberband(dx, sheetsWidth, canTurn ? 0.55 : 0.25))
+  },
+  onEnd({ dx, velocity }) {
+    const landing = dx + project(velocity)
+    if (landing < -sheetsWidth / 3 && canGoForward.value) {
+      pull.set(0)
+      forward()
+    } else if (landing > sheetsWidth / 3 && canGoBack.value) {
+      pull.set(0)
+      back()
+    } else {
+      // The cards move slower than the finger did, by the resistance they had.
+      pull.to(0, { damping: 0.8, response: 0.3, velocity: dx ? (velocity * pull.value) / dx : 0 })
+    }
+  },
+}
+
 let observer = null
+let stopSwipe = null
 
 onMounted(() => {
   observer = new ResizeObserver(([entry]) => {
     wide.value = entry.contentRect.width >= SPREAD_MIN_WIDTH
   })
   observer.observe(root.value)
+  stopSwipe = trackSwipe(sheets.value, swipe)
 })
 
-onBeforeUnmount(() => observer?.disconnect())
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  stopSwipe?.()
+  pull.stop()
+})
 
 watch(shown, load, { immediate: true })
 </script>
 
 <template>
   <figure ref="root" class="binder" :class="{ wide }" :aria-label="t('binder.label')">
-    <div class="sheets" :aria-busy="pending > 0">
+    <!-- data-own-swipe: a swipe here turns the binder, not the hero around it. -->
+    <div ref="sheets" class="sheets" :data-turned="turned" :aria-busy="pending > 0" data-own-swipe>
       <template v-for="(index, side) in shown" :key="index ?? 'cover'">
         <div v-if="index === null" class="sheet cover" aria-hidden="true">
           <BallMark class="cover-ball" outline />
@@ -206,6 +260,8 @@ watch(shown, load, { immediate: true })
 .sheets {
   position: relative;
   display: grid;
+  /* Up and down scroll the page and two fingers zoom; sideways turns the binder. */
+  touch-action: pan-y pinch-zoom;
 }
 
 .wide .sheets {
@@ -215,6 +271,7 @@ watch(shown, load, { immediate: true })
 
 .sheet {
   position: relative;
+  overflow: clip;
   padding: var(--space-4) var(--space-4) var(--space-4) var(--space-6);
   border-radius: var(--radius-md);
   background: var(--color-brand-deep);
@@ -326,14 +383,30 @@ watch(shown, load, { immediate: true })
   display: block;
   padding: 0;
   border: 0;
-  animation: slot-in 420ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+  animation: slot-in 420ms var(--ease-spring) backwards;
   animation-delay: calc(var(--order) * 50ms);
+}
+
+/* Where the cards come from: from above into their pockets at first, then from the side the binder turns to. */
+.sheets {
+  --enter-x: 0;
+  --enter-y: -1.25rem;
+}
+
+.sheets[data-turned='1'] {
+  --enter-x: 1.5rem;
+  --enter-y: 0;
+}
+
+.sheets[data-turned='-1'] {
+  --enter-x: -1.5rem;
+  --enter-y: 0;
 }
 
 @keyframes slot-in {
   from {
     opacity: 0;
-    transform: translateY(-1.25rem);
+    transform: translate(var(--enter-x), var(--enter-y));
   }
 }
 
@@ -391,10 +464,19 @@ watch(shown, load, { immediate: true })
   background: var(--color-brand-deep);
   color: var(--color-on-brand);
   cursor: pointer;
+  transition: transform var(--press-out);
 }
 
-.turn:hover:not(:disabled) {
+@media (hover: hover) {
+  .turn:hover:not(:disabled) {
+    background: var(--color-brand-raised);
+  }
+}
+
+.turn:active:not(:disabled) {
   background: var(--color-brand-raised);
+  transform: scale(0.92);
+  transition: transform var(--press-in);
 }
 
 .turn:disabled {

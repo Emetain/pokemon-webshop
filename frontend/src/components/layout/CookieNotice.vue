@@ -55,6 +55,9 @@ onBeforeUnmount(() => {
 
 function close() {
   visible.value = false
+  // The chat button moves down while the notice goes, not after.
+  observer?.disconnect()
+  publish(0)
   try {
     window.localStorage.setItem(STORAGE_KEY, '1')
   } catch {
@@ -64,14 +67,16 @@ function close() {
 </script>
 
 <template>
-  <section v-if="visible" ref="box" class="cookie-notice" :aria-label="t('cookies.label')">
-    <Cookie class="icon" :size="22" aria-hidden="true" />
-    <p class="text">
-      {{ ads.state.enabled ? t('cookies.textWithAds') : t('cookies.text') }}
-      <router-link to="/info/privacybeleid">{{ t('cookies.more') }}</router-link>
-    </p>
-    <button class="btn btn-primary btn-small" type="button" @click="close">{{ t('cookies.ok') }}</button>
-  </section>
+  <Transition name="notice" appear>
+    <section v-if="visible" ref="box" class="cookie-notice" :aria-label="t('cookies.label')">
+      <Cookie class="icon" :size="22" aria-hidden="true" />
+      <p class="text">
+        {{ ads.state.enabled ? t('cookies.textWithAds') : t('cookies.text') }}
+        <router-link to="/info/privacybeleid">{{ t('cookies.more') }}</router-link>
+      </p>
+      <button class="btn btn-primary btn-small" type="button" @click="close">{{ t('cookies.ok') }}</button>
+    </section>
+  </Transition>
 </template>
 
 <style scoped>
@@ -92,6 +97,32 @@ function close() {
   background: var(--color-surface);
   box-shadow: var(--shadow-panel);
   font-size: var(--text-sm);
+}
+
+/* It rises from the bottom edge of the screen, and goes back down the same way. */
+.notice-enter-active {
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.5s var(--ease-spring);
+}
+
+.notice-leave-active {
+  transition:
+    opacity 0.2s ease-in,
+    transform 0.25s ease-in;
+}
+
+.notice-enter-from,
+.notice-leave-to {
+  opacity: 0;
+  transform: translateY(calc(100% + var(--gutter)));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice-enter-from,
+  .notice-leave-to {
+    transform: none;
+  }
 }
 
 .icon {

@@ -65,9 +65,11 @@ const products = computed(() =>
   transition: box-shadow 0.2s, transform 0.2s;
 }
 
-.drop-card:hover {
-  box-shadow: var(--shadow-panel);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .drop-card:hover {
+    box-shadow: var(--shadow-panel);
+    transform: translateY(-2px);
+  }
 }
 
 .drop-card.live {
@@ -170,9 +172,11 @@ const products = computed(() =>
   line-height: var(--leading-tight);
 }
 
-.card-link:hover .name {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .card-link:hover .name {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 .when,
@@ -217,5 +221,15 @@ const products = computed(() =>
   .dot {
     animation: none;
   }
+}
+
+/* Pressed, the drop dims under the finger. A moment's wait first, so starting to scroll a list doesn't flash it. */
+.card-link {
+  transition: opacity 0.25s;
+}
+
+.card-link:active {
+  opacity: 0.7;
+  transition: opacity 0s 0.05s;
 }
 </style>

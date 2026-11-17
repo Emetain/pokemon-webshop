@@ -218,8 +218,10 @@ const collection = filter('collection')
   text-align: left;
 }
 
-.clear:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .clear:hover {
+    text-decoration: underline;
+  }
 }
 
 /* Wide enough to show everything at once: the sort and the filters share one row that can wrap. */

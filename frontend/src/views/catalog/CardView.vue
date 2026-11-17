@@ -243,9 +243,11 @@ usePageMeta(() =>
   border-bottom: 1px solid var(--color-line);
 }
 
-.offer-link:hover .offer-name {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .offer-link:hover .offer-name {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 .offer-price {

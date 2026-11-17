@@ -34,9 +34,11 @@ defineProps({
   text-decoration: none;
 }
 
-.link:hover .title {
-  color: var(--color-link);
-  text-decoration: underline;
+@media (hover: hover) {
+  .link:hover .title {
+    color: var(--color-link);
+    text-decoration: underline;
+  }
 }
 
 .picture {
@@ -76,5 +78,15 @@ defineProps({
 .summary {
   color: var(--color-ink-soft);
   font-size: var(--text-sm);
+}
+
+/* Pressed, the article dims under the finger. A moment's wait first, so starting to scroll a list doesn't flash it. */
+.link {
+  transition: opacity 0.25s;
+}
+
+.link:active {
+  opacity: 0.7;
+  transition: opacity 0s 0.05s;
 }
 </style>

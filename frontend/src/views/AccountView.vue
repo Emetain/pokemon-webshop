@@ -367,8 +367,10 @@ onMounted(loadAddresses)
   font-weight: 550;
 }
 
-.text-button:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .text-button:hover {
+    text-decoration: underline;
+  }
 }
 
 .text-button.danger {

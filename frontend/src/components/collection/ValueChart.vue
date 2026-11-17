@@ -452,8 +452,10 @@ function onKeydown(event) {
   font-weight: 600;
 }
 
-.range:hover {
-  background: var(--color-tint);
+@media (hover: hover) {
+  .range:hover {
+    background: var(--color-tint);
+  }
 }
 
 .range[aria-pressed='true'] {

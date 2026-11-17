@@ -781,7 +781,9 @@ const loginLink = computed(() => ({ path: '/inloggen', query: { redirect: route.
   cursor: pointer;
 }
 
-.icon-link:hover {
-  color: var(--color-danger);
+@media (hover: hover) {
+  .icon-link:hover {
+    color: var(--color-danger);
+  }
 }
 </style>

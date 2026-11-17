@@ -44,7 +44,9 @@ const id = useId()
   font-size: var(--text-sm);
 }
 
-.filter-input:hover {
-  border-color: var(--color-ink);
+@media (hover: hover) {
+  .filter-input:hover {
+    border-color: var(--color-ink);
+  }
 }
 </style>
