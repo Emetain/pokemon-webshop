@@ -43,7 +43,7 @@ These decisions came up while building and apply to every later phase. The phase
 - **Dollar prices are converted, not left out.** A converted price is better than "geen prijs". Customers on the default euro setting see every price in euros. Lists sort on `Card.sortPriceCents`, the list price in euro cents.
 - **Currency setting:** customers choose EUR or USD in their profile. This only changes how card prices are shown. No "≈" sign in front of converted prices: the card page says in a small line that a price was converted.
 - **Prices must be right (changed 2026-11-19).** Until phase 11 the rule was to show prices as the source gives them, even when TCGdex links several prints of a Pokémon card to one Cardmarket product. On 2026-11-19 the owner reversed that: a Special Illustration Rare must not show the price of the Double Rare with the same name. A correct dollar price, converted, is better than a known wrong euro price. Phase 11 fixes this.
-- **Premium (added 2026-11-19):** a paid subscription bought on the site, €6.99 per month or €59.99 per year, with the card scanner beyond 100 free scans, the "Max" period of the value graph and the pre-grade check. Admins always have it. See phase 11. The app, widgets, icons, themes and more Premium extras follow in phase 12.
+- **Premium (added 2026-11-19):** a paid subscription bought on the site, €6.99 per month or €59.99 per year, with the card scanner beyond 100 free scans, the "Max" period of the value graph and the pre-grade check. Admins always have it. See phase 11. More Premium follows in phase 12 (no ads, price history and alerts, export, extra binders, themes), and the Android app with widgets comes last, in phase 13. No early access to drops for Premium: the owner finds that unfair.
 - **Addresses have no name.** They use the name from the profile.
 - **Card images are never changed.** Scryfall's terms forbid covering, cropping, distorting, blurring or tinting images, and adding anything on top. Use `CardImage.vue` for every card image, and put prices, labels and badges below the image.
 - **Ads:** added by the owner on 2026-11-16: other companies' ads through Google AdSense, behind the `ADS` switch (off by default). Only on the free card and news pages through `AdSlot.vue`, never on shop, cart, checkout, drop, collection or account pages. Google's own consent message asks for consent. Details in `docs/phases/phase-10.md`.
@@ -486,7 +486,15 @@ Build:
 - Unit tests with the Rayquaza case, and an integration test for a set with shared products.
 - Check Magic, Lorcana, One Piece and Riftbound for the same problem and report what you find. Fix it only when it's the same cause.
 
-### 3. Card lists that keep loading
+### 3. Start saving card prices every day
+
+Phase 12 shows a price graph per card, risers and fallers, and price alerts, and those need history. History can't be filled in afterwards, so saving starts in this phase, right after part 2, with no screens yet (the owner agreed on 2026-11-19).
+
+- After each sync, save a card's price for that day: card, variant, source, currency, trend and average, date. Only when it differs from the last saved price, so a price that stays the same costs no row.
+- Estimate the growth first from the real catalog (Magic alone has about 100,000 prints), and write the estimate in `docs/phases/phase-11.md`. Add an index for "the prices of one card over time".
+- Saving starts after part 2, so the history begins with correct prices.
+
+### 4. Card lists that keep loading
 
 - Card lists (set pages, search, the collection, the Pokédex cards of a Pokémon, and the shop lists if the owner wants) load the next 25 cards when the customer nears the end, instead of page buttons. Build it once as a composable with `IntersectionObserver`, and keep the filters and sorting of `CardFilters.vue` as they are.
 - The URL keeps how far the customer got, so a shared link and the back button return to the same place.
@@ -494,20 +502,20 @@ Build:
 - Search engines don't scroll: keep plain links to the next pages (`PageLinks.vue`) in the page for them.
 - Ads on card pages (`AdSlot.vue`) don't come back with every load.
 
-### 4. Premium
+### 5. Premium
 
 - Premium on the user: from when and until when (or for good), and how it was bought. Admins always have Premium without buying it: decide it from the role, don't store it.
 - Buying goes through Stripe behind `PaymentGateway`, like orders: Stripe Billing subscriptions of €6.99 per month or €59.99 per year. Only the verified webhook switches Premium on, renews it and ends it (a failed renewal, a cancellation, a refund). My account shows the status, the next payment date, and a link to Stripe's customer portal to cancel or switch between monthly and yearly.
 - Premium is a digital service: at checkout the customer agrees that it starts right away and that the 14-day withdrawal right ends then. Add Premium to the terms and the privacy policy, and to the legal check. Also for the legal check: btw on digital services to consumers in other EU countries can follow their country's rate (OSS, above €10,000 a year in sales across borders).
 - The server checks Premium for every Premium feature. Hiding a button in the frontend is not enough.
 
-### 5. Value graph periods
+### 6. Value graph periods
 
-- `ValueChart.vue` gets the periods 1D, 1W, 1M, 3M, 6M, 1J and Max, instead of 7D, 1M, 3M, 6M, 1J and Alles. Max is Premium.
-- Switching periods animates (the owner's wish): the line and the area morph from the old period to the new one, and the value and the change count along. Resample both lines to the same number of points, then interpolate. Short (about 300 ms) with an ease-out, a new click during the animation starts from where the line is, and with `prefers-reduced-motion` it switches without animation. Use the `animate` skill if it's available. Without Premium, the Max button shows a lock and a short line about Premium, and the API gives at most one year of history.
+- `ValueChart.vue` gets the periods 1D, 1W, 1M, 3M, 6M, 1J and Max, instead of 7D, 1M, 3M, 6M, 1J and Alles. Max is Premium. Without Premium, the Max button shows a lock and a short line about Premium, and the API gives at most one year of history.
+- Switching periods animates (the owner's wish): the line and the area morph from the old period to the new one, and the value and the change count along. Resample both lines to the same number of points, then interpolate. Short (about 300 ms) with an ease-out, a new click during the animation starts from where the line is, and with `prefers-reduced-motion` it switches without animation. Use the `animate` skill if it's available.
 - The history has one value per day, so 1D compares yesterday's value with today's live value. Card prices change once a day, so more points per day wouldn't add anything.
 
-### 6. Card scanner
+### 7. Card scanner
 
 - `/scanner`: the customer takes or uploads a photo of a card and gets the matching card, or a short list to choose from, with its price and the button to add it to the collection.
 - Only for logged-in customers, so scans can be counted: 100 free scans (once or per month, the owner's choice), unlimited with Premium. A scan counts when it gives a result, not when it fails on our side. A rate limit per user and per IP address.
@@ -517,7 +525,7 @@ Build:
   Report the test results to the owner before building the rest.
 - The photo goes to the backend only and isn't kept after the scan. When a model provider gets it: put that in the privacy policy, and give the scanner its own monthly cost limit, like the chatbot. Pick the cheapest current model that does the job (the owner wants cheap AI) and check that it isn't close to being shut down.
 
-### 7. Pre-grade check
+### 8. Pre-grade check
 
 How hard it is (estimated on 2026-11-19): centering can be measured well from a sharp, straight photo of the front and the back, from the widths of the borders, and centering is where graders are strictest. Corners, edges and surface (whitening, dents, scratches) are hard to judge reliably from a phone photo. A vision model can point out visible damage, but it can't grade like PSA or BGS. So the check gives an indication, never a grade.
 
@@ -529,46 +537,53 @@ How hard it is (estimated on 2026-11-19): centering can be measured well from a 
 Done when:
 - The Magic sync completes on the server again, and the test with the swapped set codes passes.
 - The three Rayquaza cards in Delta Reign each show their own price, and `docs/phases/phase-11.md` reports how many cards shared a price before and after.
+- Card prices are saved after every sync, only when they changed, and the growth estimate is in `docs/phases/phase-11.md`.
 - Card lists keep loading while scrolling, the back button returns to the same place, and the footer can be reached.
 - In Stripe's test mode a customer buys Premium monthly and yearly and gets the Max period, unlimited scans and the pre-grade check, and a cancellation ends it at the end of the paid period. An admin has them without buying, and the API refuses them to a customer without Premium.
 - Switching periods in the value graph animates smoothly, and doesn't with reduced motion.
 - Scanning a few real photos per game finds the right card, and the scan after the free ones asks for Premium.
 - The pre-grade test results against graded cards are in `docs/phases/phase-11.md`.
 
-## Phase 12: The app, widgets and more Premium
+## Phase 12: More Premium
 
-Goal: Poketopia on the phone as an app, with widgets on the home screen, and more reasons to take Premium.
+Goal: more reasons to take Premium, on the website, before any work on the app.
 
-Added by the owner on 2026-11-19, as a phase of its own after phase 11, because it builds on Premium and needs accounts and choices the website doesn't.
+Chosen by the owner on 2026-11-19. Not included: early access to drops for Premium members, because the owner finds that unfair to everyone else. Every feature below is Premium, and the server checks that, like in phase 11.
 
-Ask the owner first for:
-- **Which Premium extras** from the list at the bottom.
-- **Store accounts:** the Apple Developer Program (about €99 a year) and Google Play (a one-time $25), in the business name once the KVK registration exists. Building for iPhone needs a Mac with Xcode, which takes a lot of disk space the owner's Mac doesn't have; a macOS build in GitHub Actions avoids that.
-- **Selling Premium in the app:** Apple and Google want digital purchases inside an app to go through their own payment, and take 15 to 30% of it. The simplest way: the app doesn't sell Premium, customers buy it on the website and log in in the app. Check the stores' current rules before deciding, because they change.
-
-Build, in this order:
-1. **Installable web app (PWA):** a manifest, the app icon, a start screen, an offline page and "Zet op beginscherm". Cheap, and it works on Android and iPhone. A web app can't have home screen widgets, so the rest needs a real app.
-2. **The app:** wrap the Vue frontend with Capacitor, so the website and the app share one code base. Links to poketopia.nl open in the app, and the login stays. Card images and the other rules of the website apply in the app too.
-3. **Widgets:** small native parts (WidgetKit in Swift for iPhone, Glance in Kotlin for Android) with the collection value, today's change and a small graph, and the countdown to the next drop. They read a small read-only API with a token per device, a few times a day (iPhone limits how often a widget refreshes). Never stock counts, also not in a widget.
-4. **Push notifications:** a drop that starts, an answer on a ticket, and the price alerts if the owner chooses them. Each kind can be switched off in My account.
-5. **Exclusive app icons (Premium):** a few alternative app icons the customer picks in the app. No Pokémon or other characters, logos or card art in them (legal check).
-6. **Themes (Premium):** a few colour themes for the website and the app, built on the tokens in `main.css`. Ask the owner whether a dark mode is for everyone; most sites give that for free.
-7. **The stores:** the listings, screenshots, the privacy details both stores ask for, and their review.
-
-Premium extras to choose from (the owner picks on 2026-11-19 or later):
-- **No ads** for Premium members. Small to build.
-- **Price alerts:** a mail or push message when a card on the wishlist drops below a price, or a card you own rises or falls a lot.
-- **Price history per card:** a graph of a card's price, and "biggest risers and fallers" in your collection. Card prices have no history yet, so it only starts once the shop saves them every day; the sooner that starts, the longer the graphs. Save only changes, and estimate the database growth first (Magic alone has about 100,000 prints).
-- **Export the collection** as CSV or PDF, for example for insurance.
-- **More than one collection or binder**, for example a trade binder.
-- **Early access to drops:** Premium members get into the queue a few minutes earlier. Only if the owner wants it, and check it against the drop rules.
+- **No ads:** Premium members never see an `AdSlot.vue`, and the AdSense script isn't loaded for them at all.
+- **Price history per card:** a graph on the card page from the prices saved since phase 11, with the periods of the value graph, and the same animation. Without Premium the card page shows a locked graph with a short line about Premium. Also "biggest risers and fallers" among your own cards, for a day, a week and a month.
+- **Price alerts:** on a card, the customer sets "mail me when it drops below €…" (for wishlist cards) or "when it rises or falls more than …%" (for owned cards). The check runs once a day after the sync and sends at most one mail per day with all alerts that went off, with a link to switch them off. A limit on the number of alerts per customer. Push messages for alerts come with the app in phase 13.
+- **Export the collection** as CSV and as PDF, for example for insurance: card, set, number, variant, condition, quantity, price and source, total value and the date.
+- **Extra binders:** besides the collection, Premium members make binders of their own, for example a trade binder, each with its own value. The collection stays what counts for progress, the Pokédex, the value graph and the home binder. When Premium ends, the extra binders stay visible but can't be changed, and nothing is deleted.
+- **Themes:** a few colour themes for the website, built on the tokens in `main.css`, chosen in My account. Ask the owner whether a dark mode is for everyone; most sites give that for free. The app in phase 13 uses the same themes.
 
 Done when:
-- The web app can be installed on Android and iPhone.
-- The app runs on a real Android phone and a real iPhone from a test build, with the login, deep links and push messages working.
-- The widgets show the right value and refresh, on both phones.
-- The Premium extras the owner chose work, and the API refuses them without Premium.
-- `docs/phases/phase-12.md` describes how to build and publish a new app version.
+- A test customer with Premium sees no ads, the price graph of a card, risers and fallers, can set alerts and gets one mail with them, exports CSV and PDF, makes an extra binder and picks a theme.
+- Without Premium the API refuses each of these, and the pages say what Premium adds.
+- Unit tests for the alert rules and the export.
+
+## Phase 13: The Android app
+
+Goal: Poketopia as an Android app, with widgets on the home screen. The owner wants this as one of the last steps, after the Premium features of phases 11 and 12 work, and Android first (2026-11-19). iPhone comes later, not in this phase: it needs the Apple Developer Program (about €99 a year) and Xcode on a Mac, or a macOS build in GitHub Actions.
+
+Ask the owner first for:
+- **A Google Play developer account** (a one-time $25), in the business name once the KVK registration exists.
+- **Selling Premium in the app:** Google wants digital purchases inside an app to go through Google Play's payment, and takes 15 to 30% of it. The simplest way: the app doesn't sell Premium, customers buy it on the website and log in in the app. Check Google's current rules before deciding, because they change.
+
+Build, in this order:
+1. **Installable web app (PWA):** a manifest, the app icon, a start screen, an offline page and "Zet op beginscherm". Cheap, and it also works on iPhone, until the iPhone app exists.
+2. **The app:** wrap the Vue frontend with Capacitor, so the website and the app share one code base. Links to poketopia.nl open in the app (Android App Links), and the login stays. The rules of the website apply in the app too, card images included.
+3. **Widgets** (Glance, in Kotlin): the collection value with today's change and a small graph, and the countdown to the next drop. They read a small read-only API with a token per device, a few times a day. Never stock counts, also not in a widget.
+4. **Push notifications** through Firebase Cloud Messaging: a drop that starts, an answer on a ticket, and the price alerts from phase 12. Each kind can be switched off in My account. Add Firebase to the privacy policy.
+5. **Exclusive app icons (Premium):** a few alternative launcher icons the customer picks in the app. No Pokémon or other characters, logos or card art in them (legal check).
+6. **Google Play:** the listing, screenshots, the Data safety form, first the internal testing track, then the review.
+
+Done when:
+- The web app can be installed on Android and on iPhone.
+- The app runs on a real Android phone from the internal testing track, with the login, App Links and push messages working.
+- The widgets show the right value and refresh.
+- Only Premium members can pick another app icon.
+- `docs/phases/phase-13.md` describes how to build and publish a new app version.
 
 ---
 
