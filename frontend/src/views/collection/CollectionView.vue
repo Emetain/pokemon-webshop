@@ -69,7 +69,13 @@ onMounted(load)
 
     <CollectionSummary v-else :collection="collection">
       <template #chart>
-        <ValueChart v-if="history" :points="history.points" :currency="history.currency" />
+        <ValueChart
+          v-if="history"
+          :points="history.points"
+          :currency="history.currency"
+          :premium="history.premium"
+          :has-older="history.hasOlder"
+        />
       </template>
 
       <section v-if="pokedex" class="pokedex" data-game="pokemon">

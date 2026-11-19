@@ -27,6 +27,8 @@ import com.emetain.pokemonwebshop.service.CollectionHistoryService
 import com.emetain.pokemonwebshop.service.CollectionService
 import com.emetain.pokemonwebshop.service.CollectionStatsService
 import com.emetain.pokemonwebshop.service.UserService
+import com.emetain.pokemonwebshop.config.AppProperties
+import com.emetain.pokemonwebshop.service.PremiumService
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
@@ -41,15 +43,26 @@ class CollectionOrchestrator(
     private val cardRepository: CardRepository,
     private val cardSetRepository: CardSetRepository,
     private val entryRepository: CollectionEntryRepository,
+    private val premiumService: PremiumService,
+    properties: AppProperties,
 ) {
+    private val historyDaysWithoutPremium = properties.premium.historyDaysWithoutPremium
+
 
     @Transactional(readOnly = true)
     fun overview(user: User): CollectionOverviewDto = overview(user.id, user.currency)
 
-    fun history(user: User): CollectionHistoryDto = CollectionHistoryDto(
-        currency = user.currency,
-        points = historyService.history(user.id, user.currency).map { HistoryPointDto(it.date, it.cents) },
-    )
+    /** The value graph. Without Premium the API gives at most a year: the "Max" period is Premium (phase 11). */
+    fun history(user: User): CollectionHistoryDto {
+        val premium = premiumService.has(user)
+        val history = historyService.history(user.id, user.currency, if (premium) null else historyDaysWithoutPremium)
+        return CollectionHistoryDto(
+            currency = user.currency,
+            points = history.points.map { HistoryPointDto(it.date, it.cents) },
+            premium = premium,
+            hasOlder = history.hasOlder,
+        )
+    }
 
     fun startedSets(user: User, gameSlug: String): List<StartedSetDto> =
         statsService.startedSets(user.id, game(gameSlug)).map(StartedSetDto::from)

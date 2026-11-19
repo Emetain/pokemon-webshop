@@ -33,7 +33,23 @@ object CollectionHistoryMath {
             }
         return past + HistoryPoint(today, live.cents)
     }
+
+    /**
+     * At most [days] back, for a customer without Premium (phase 11). The last point before the cutoff stays as the
+     * line's start, so a full year still has a value on its first day.
+     */
+    fun limit(points: List<HistoryPoint>, today: LocalDate, days: Long): LimitedHistory {
+        val cutoff = today.minusDays(days)
+        val before = points.filter { !it.date.isAfter(cutoff) }
+        if (before.size <= 1 && before.firstOrNull()?.date?.isBefore(cutoff) != true) return LimitedHistory(points, false)
+        val start = before.last()
+        val within = points.filter { it.date.isAfter(cutoff) }
+        return LimitedHistory(listOf(HistoryPoint(cutoff, start.cents)) + within, true)
+    }
 }
+
+/** [hasOlder]: there are points from before the cutoff, which Premium would show. */
+data class LimitedHistory(val points: List<HistoryPoint>, val hasOlder: Boolean)
 
 /** Remembers what collections are worth, because card prices themselves have no history. */
 @Service
@@ -45,6 +61,13 @@ class CollectionHistoryService(
     private val exchangeRateService: ExchangeRateService,
     private val clock: Clock,
 ) {
+
+    /** The graph's points; without Premium only the last [limitDays] days, see [CollectionHistoryMath.limit]. */
+    @Transactional(readOnly = true)
+    fun history(userId: Long, currency: Currency, limitDays: Long?): LimitedHistory {
+        val points = history(userId, currency)
+        return if (limitDays == null) LimitedHistory(points, false) else CollectionHistoryMath.limit(points, today(), limitDays)
+    }
 
     @Transactional(readOnly = true)
     fun history(userId: Long, currency: Currency): List<HistoryPoint> = CollectionHistoryMath.points(

@@ -1143,8 +1143,12 @@ export default {
       date: 'Datum',
       value: 'Waarde',
       noChange: 'Geen verandering',
+      maxLocked: 'Max laat de hele geschiedenis van je collectie zien. Dat hoort bij Premium.',
+      maxLockedOlder: 'Je grafiek gaat verder terug dan een jaar. De hele geschiedenis zie je met Premium.',
+      toPremium: 'Bekijk Premium',
       periods: {
-        '7D': 'in de laatste 7 dagen',
+        '1D': 'sinds gisteren',
+        '1W': 'in de laatste week',
         '1M': 'in de laatste maand',
         '3M': 'in de laatste 3 maanden',
         '6M': 'in de laatste 6 maanden',

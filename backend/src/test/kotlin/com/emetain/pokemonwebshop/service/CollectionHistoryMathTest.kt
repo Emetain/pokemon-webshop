@@ -73,4 +73,36 @@ class CollectionHistoryMathTest {
 
         assertEquals(listOf(HistoryPoint(today, 2000)), points)
     }
+
+    // Phase 11: without Premium the graph goes back at most a year.
+
+    @Test
+    fun `a history shorter than the limit stays whole`() {
+        val today = LocalDate.of(2026, 11, 19)
+        val points = listOf(HistoryPoint(today.minusDays(30), 100), HistoryPoint(today, 200))
+
+        val limited = CollectionHistoryMath.limit(points, today, 365)
+
+        assertEquals(points, limited.points)
+        assertEquals(false, limited.hasOlder)
+    }
+
+    @Test
+    fun `a longer history starts at the cutoff with the value it had then`() {
+        val today = LocalDate.of(2026, 11, 19)
+        val points = listOf(
+            HistoryPoint(today.minusDays(700), 50),
+            HistoryPoint(today.minusDays(400), 80),
+            HistoryPoint(today.minusDays(10), 150),
+            HistoryPoint(today, 200),
+        )
+
+        val limited = CollectionHistoryMath.limit(points, today, 365)
+
+        assertEquals(
+            listOf(HistoryPoint(today.minusDays(365), 80), HistoryPoint(today.minusDays(10), 150), HistoryPoint(today, 200)),
+            limited.points,
+        )
+        assertEquals(true, limited.hasOlder)
+    }
 }

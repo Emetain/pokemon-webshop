@@ -168,6 +168,10 @@ data class HistoryPointDto(val date: LocalDate, val cents: Long)
 data class CollectionHistoryDto(
     val currency: Currency,
     val points: List<HistoryPointDto>,
+    /** Whether the viewer has Premium, which shows the whole history ("Max"). */
+    val premium: Boolean = false,
+    /** Without Premium: older points exist than the year that's shown. */
+    val hasOlder: Boolean = false,
 )
 
 /** A collection someone chose to make public. Only the first name: the full name is also the name on orders. */
