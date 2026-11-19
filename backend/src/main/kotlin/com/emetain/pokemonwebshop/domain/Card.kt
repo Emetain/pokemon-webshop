@@ -28,6 +28,7 @@ import jakarta.persistence.UniqueConstraint
         Index(name = "idx_cards_game_name_search", columnList = "game, name_search"),
         Index(name = "idx_cards_name_search", columnList = "name_search"),
         Index(name = "idx_cards_sort_price_cents", columnList = "sort_price_cents"),
+        Index(name = "idx_cards_game_cardmarket_link", columnList = "game, cardmarket_link"),
     ],
 )
 class Card(
@@ -118,6 +119,15 @@ class Card(
     /** The price shown in lists, in euro cents whatever its source, so all cards can sort together. */
     @Column
     var sortPriceCents: Long? = null,
+
+    /** Pokémon only: the Cardmarket product this card's prices come from, see [cardmarketLink]. */
+    @Column
+    var cardmarketProductId: Long? = null,
+
+    /** How [cardmarketProductId] was chosen. Null when the source has no Cardmarket product for the card. */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    var cardmarketLink: CardmarketLink? = null,
 
     // A sequence instead of identity columns, because Hibernate can't batch inserts with those.
     @Id

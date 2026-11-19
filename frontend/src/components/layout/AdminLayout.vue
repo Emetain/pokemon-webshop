@@ -8,6 +8,7 @@ import {
   FileUp,
   GalleryHorizontal,
   Image,
+  Link2,
   LayoutDashboard,
   LifeBuoy,
   Mail,
@@ -138,6 +139,10 @@ function closeMenu() {
           <router-link class="sidebar-link" to="/admin/afbeeldingen" active-class="is-active">
             <Image :size="18" aria-hidden="true" />
             {{ t('admin.images.nav') }}
+          </router-link>
+          <router-link class="sidebar-link" to="/admin/prijskoppelingen" active-class="is-active">
+            <Link2 :size="18" aria-hidden="true" />
+            {{ t('admin.priceLinks.nav') }}
           </router-link>
         </nav>
         <router-link class="sidebar-link back-link" to="/">

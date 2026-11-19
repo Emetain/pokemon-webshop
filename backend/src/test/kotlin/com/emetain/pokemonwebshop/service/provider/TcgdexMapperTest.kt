@@ -251,4 +251,41 @@ class TcgdexMapperTest {
         assertEquals(7, set.sortOrder)
         assertEquals(2, set.failedCards)
     }
+
+    // Phase 11: the shop's own Cardmarket link needs TCGdex's product id and TCGplayer's price per print.
+
+    @Test
+    fun `keeps the Cardmarket product and the TCGplayer price of the print`() {
+        val card = TcgdexMapper.card(fixture("tcgdex-me06-138.json"))
+
+        assertEquals(918912L, card.cardmarketProductId)
+        // TCGdex calls this print "normal", TCGplayer "holofoil": the base price still goes to the card's variant.
+        val fallback = card.fallbackPrices.single()
+        assertEquals(NORMAL, fallback.variant)
+        assertEquals(27729, fallback.trendCents)
+        assertEquals(com.emetain.pokemonwebshop.domain.PriceSource.TCGPLAYER, fallback.source)
+        assertEquals(com.emetain.pokemonwebshop.domain.Currency.USD, fallback.currency)
+    }
+
+    @Test
+    fun `maps TCGplayer finishes to the card's variants`() {
+        val card = TcgdexMapper.card(
+            json(
+                """
+                {
+                  "id": "x-2", "localId": "2", "name": "Testmon",
+                  "variants": { "normal": true, "reverse": true, "firstEdition": true },
+                  "pricing": { "tcgplayer": { "updated": "2026-11-19T05:47:44.244Z",
+                    "unlimited": { "marketPrice": 1.50 },
+                    "reverse-holofoil": { "marketPrice": 0, "midPrice": 2.25 },
+                    "1st-edition": { "marketPrice": 9.99 } } }
+                }
+                """,
+            ),
+        )
+
+        val byVariant = card.fallbackPrices.associate { it.variant to it.trendCents }
+        assertEquals(mapOf(NORMAL to 150L, REVERSE to 225L, FIRST_EDITION to 999L), byVariant)
+        assertNull(card.cardmarketProductId)
+    }
 }

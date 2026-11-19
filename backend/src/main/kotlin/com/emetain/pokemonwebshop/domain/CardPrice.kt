@@ -14,6 +14,7 @@ import jakarta.persistence.SequenceGenerator
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import java.time.Instant
+import java.time.LocalDate
 
 /** A market price in cents of [currency]. Exists only when the source really has a price for this variant. */
 @Entity
@@ -47,6 +48,16 @@ class CardPrice(
 
     @Column(nullable = false)
     var updatedAt: Instant,
+
+    /** The last day this price was written to [CardPriceHistory], and what was written then (phase 11). */
+    @Column
+    var recordedOn: LocalDate? = null,
+
+    @Column
+    var recordedTrendCents: Long? = null,
+
+    @Column
+    var recordedAverageCents: Long? = null,
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "card_prices_seq")

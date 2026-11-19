@@ -1,0 +1,56 @@
+{
+  "id": "me06-138",
+  "localId": "138",
+  "name": "Mega Rayquaza ex",
+  "rarity": "Special illustration rare",
+  "category": "Pokemon",
+  "variants": {
+    "firstEdition": false,
+    "holo": false,
+    "normal": true,
+    "reverse": false,
+    "wPromo": false
+  },
+  "variants_detailed": [
+    {
+      "type": "normal",
+      "size": "standard",
+      "variantId": "generated"
+    }
+  ],
+  "pricing": {
+    "cardmarket": {
+      "updated": "2026-11-19T05:47:45.709Z",
+      "unit": "EUR",
+      "idProduct": 918912,
+      "avg": 3.92,
+      "low": 1,
+      "trend": 2.93,
+      "avg1": 3.26,
+      "avg7": 3.59,
+      "avg30": 3.91,
+      "avg-holo": null,
+      "low-holo": null,
+      "trend-holo": 0,
+      "avg1-holo": null,
+      "avg7-holo": null,
+      "avg30-holo": null
+    },
+    "tcgplayer": {
+      "unit": "USD",
+      "updated": "2026-11-19T05:47:44.244Z",
+      "holofoil": {
+        "productId": 728061,
+        "lowPrice": 288.66,
+        "midPrice": 311.63,
+        "highPrice": 1749.99,
+        "marketPrice": 277.29,
+        "directLowPrice": null
+      }
+    }
+  },
+  "image": "https://assets.tcgdex.net/en/me/me06/138",
+  "types": [
+    "Colorless"
+  ]
+}

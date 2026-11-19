@@ -1,6 +1,8 @@
 package com.emetain.pokemonwebshop.service.provider
 
 import com.emetain.pokemonwebshop.domain.CardVariants
+import com.emetain.pokemonwebshop.domain.Currency
+import com.emetain.pokemonwebshop.domain.PriceSource
 import tools.jackson.databind.JsonNode
 import java.time.Instant
 import java.time.format.DateTimeParseException
@@ -59,6 +61,8 @@ object TcgdexMapper {
             colors = colors(json),
             dexNumbers = json.path("dexId").filter { it.isInt }.map { it.asInt() }.toSet(),
             prices = prices(json, variants),
+            cardmarketProductId = json.path("pricing").path("cardmarket").path("idProduct").asLong(0).takeIf { it > 0 },
+            fallbackPrices = tcgplayerPrices(json, variants),
         )
     }
 
@@ -81,7 +85,18 @@ object TcgdexMapper {
 
         val base = Amounts(PriceCents.parse(market.path("trend")), PriceCents.parse(market.path("avg")))
         val foil = Amounts(PriceCents.parse(market.path("trend-holo")), PriceCents.parse(market.path("avg-holo")))
+        val firstEdition = if (CardVariants.FIRST_EDITION in variants) firstEdition(card, market) else null
 
+        return cardmarketPrices(variants, base, foil, updatedAt) +
+            listOfNotNull(firstEdition?.takeIf { !it.isEmpty }?.price(CardVariants.FIRST_EDITION, updatedAt))
+    }
+
+    /**
+     * Who gets which of Cardmarket's two columns of one product, see [prices]. Also used for the shop's own link to
+     * a Cardmarket product (phase 11), which has the same two columns. The 1st edition isn't in here: it has a
+     * product of its own.
+     */
+    fun cardmarketPrices(variants: Set<String>, base: Amounts, foil: Amounts, updatedAt: Instant): List<ProviderPrice> {
         val hasNormal = CardVariants.NORMAL in variants
         val hasHolo = CardVariants.HOLO in variants
         val hasReverse = CardVariants.REVERSE in variants
@@ -94,14 +109,49 @@ object TcgdexMapper {
                 hasReverse -> put(CardVariants.REVERSE, if (foil.isEmpty) base else foil)
                 hasNormal && hasHolo -> put(CardVariants.HOLO, foil)
             }
+        }
 
+        return amounts.filterValues { !it.isEmpty }.map { (variant, amount) -> amount.price(variant, updatedAt) }
+    }
+
+    /**
+     * TCGplayer's prices that TCGdex passes on, per print and right where Cardmarket's link is shared (phase 11).
+     * TCGplayer names its finishes itself, and a card's variants don't always match them: Mega Rayquaza ex `me06-138`
+     * is "normal" at TCGdex and "holofoil" at TCGplayer. So the base price goes to the card's base variant.
+     */
+    private fun tcgplayerPrices(card: JsonNode, variants: Set<String>): List<ProviderPrice> {
+        val market = card.path("pricing").path("tcgplayer")
+        val updatedAt = instant(market.text("updated")) ?: return emptyList()
+
+        fun amounts(vararg keys: String): Amounts? =
+            keys.asSequence()
+                .map { market.path(it) }
+                .map { Amounts(PriceCents.parse(it.path("marketPrice")) ?: PriceCents.parse(it.path("midPrice")), null) }
+                .firstOrNull { !it.isEmpty }
+
+        val normal = amounts("normal", "unlimited")
+        val holo = amounts("holofoil", "unlimited-holofoil")
+        val hasNormal = CardVariants.NORMAL in variants
+        val hasHolo = CardVariants.HOLO in variants
+
+        val prices = buildMap<String, Amounts?> {
+            when {
+                hasNormal && hasHolo -> {
+                    put(CardVariants.NORMAL, normal)
+                    put(CardVariants.HOLO, holo)
+                }
+                hasHolo -> put(CardVariants.HOLO, holo ?: normal)
+                hasNormal || CardVariants.REVERSE !in variants -> put(CardVariants.NORMAL, normal ?: holo)
+            }
+            if (CardVariants.REVERSE in variants) put(CardVariants.REVERSE, amounts("reverse-holofoil"))
             if (CardVariants.FIRST_EDITION in variants) {
-                firstEdition(card, market)?.let { put(CardVariants.FIRST_EDITION, it) }
+                put(CardVariants.FIRST_EDITION, amounts("1st-edition-holofoil", "1st-edition"))
             }
         }
 
-        return amounts.filterValues { !it.isEmpty }
-            .map { (variant, amount) -> ProviderPrice(variant, amount.trend, amount.average, updatedAt) }
+        return prices.mapNotNull { (variant, amount) ->
+            amount?.let { ProviderPrice(variant, it.trend, it.average, updatedAt, PriceSource.TCGPLAYER, Currency.USD) }
+        }
     }
 
     /** The 1st edition is only a real price when Cardmarket lists it as its own product. */
@@ -125,7 +175,10 @@ object TcgdexMapper {
             }
         }
 
-    private data class Amounts(val trend: Long?, val average: Long?) {
+    /** A trend and an average price in cents, as one column of a marketplace has them. */
+    data class Amounts(val trend: Long?, val average: Long?) {
         val isEmpty: Boolean get() = trend == null && average == null
+
+        fun price(variant: String, updatedAt: Instant) = ProviderPrice(variant, trend, average, updatedAt)
     }
 }

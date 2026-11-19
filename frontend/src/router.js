@@ -351,6 +351,11 @@ const router = createRouter({
           props: withQuery('kind', 'q', 'game', 'set', 'image', 'sort', 'size', 'page'),
         },
         { path: 'afbeeldingen/zoeken', component: () => import('./views/admin/AdminPictureSearchView.vue') },
+        {
+          path: 'prijskoppelingen',
+          component: () => import('./views/admin/AdminPriceLinksView.vue'),
+          props: withQuery('status', 'page'),
+        },
       ],
     },
     {

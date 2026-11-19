@@ -301,6 +301,13 @@ export const adminPictureApi = {
   reject: (id) => request('POST', `/admin/pictures/suggestions/${id}/reject`),
 }
 
+/** Pokémon cards whose Cardmarket product is doubtful or was set by hand (phase 11). */
+export const adminPriceLinkApi = {
+  list: (params) => request('GET', `/admin/catalog/cardmarket-links${queryString(params)}`),
+  set: (cardId, productId) => request('PUT', `/admin/catalog/cardmarket-links/${cardId}`, { productId }),
+  reset: (cardId) => request('DELETE', `/admin/catalog/cardmarket-links/${cardId}`),
+}
+
 /** Upcoming sets for the release calendar, from the card catalog and TCGplayer. */
 export const adminReleaseSuggestionApi = {
   list: () => request('GET', '/admin/release-suggestions'),

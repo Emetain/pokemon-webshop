@@ -15,6 +15,9 @@ import com.emetain.pokemonwebshop.service.provider.ProviderPrice
 import com.emetain.pokemonwebshop.service.provider.ProviderSet
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
+import java.time.LocalDate
+import java.time.ZoneId
 
 data class ImportResult(
     val created: Int = 0,
@@ -43,15 +46,20 @@ class CatalogImportService(
     private val cardPriceRepository: CardPriceRepository,
     private val exchangeRateRepository: ExchangeRateRepository,
     private val shopSetRules: ShopSetRules,
+    private val cardmarketLinkService: CardmarketLinkService,
+    private val historyService: CardPriceHistoryService,
+    private val clock: Clock,
 ) {
 
     @Transactional
     fun importSet(game: Game, source: ProviderSet): ImportResult {
         val set = upsertSet(game, source)
         val rates = ExchangeRates(exchangeRateRepository.findAll().associate { it.currency to it.perEuro })
-        return source.cards.distinctBy { it.externalId }
-            .chunked(LOOKUP_CHUNK_SIZE)
-            .map { importCards(game, set, it, rates) }
+        val cards = source.cards.distinctBy { it.externalId.cut(255) }
+        val links = cardmarketLinkService.decide(game, cards, rates)
+        val today = LocalDate.now(clock.withZone(AMSTERDAM))
+        return cards.chunked(LOOKUP_CHUNK_SIZE)
+            .map { importCards(game, set, it, rates, links, today) }
             .fold(ImportResult(failed = source.failedCards), ImportResult::plus)
     }
 
@@ -91,6 +99,8 @@ class CatalogImportService(
         set: CardSet,
         sources: List<ProviderCard>,
         rates: ExchangeRates,
+        links: Map<String, LinkDecision>,
+        today: LocalDate,
     ): ImportResult {
         val existing = cardRepository.findAllByGameAndExternalIdIn(game, sources.map { it.externalId.cut(255) })
             .associateBy { it.externalId }
@@ -100,6 +110,7 @@ class CatalogImportService(
         var updated = 0
         var unchanged = 0
         var pricesStored = 0
+        val history = mutableListOf<PendingHistory>()
 
         for (source in sources) {
             val card = existing[source.externalId.cut(255)]
@@ -110,8 +121,20 @@ class CatalogImportService(
                 if (applyChanges(card, set, source)) updated++ else unchanged++
                 card
             }
-            pricesStored += syncPrices(saved, pricesByCard[saved.id].orEmpty(), source.prices)
-            saved.sortPriceCents = sortPrice(source.prices, rates)
+            val link = links[source.externalId]
+            val prices = link?.prices ?: source.prices
+            if (link != null) {
+                saved.cardmarketLink = link.link
+                saved.cardmarketProductId = link.productId
+            }
+            val stored = syncPrices(saved, pricesByCard[saved.id].orEmpty(), prices)
+            pricesStored += stored.size
+            stored.mapNotNullTo(history) { historyService.pending(it, today) }
+            saved.sortPriceCents = sortPrice(prices, rates)
+        }
+        if (history.isNotEmpty()) {
+            cardPriceRepository.flush()
+            historyService.write(history)
         }
         return ImportResult(created, updated, unchanged, pricesStored)
     }
@@ -168,12 +191,12 @@ class CatalogImportService(
         return true
     }
 
-    /** A price the source no longer has is removed: showing an old price would be making one up. */
-    private fun syncPrices(card: Card, existing: List<CardPrice>, sources: List<ProviderPrice>): Int {
+    /** A price the source no longer has is removed: showing an old price would be making one up. Returns the rest. */
+    private fun syncPrices(card: Card, existing: List<CardPrice>, sources: List<ProviderPrice>): List<CardPrice> {
         val wanted = sources.distinctBy { it.variant to it.source }
         val existingByKey = existing.associateBy { it.variant to it.source }
 
-        for (source in wanted) {
+        val stored = wanted.map { source ->
             val price = existingByKey[source.variant to source.source]
             if (price == null) {
                 cardPriceRepository.save(
@@ -191,12 +214,13 @@ class CatalogImportService(
                 price.trendCents = source.trendCents
                 price.averageCents = source.averageCents
                 price.updatedAt = source.updatedAt
+                price
             }
         }
 
         val wantedKeys = wanted.map { it.variant to it.source }.toSet()
         cardPriceRepository.deleteAll(existing.filter { (it.variant to it.source) !in wantedKeys })
-        return wanted.size
+        return stored
     }
 
     /** The price lists show, in euro cents. Without a rate a dollar price sorts as is, which is close enough. */
@@ -217,5 +241,6 @@ class CatalogImportService(
 
     private companion object {
         const val LOOKUP_CHUNK_SIZE = 1000
+        val AMSTERDAM: ZoneId = ZoneId.of("Europe/Amsterdam")
     }
 }
