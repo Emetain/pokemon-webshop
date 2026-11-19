@@ -14,7 +14,10 @@ import java.time.Instant
 @Entity
 @Table(
     name = "users",
-    uniqueConstraints = [UniqueConstraint(name = "uk_users_collection_share_slug", columnNames = ["collection_share_slug"])],
+    uniqueConstraints = [
+        UniqueConstraint(name = "uk_users_collection_share_slug", columnNames = ["collection_share_slug"]),
+        UniqueConstraint(name = "uk_users_stripe_customer_id", columnNames = ["stripe_customer_id"]),
+    ],
 )
 class User(
     @Column(nullable = false, unique = true, length = 254)
@@ -49,6 +52,32 @@ class User(
 
     @Column(nullable = false, updatable = false)
     val createdAt: Instant,
+
+    /** The customer at Stripe for Premium (phase 11). Orders don't use it. */
+    @Column(length = 255)
+    var stripeCustomerId: String? = null,
+
+    /** Premium, see [com.emetain.pokemonwebshop.service.PremiumAccess]. Admins have it from their role instead. */
+    @Column
+    var premiumSince: Instant? = null,
+
+    @Column
+    var premiumUntil: Instant? = null,
+
+    @Column(nullable = false)
+    var premiumForever: Boolean = false,
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    var premiumSource: PremiumSource? = null,
+
+    /** Card scans that gave a result without Premium. 100 are free, for good (phase 11). */
+    @Column(nullable = false)
+    var freeScansUsed: Int = 0,
+
+    /** When the customer agreed to the last Premium checkout's terms; copied to the subscription it creates. */
+    @Column
+    var premiumConsentAt: Instant? = null,
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

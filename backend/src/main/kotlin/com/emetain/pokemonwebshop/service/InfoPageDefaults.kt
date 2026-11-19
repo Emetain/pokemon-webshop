@@ -94,7 +94,14 @@ object InfoPageDefaults {
                 ## 10. Garantie en klachten
                 Je hebt recht op een product dat doet wat je mag verwachten. Klachten meld je binnen redelijke tijd met een ticket op de [contactpagina](/info/contact). We reageren binnen 14 dagen.
 
-                ## 11. Geschillen
+                ## 11. Premium
+                - Premium is een abonnement op extra functies van de site, zoals onbeperkt kaarten scannen, de volledige waardegrafiek en de pre-grade check. Het kost €6,99 per maand of €59,99 per jaar, inclusief btw, en wordt elke maand of elk jaar automatisch verlengd tot je opzegt.
+                - Opzeggen of wisselen tussen maand en jaar doe je zelf onder Mijn account. Na opzeggen houd je Premium tot het einde van de periode die je al hebt betaald.
+                - Premium is een digitale dienst die direct begint. Bij het afsluiten vragen we je toestemming daarvoor en bevestig je dat je herroepingsrecht vervalt zodra Premium begint.
+                - Lukt een verlenging niet, dan stopt Premium tot de betaling alsnog lukt.
+                - De pre-grade check is een indicatie, geen officiële beoordeling. Alleen een gradingbedrijf bepaalt een grade.
+
+                ## 12. Geschillen
                 Op deze voorwaarden is Nederlands recht van toepassing. Komen we er samen niet uit, dan kun je je klacht ook voorleggen via het Europese ODR-platform: https://ec.europa.eu/consumers/odr.
             """.trimIndent(),
         ),
@@ -116,12 +123,14 @@ object InfoPageDefaults {
                 - **Reviews:** je beoordeling met je voornaam.
                 - **Nieuwsbrief:** je e-mailadres, alleen als je je aanmeldt en dat bevestigt. Afmelden kan altijd via de link in elke mail.
                 - **Tickets:** je naam, e-mailadres, eventueel je bestelnummer en wat je ons schrijft, om je vraag te beantwoorden. We bewaren een ticket [bewaartermijn].
+                - **Premium:** je abonnement, wanneer het begon en tot wanneer het loopt, en je klantnummer bij Stripe, om Premium te leveren en te verlengen. Je betaalgegevens staan alleen bij Stripe.
+                - **Kaartscanner:** de foto die je scant gaat naar onze server en naar OpenAI, dat de naam en het nummer van de kaart leest. We bewaren de foto niet na de scan; OpenAI gebruikt hem niet voor het trainen van zijn modellen. We tellen alleen hoeveel scans je gebruikte.
                 - **Assistent:** wat je de digitale assistent vraagt gaat naar OpenAI, dat het antwoord maakt. OpenAI gebruikt het niet voor het trainen van zijn modellen en bewaart het hoogstens [termijn, zie de voorwaarden van OpenAI] tegen misbruik. Wij bewaren het gesprek niet. Stuur je het gesprek mee met een ticket, dan staat het bij dat ticket.
 
                 ## Wie je gegevens ziet
                 - De beheerders van de shop: [namen van iedereen met beheerderstoegang].
                 - Stripe, voor de betaling.
-                - OpenAI, voor de antwoorden van de digitale assistent.
+                - OpenAI, voor de antwoorden van de digitale assistent en het lezen van gescande kaarten.
                 - [Hostingpartij] in Nederland, waar de shop draait.
                 - [Mailprovider], die onze mails verstuurt.
                 - De vervoerder, voor de bezorging van je pakket.

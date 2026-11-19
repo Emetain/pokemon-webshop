@@ -10,6 +10,8 @@ let loading = null
 
 const isLoggedIn = computed(() => state.user !== null)
 const isAdmin = computed(() => state.user?.role === 'ADMIN')
+/** Premium right now, admins included (phase 11). Only for showing things: the server checks every feature itself. */
+const isPremium = computed(() => Boolean(state.user?.premium))
 
 /** Asks the backend who is logged in, once. Without an answer the visitor counts as logged out. */
 function ensureLoaded() {
@@ -26,6 +28,15 @@ function ensureLoaded() {
       state.loaded = true
     })
   return loading
+}
+
+/** Asks again, for example after Premium started or ended. */
+async function refresh() {
+  try {
+    state.user = await authApi.me()
+  } catch {
+    // Keeps what it had: a failed check doesn't log anyone out.
+  }
 }
 
 async function login(credentials) {
@@ -58,7 +69,9 @@ export function useSession() {
     state,
     isLoggedIn,
     isAdmin,
+    isPremium,
     ensureLoaded,
+    refresh,
     login,
     register,
     logout,

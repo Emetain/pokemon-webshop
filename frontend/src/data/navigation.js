@@ -260,6 +260,7 @@ export const footerInfoLinks = [
 export const footerShopLinks = [
   { to: '/nieuws', labelKey: 'footer.news' },
   { to: '/releasekalender', labelKey: 'footer.calendar' },
+  { to: '/premium', labelKey: 'footer.premium' },
   { to: '/info/over-ons', labelKey: 'footer.about' },
   { to: '/info/algemene-voorwaarden', labelKey: 'footer.terms' },
   { to: '/info/privacybeleid', labelKey: 'footer.privacy' },

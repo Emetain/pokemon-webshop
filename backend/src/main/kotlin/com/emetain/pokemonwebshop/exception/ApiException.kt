@@ -14,6 +14,10 @@ class ApiException(
         fun notAuthenticated() =
             ApiException(HttpStatus.UNAUTHORIZED, "not_authenticated", "Log in om verder te gaan.")
 
+        /** A Premium feature for a customer without Premium (phase 11). The frontend shows what Premium adds. */
+        fun premiumRequired(message: String = "Dit hoort bij Premium.") =
+            ApiException(HttpStatus.FORBIDDEN, "premium_required", message)
+
         fun forbidden() =
             ApiException(HttpStatus.FORBIDDEN, "forbidden", "Je hebt geen toegang tot deze pagina.")
 

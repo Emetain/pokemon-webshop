@@ -301,6 +301,13 @@ export const adminPictureApi = {
   reject: (id) => request('POST', `/admin/pictures/suggestions/${id}/reject`),
 }
 
+/** Premium (phase 11): status, Stripe's payment page and Stripe's customer portal. */
+export const premiumApi = {
+  status: () => request('GET', '/premium'),
+  checkout: (plan, consent) => request('POST', '/premium/checkout', { plan, consent }),
+  portal: () => request('POST', '/premium/portal'),
+}
+
 /** Pokémon cards whose Cardmarket product is doubtful or was set by hand (phase 11). */
 export const adminPriceLinkApi = {
   list: (params) => request('GET', `/admin/catalog/cardmarket-links${queryString(params)}`),

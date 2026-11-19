@@ -9,6 +9,7 @@ import CountrySelect from '../components/account/CountrySelect.vue'
 import CurrencySelect from '../components/account/CurrencySelect.vue'
 import FormField from '../components/FormField.vue'
 import FormMessage from '../components/FormMessage.vue'
+import PremiumPanel from '../components/account/PremiumPanel.vue'
 import { accountApi } from '../services/api'
 import { useRegion } from '../stores/region'
 import { useSession } from '../stores/session'
@@ -173,6 +174,11 @@ onMounted(loadAddresses)
           </button>
         </div>
       </form>
+    </section>
+
+    <section id="premium" class="account-section">
+      <h2>{{ t('account.premium.title') }}</h2>
+      <PremiumPanel class="section-body" />
     </section>
 
     <section class="account-section">

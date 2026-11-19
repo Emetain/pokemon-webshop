@@ -40,11 +40,22 @@ data class AppProperties(
     val shopAccess: ShopAccess = ShopAccess.PREVIEW,
     val company: Company = Company(),
     val ads: Ads = Ads(),
+    val premium: Premium = Premium(),
 ) {
     /**
      * Ads from Google AdSense on the free card and news pages. Never on shop, cart, checkout, drop or account pages.
      * Off until the owner has an AdSense account: the values come from that account.
      */
+    /** Premium (phase 11): prices including btw, and what a customer without it gets. */
+    data class Premium(
+        val monthlyPriceCents: Long = 699,
+        val yearlyPriceCents: Long = 5999,
+        /** Card scans with a result, per account, for good. */
+        val freeScans: Int = 100,
+        /** How far back the value graph goes without Premium. */
+        val historyDaysWithoutPremium: Long = 365,
+    )
+
     data class Ads(
         val mode: AdsMode = AdsMode.OFF,
         /** The publisher id of the AdSense account, `ca-pub-` and 16 digits. */

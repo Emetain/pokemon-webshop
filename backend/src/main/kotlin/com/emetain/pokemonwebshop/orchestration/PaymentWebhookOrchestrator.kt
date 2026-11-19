@@ -6,6 +6,7 @@ import com.emetain.pokemonwebshop.service.CheckoutService
 import com.emetain.pokemonwebshop.service.OrderPaymentService
 import com.emetain.pokemonwebshop.service.OrderService
 import com.emetain.pokemonwebshop.service.PaymentOutcome
+import com.emetain.pokemonwebshop.service.PremiumService
 import com.emetain.pokemonwebshop.service.payment.PaymentGateway
 import com.emetain.pokemonwebshop.service.payment.PaymentUnavailableException
 import com.emetain.pokemonwebshop.service.payment.StripeWebhookVerifier
@@ -26,22 +27,29 @@ class PaymentWebhookOrchestrator(
     private val orderPaymentService: OrderPaymentService,
     private val orderService: OrderService,
     private val checkoutService: CheckoutService,
+    private val premiumService: PremiumService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun handle(payload: String, signature: String?) {
         val event = verifier.verify(payload, signature)
-        val sessionId = event.objectId ?: return
+        val objectId = event.objectId ?: return
         when (event.type) {
-            "checkout.session.completed", "checkout.session.async_payment_succeeded" -> confirm(sessionId, event.id)
-            "checkout.session.expired" -> ended(sessionId, "Betaalpagina verlopen")
-            "checkout.session.async_payment_failed" -> failed(sessionId)
+            "checkout.session.completed", "checkout.session.async_payment_succeeded" -> confirm(objectId, event.id)
+            "checkout.session.expired" -> ended(objectId, "Betaalpagina verlopen")
+            "checkout.session.async_payment_failed" -> failed(objectId)
+            // Premium (phase 11): Stripe is asked for the subscription itself every time.
+            "customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted" ->
+                premiumService.syncSubscription(objectId)
+            "invoice.paid", "invoice.payment_failed" -> premiumService.syncInvoice(objectId)
+            "charge.refunded" -> premiumService.chargeRefunded(objectId)
             else -> log.debug("Ignored Stripe event {} of type {}", event.id, event.type)
         }
     }
 
     private fun confirm(sessionId: String, eventId: String) {
-        val order = orderRepository.findByStripeSessionId(sessionId) ?: return unknown(sessionId, eventId)
+        val order = orderRepository.findByStripeSessionId(sessionId)
+            ?: return if (premiumService.checkoutCompleted(sessionId)) Unit else unknown(sessionId, eventId)
         val state = try {
             gateway.retrieve(sessionId)
         } catch (exception: PaymentUnavailableException) {

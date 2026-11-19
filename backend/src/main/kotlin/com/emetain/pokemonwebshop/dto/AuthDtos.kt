@@ -4,6 +4,7 @@ import com.emetain.pokemonwebshop.domain.BinderSource
 import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.domain.User
+import com.emetain.pokemonwebshop.service.PremiumAccess
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
@@ -61,9 +62,11 @@ data class UserDto(
     /** The random part of the public link to the collection. Null means the collection is private. */
     val collectionShareSlug: String?,
     val createdAt: Instant,
+    /** Premium right now (phase 11), admins included. The server checks it again for every Premium feature. */
+    val premium: Boolean = false,
 ) {
     companion object {
-        fun from(user: User) = UserDto(
+        fun from(user: User, now: Instant = Instant.now()) = UserDto(
             id = user.id,
             email = user.email,
             displayName = user.displayName,
@@ -73,6 +76,7 @@ data class UserDto(
             binderSource = user.binderSource ?: BinderSource.DEFAULT,
             collectionShareSlug = user.collectionShareSlug,
             createdAt = user.createdAt,
+            premium = PremiumAccess.has(user, now),
         )
     }
 }

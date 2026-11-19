@@ -199,7 +199,13 @@ that refusal has its own message. Checkout takes 5 tries per 10 minutes per IP a
 (`app.rate-limit.buckets.checkout`). The owner chose 2 and the rate limit in phase 9; 5 per IP address is a default
 from phase 10. All are defaults the owner can change.
 
-In production, add a webhook endpoint in the Stripe dashboard for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`, pointing at `https://<your domain>/api/v1/payments/stripe/webhook`, and use its signing secret. Managed Payments must be off in the live account too. The backend only uses a live key (`sk_live_...`) once `SHOP_ACCESS=open`, and only a test key before that: the other kind keeps online payment off, and the admin dashboard says why. The steps are in [docs/phases/phase-10.md](docs/phases/phase-10.md).
+In production, add a webhook endpoint in the Stripe dashboard for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`, and for Premium (phase 11) also `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed` and `charge.refunded`, pointing at `https://<your domain>/api/v1/payments/stripe/webhook`, and use its signing secret. Managed Payments must be off in the live account too. The backend only uses a live key (`sk_live_...`) once `SHOP_ACCESS=open`, and only a test key before that: the other kind keeps online payment off, and the admin dashboard says why. The steps are in [docs/phases/phase-10.md](docs/phases/phase-10.md).
+
+Premium (phase 11) is a Stripe Billing subscription of €6.99 a month or €59.99 a year (`app.premium`). The backend
+makes the product, its two prices (lookup keys `poketopia_premium_monthly` and `poketopia_premium_yearly`) and the
+customer portal's settings in Stripe the first time someone buys or opens the portal, so nothing has to be set up by
+hand. Only the verified webhook switches Premium on, renews it and ends it; admins have it from their role. Details in
+[docs/phases/phase-11.md](docs/phases/phase-11.md).
 
 ## Drops
 
