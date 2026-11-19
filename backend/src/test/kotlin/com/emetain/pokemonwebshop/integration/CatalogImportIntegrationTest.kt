@@ -127,6 +127,35 @@ class CatalogImportIntegrationTest : IntegrationTest() {
     }
 
     @Test
+    fun `a new set can take the code of an old set that the source renamed`() {
+        // Scryfall in November 2026: `punk` went to a new set and the old set became `ounk`, in that order.
+        val code = uniqueCode()
+        val renamed = uniqueCode()
+        importService.importSet(game, providerSet(code, name = "Old set"))
+        val oldId = requireNotNull(cardSetRepository.findByGameAndCode(game, code)).id
+
+        importService.importSet(game, providerSet(code, name = "New set").copy(externalId = "ext-new-$code"))
+        importService.importSet(game, providerSet(renamed, name = "Old set").copy(externalId = "ext-$code"))
+
+        assertEquals("New set", cardSetRepository.findByGameAndCode(game, code)?.name)
+        assertEquals(renamed, cardSetRepository.findById(oldId).orElseThrow().code)
+    }
+
+    @Test
+    fun `two sets can swap their codes in one run`() {
+        val first = providerSet(uniqueCode())
+        val second = providerSet(uniqueCode())
+        importService.importSet(game, first)
+        importService.importSet(game, second)
+
+        importService.importSet(game, first.copy(code = second.code))
+        importService.importSet(game, second.copy(code = first.code))
+
+        assertEquals(first.externalId, cardSetRepository.findByGameAndCode(game, second.code)?.externalId)
+        assertEquals(second.externalId, cardSetRepository.findByGameAndCode(game, first.code)?.externalId)
+    }
+
+    @Test
     fun `a card that moved to another set follows`() {
         val id = uniqueCode()
         importService.importSet(game, providerSet(cards = listOf(providerCard(id))))

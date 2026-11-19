@@ -57,9 +57,11 @@ class CatalogImportService(
 
     private fun upsertSet(game: Game, source: ProviderSet): CardSet {
         val externalId = source.externalId.cut(100)
+        val code = source.code.cut(50)
         val set = cardSetRepository.findByGameAndExternalId(game, externalId)
-            ?: CardSet(game = game, externalId = externalId, code = source.code, name = source.name, series = source.series)
-        set.code = source.code.cut(50)
+            ?: CardSet(game = game, externalId = externalId, code = code, name = source.name, series = source.series)
+        freeCode(game, code, set)
+        set.code = code
         set.name = source.name.cut(255)
         set.series = source.series.cut(100)
         set.releaseDate = source.releaseDate
@@ -69,6 +71,19 @@ class CatalogImportService(
         set.sortOrder = source.sortOrder
         shopSetRules.apply(set)
         return cardSetRepository.save(set)
+    }
+
+    /**
+     * A source can give a set's code to another set: in November 2026 Scryfall gave `punk` to the new
+     * "Prismatic Pride" and renamed the old set to `ounk`. When the new set comes first, the old one still
+     * holds the code, so it gets a temporary one until its own import gives it the new code. The flush
+     * matters: Hibernate writes inserts before updates, so the new set would otherwise still clash.
+     */
+    private fun freeCode(game: Game, code: String, owner: CardSet) {
+        val holder = cardSetRepository.findByGameAndCode(game, code) ?: return
+        if (holder.externalId == owner.externalId) return
+        holder.code = "~${holder.id}~$code".cut(50)
+        cardSetRepository.saveAndFlush(holder)
     }
 
     private fun importCards(
