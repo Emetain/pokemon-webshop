@@ -160,10 +160,10 @@ usePageMeta(() => ({ title: t('scanner.title'), description: t('scanner.intro') 
 </template>
 
 <style scoped>
+/* The band sets the text colour for its accent. */
 .intro {
   max-width: 40rem;
   margin-top: var(--space-2);
-  color: var(--color-ink-soft);
 }
 
 .page {

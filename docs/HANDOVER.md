@@ -1,4 +1,22 @@
-# Handover: phase 10 (Go live) is prepared, not finished
+# Handover: phase 11 built, waiting for the owner; phase 10 still prepared, not finished
+
+## Phase 11 (Correct prices, Premium and the card scanner), 2026-11-19
+
+- **Branch:** `feature/phase-11-premium` from `main` at `6545edb`, one commit per part. Not pushed, not merged, no
+  `phase-11` tag: the "Done when" checks below need the owner.
+- **Built and tested:** parts 2 to 8: Pokémon prices per print from Cardmarket's daily files with the shop's own links
+  and the admin page `/admin/prijskoppelingen`; card prices saved per day; lists that keep loading; Premium as a Stripe
+  subscription; value graph periods 1D to Max with the morph; the card scanner (`/scanner`); the pre-grade check
+  (`/pre-grade`). Details, numbers and decisions are in [phases/phase-11.md](phases/phase-11.md).
+- **Waiting for the owner** (the list at the bottom of phase-11.md): restart the local backend and run a Pokémon sync;
+  Premium in Stripe test mode; the six new webhook events in the Stripe dashboard; about 50 real photos through
+  `tools/scan-test.py`; the graded cards through `/pre-grade`; the Magic sync on the server after deploying; the legal
+  check additions.
+- **Not done on purpose:** Magic's smaller shared-product problem (open issue in phase-11.md).
+- **Finish the phase:** put the owner's scanner and pre-grade results and the server's before/after count in
+  phase-11.md, then commit and tag `phase-11`.
+
+## Phase 10 (Go live)
 
 Written on 2026-11-15 at the end of the night session. This file only exists while phase 10 is unfinished; the details
 are in [phases/phase-10.md](phases/phase-10.md).

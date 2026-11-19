@@ -197,17 +197,17 @@ usePageMeta(() => ({ title: t('premium.title'), description: t('premium.intro') 
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--color-brand);
+  opacity: 0.85;
   font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
+/* The band sets the text colour for its accent. */
 .intro {
   max-width: 40rem;
   margin-top: var(--space-2);
-  color: var(--color-ink-soft);
 }
 
 .page {
