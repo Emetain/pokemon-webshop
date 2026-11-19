@@ -454,12 +454,11 @@ Goal: card prices customers can trust, card lists that keep loading while you sc
 
 Added by the owner on 2026-11-19. Do the parts in the order below: the first two fix data that every visitor sees today.
 
-Decided by the owner on 2026-11-19: Premium is a subscription of €6.99 per month or €59.99 per year, including btw.
-
-Ask the owner first for:
-- **Free scans:** whether the 100 free scans are once per account or every month.
-- **Infinite scroll:** only the card lists, or the shop's product lists too.
-- **Games:** whether the scanner and the pre-grade check cover all five games from the start, or Pokémon first.
+Decided by the owner on 2026-11-19:
+- **Premium** is a subscription of €6.99 per month or €59.99 per year, including btw.
+- **Free scans:** 100 per account in total, never reset.
+- **Infinite scroll** goes on the card lists and on the shop's product lists.
+- **All five games** get the scanner and the pre-grade check from the start.
 
 ### 1. The Magic sync stops on a reused set code
 
@@ -494,9 +493,9 @@ Phase 12 shows a price graph per card, risers and fallers, and price alerts, and
 - Estimate the growth first from the real catalog (Magic alone has about 100,000 prints), and write the estimate in `docs/phases/phase-11.md`. Add an index for "the prices of one card over time".
 - Saving starts after part 2, so the history begins with correct prices.
 
-### 4. Card lists that keep loading
+### 4. Lists that keep loading
 
-- Card lists (set pages, search, the collection, the Pokédex cards of a Pokémon, and the shop lists if the owner wants) load the next 25 cards when the customer nears the end, instead of page buttons. Build it once as a composable with `IntersectionObserver`, and keep the filters and sorting of `CardFilters.vue` as they are.
+- Card lists (set pages, search, the collection, the Pokédex cards of a Pokémon) and the shop's product lists load the next 25 items when the customer nears the end, instead of page buttons. Build it once as a composable with `IntersectionObserver`, and keep the filters and sorting of `CardFilters.vue` and the shop's filters as they are.
 - The URL keeps how far the customer got, so a shared link and the back button return to the same place.
 - The footer stays reachable, because the KVK number and the legal links are there: after a few automatic loads, show a "Meer laden" button.
 - Search engines don't scroll: keep plain links to the next pages (`PageLinks.vue`) in the page for them.
@@ -517,8 +516,8 @@ Phase 12 shows a price graph per card, risers and fallers, and price alerts, and
 
 ### 7. Card scanner
 
-- `/scanner`: the customer takes or uploads a photo of a card and gets the matching card, or a short list to choose from, with its price and the button to add it to the collection.
-- Only for logged-in customers, so scans can be counted: 100 free scans (once or per month, the owner's choice), unlimited with Premium. A scan counts when it gives a result, not when it fails on our side. A rate limit per user and per IP address.
+- `/scanner`: the customer takes or uploads a photo of a card of any of the five games and gets the matching card, or a short list to choose from, with its price and the button to add it to the collection.
+- Only for logged-in customers, so scans can be counted: 100 free scans per account in total, which never reset, and unlimited with Premium. When Premium ends, the customer has whatever free scans were left. A scan counts when it gives a result, not when it fails on our side. A rate limit per user and per IP address.
 - How the scanner recognises a card: first test with about 50 real photos from different games, light and sleeves, and choose by hit rate and cost:
   - a cheap vision model reads the name, set code and number from the photo, and the backend looks the card up in our own database. Every scan costs a little, and it works for every game.
   - or matching the photo against the card images (a perceptual hash or image embeddings). No cost per scan, but every card image has to be processed once, so check each source's image terms first.
@@ -529,7 +528,7 @@ Phase 12 shows a price graph per card, risers and fallers, and price alerts, and
 
 How hard it is (estimated on 2026-11-19): centering can be measured well from a sharp, straight photo of the front and the back, from the widths of the borders, and centering is where graders are strictest. Corners, edges and surface (whitening, dents, scratches) are hard to judge reliably from a phone photo. A vision model can point out visible damage, but it can't grade like PSA or BGS. So the check gives an indication, never a grade.
 
-- Premium only. The customer uploads the front and the back, lying flat in good light, with tips on the page. Reuse the scanner's photo upload.
+- Premium only, for cards of all five games. The customer uploads the front and the back, lying flat in good light, with tips on the page. Reuse the scanner's photo upload. Border widths differ per game and per card (full-art cards, borderless Magic cards), so test centering on each game.
 - The result: the centering per side as ratios (for example 55/45) and what that allows on the common grading scales, and visible problems per corner and edge, all as "indicatie", with a clear line that it isn't an official grade and that only a grading company decides.
 - Never use a grading company's name or logo as if the result comes from them. Add this to the legal check.
 - Before it goes live, test it on cards with a known grade (the owner's graded cards) and report how close it gets.
@@ -538,10 +537,10 @@ Done when:
 - The Magic sync completes on the server again, and the test with the swapped set codes passes.
 - The three Rayquaza cards in Delta Reign each show their own price, and `docs/phases/phase-11.md` reports how many cards shared a price before and after.
 - Card prices are saved after every sync, only when they changed, and the growth estimate is in `docs/phases/phase-11.md`.
-- Card lists keep loading while scrolling, the back button returns to the same place, and the footer can be reached.
+- Card lists and product lists keep loading while scrolling, the back button returns to the same place, and the footer can be reached.
 - In Stripe's test mode a customer buys Premium monthly and yearly and gets the Max period, unlimited scans and the pre-grade check, and a cancellation ends it at the end of the paid period. An admin has them without buying, and the API refuses them to a customer without Premium.
 - Switching periods in the value graph animates smoothly, and doesn't with reduced motion.
-- Scanning a few real photos per game finds the right card, and the scan after the free ones asks for Premium.
+- Scanning a few real photos of each of the five games finds the right card, and the 101st scan of an account without Premium asks for Premium.
 - The pre-grade test results against graded cards are in `docs/phases/phase-11.md`.
 
 ## Phase 12: More Premium
