@@ -99,4 +99,33 @@ class ScannerIntegrationTest : IntegrationTest() {
         scan(null).andExpect(status().isUnauthorized)
         scan(loggedInUser(), "not a photo".toByteArray()).andExpect(status().isBadRequest)
     }
+
+    // The pre-grade check (phase 11): Premium only.
+
+    private fun pregrade(session: Cookie) = mockMvc.perform(
+        multipart("/v1/pregrade")
+            .file(MockMultipartFile("front", "voor.jpg", "image/jpeg", jpeg))
+            .file(MockMultipartFile("back", "achter.jpg", "image/jpeg", jpeg))
+            .with(fromRandomIp())
+            .cookie(session),
+    )
+
+    @Test
+    fun `the pre-grade check is Premium only and refuses before the photos go anywhere`() {
+        val photos = ai.scannedPhotos.size
+        pregrade(loggedInUser()).andExpect(status().isForbidden).andExpect(jsonPath("$.error").value("premium_required"))
+        kotlin.test.assertEquals(photos, ai.scannedPhotos.size)
+    }
+
+    @Test
+    fun `the pre-grade check finds the edges and the wear on both sides`() {
+        pregrade(loggedInUser(Role.ADMIN))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.sides[0].side").value("front"))
+            .andExpect(jsonPath("$.sides[0].outer.left").value(100))
+            .andExpect(jsonPath("$.sides[0].inner.right").value(840))
+            .andExpect(jsonPath("$.sides[0].corners[0].position").value("top_left"))
+            .andExpect(jsonPath("$.sides[0].surface.condition").value("clean"))
+            .andExpect(jsonPath("$.sides[1].side").value("back"))
+    }
 }

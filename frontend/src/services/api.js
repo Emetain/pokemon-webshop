@@ -311,6 +311,16 @@ export const scannerApi = {
   },
 }
 
+/** The pre-grade check (phase 11, Premium): the front and the back of a card. */
+export const pregradeApi = {
+  check: (front, back) => {
+    const body = new FormData()
+    body.append('front', front, 'voorkant.jpg')
+    body.append('back', back, 'achterkant.jpg')
+    return send('POST', '/pregrade', { body }, { isUpload: true })
+  },
+}
+
 /** Premium (phase 11): status, Stripe's payment page and Stripe's customer portal. */
 export const premiumApi = {
   status: () => request('GET', '/premium'),

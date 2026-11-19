@@ -39,8 +39,14 @@ interface AiClient {
         contentType: String,
         schemaName: String,
         schema: ObjectNode,
-    ): AiTextResult
+    ): AiTextResult = visionJson(model, instructions, listOf(VisionImage("Lees deze kaart.", image, contentType)), schemaName, schema)
+
+    /** Several images in one question, each after its own line of text, such as "De voorkant:". */
+    fun visionJson(model: String, instructions: String, images: List<VisionImage>, schemaName: String, schema: ObjectNode): AiTextResult
 }
+
+/** A photo for a vision model, with the line of text that goes before it. */
+class VisionImage(val label: String, val bytes: ByteArray, val contentType: String)
 
 /**
  * OpenAI's API, called from the backend only: the key never reaches the browser. Text through the Responses API with
@@ -77,8 +83,7 @@ class OpenAiClient(
     override fun visionJson(
         model: String,
         instructions: String,
-        image: ByteArray,
-        contentType: String,
+        images: List<VisionImage>,
         schemaName: String,
         schema: ObjectNode,
     ): AiTextResult {
@@ -89,11 +94,13 @@ class OpenAiClient(
             putArray("input").addObject().apply {
                 put("role", "user")
                 putArray("content").apply {
-                    addObject().put("type", "input_text").put("text", "Lees deze kaart.")
-                    addObject()
-                        .put("type", "input_image")
-                        .put("image_url", "data:$contentType;base64," + Base64.getEncoder().encodeToString(image))
-                        .put("detail", "high")
+                    images.forEach { image ->
+                        addObject().put("type", "input_text").put("text", image.label)
+                        addObject()
+                            .put("type", "input_image")
+                            .put("image_url", "data:${image.contentType};base64," + Base64.getEncoder().encodeToString(image.bytes))
+                            .put("detail", "high")
+                    }
                 }
             }
             format(schemaName, schema)

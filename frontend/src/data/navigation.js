@@ -170,6 +170,7 @@ export const mainNav = [
           link('/collectie/pokedex', 'nav.collectionLinks.pokedex'),
           link('/verlanglijst', 'nav.collectionLinks.wishlist'),
           link('/scanner', 'nav.collectionLinks.scanner'),
+          link('/pre-grade', 'nav.collectionLinks.pregrade'),
         ],
       },
       {

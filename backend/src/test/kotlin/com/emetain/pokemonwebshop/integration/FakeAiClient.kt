@@ -30,18 +30,33 @@ class FakeAiClient : AiClient {
 
     @Volatile var failScan = false
 
+    /** What the pre-grade check sees on the two photos in a test. */
+    @Volatile var pregradeAnswer = """
+        {"sides": [
+          {"side": "front", "usable": true, "problem": null,
+           "outer": {"left": 100, "top": 50, "right": 900, "bottom": 950},
+           "inner": {"left": 150, "top": 100, "right": 840, "bottom": 900},
+           "corners": [{"position": "top_left", "condition": "light", "note": "Een klein wit puntje"}],
+           "edges": [], "surface": {"condition": "clean", "note": null}},
+          {"side": "back", "usable": true, "problem": null,
+           "outer": {"left": 100, "top": 50, "right": 900, "bottom": 950},
+           "inner": {"left": 140, "top": 90, "right": 860, "bottom": 910},
+           "corners": [], "edges": [], "surface": {"condition": "clean", "note": null}}
+        ]}
+    """.trimIndent()
+
     override fun visionJson(
         model: String,
         instructions: String,
-        image: ByteArray,
-        contentType: String,
+        images: List<com.emetain.pokemonwebshop.service.ai.VisionImage>,
         schemaName: String,
         schema: ObjectNode,
     ): AiTextResult {
         if (failScan) throw com.emetain.pokemonwebshop.service.ai.AiException("The model is down in this test")
-        scannedPhotos += image
+        images.forEach { scannedPhotos += it.bytes }
         models += model
-        return AiTextResult(objectMapper.readTree(scanReading), inputTokens = 1000, outputTokens = 60)
+        val answer = if (schemaName == "pregrade") pregradeAnswer else scanReading
+        return AiTextResult(objectMapper.readTree(answer), inputTokens = 1000 * images.size.toLong(), outputTokens = 60)
     }
 
     override val configured: Boolean get() = configuredInTest

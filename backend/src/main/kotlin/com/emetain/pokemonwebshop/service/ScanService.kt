@@ -127,7 +127,7 @@ class ScanService(
     }
 
     private fun fitsBudget(): Boolean {
-        val spent = usageRepository.costSince(startOfMonth(), listOf(KIND))
+        val spent = usageRepository.costSince(startOfMonth(), BUDGET_KINDS)
         return AiCost.fits(spent, AiCost.micros(ESTIMATE_USD), AiCost.micros(settings.scanMonthlyLimitUsd))
     }
 
@@ -147,17 +147,20 @@ class ScanService(
         putArray("required").add("game").add("name").add("setCode").add("setName").add("number")
     }
 
-    private companion object {
+    companion object {
         const val KIND = "SCAN"
-        const val RATE_BUCKET = "scanner-account"
-        const val MODEL_LENGTH = 60
-        const val FIELD_LENGTH = 120
-        const val LOOKUP_LIMIT = 300
-        const val MIN_NAME = 2
-        val ESTIMATE_USD = BigDecimal("0.001")
-        val ZONE: ZoneId = ZoneId.of("Europe/Amsterdam")
 
-        val INSTRUCTIONS = """
+        /** The scanner and the pre-grade check share OPENAI_SCAN_MONTHLY_LIMIT_USD. */
+        val BUDGET_KINDS = listOf(KIND, PregradeService.KIND)
+        private const val RATE_BUCKET = "scanner-account"
+        private const val MODEL_LENGTH = 60
+        private const val FIELD_LENGTH = 120
+        private const val LOOKUP_LIMIT = 300
+        private const val MIN_NAME = 2
+        private val ESTIMATE_USD = BigDecimal("0.001")
+        private val ZONE: ZoneId = ZoneId.of("Europe/Amsterdam")
+
+        private val INSTRUCTIONS = """
             You read one physical trading card in a photo, for a Dutch card shop's scanner. The card is from one of
             these games: pokemon (Pokémon TCG), mtg (Magic: The Gathering), lorcana (Disney Lorcana), one_piece (One
             Piece Card Game) or riftbound (Riftbound: League of Legends). It may be in a sleeve, at an angle or in poor

@@ -110,6 +110,11 @@ const router = createRouter({
           meta: { requiresLogin: true, title: 'scanner.title' },
         },
         {
+          path: 'pre-grade',
+          component: () => import('./views/PregradeView.vue'),
+          meta: { requiresLogin: true, title: 'pregrade.title' },
+        },
+        {
           path: 'premium',
           component: () => import('./views/PremiumView.vue'),
           meta: { title: 'premium.title' },

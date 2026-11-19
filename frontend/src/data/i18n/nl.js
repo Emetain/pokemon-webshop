@@ -109,6 +109,7 @@ export default {
       pokedex: 'Pokédex',
       wishlist: 'Verlanglijst',
       scanner: 'Kaartscanner',
+      pregrade: 'Pre-grade check',
     },
     feature: {
       pokedex: {
@@ -216,6 +217,58 @@ export default {
     premiumTitle: 'Je gratis scans zijn op',
     premiumText: 'Met Premium scan je zoveel kaarten als je wilt, en krijg je de hele waardegrafiek en de pre-grade check.',
     toPremium: 'Bekijk Premium',
+  },
+  pregrade: {
+    title: 'Pre-grade check',
+    intro: 'Zie voordat je een kaart laat graden hoe goed hij gecentreerd is en welke slijtage zichtbaar is.',
+    disclaimer:
+      'Dit is een indicatie, geen officiële grade. Alleen een gradingbedrijf beoordeelt een kaart; deze check komt niet van een gradingbedrijf.',
+    disclaimerLong:
+      'Centering meten we uit je foto. Hoeken, randen en het oppervlak zijn op een telefoonfoto lastig te beoordelen: zie het als een eerste blik, niet als een oordeel. Alleen een gradingbedrijf bepaalt een grade.',
+    lockedTitle: 'De pre-grade check hoort bij Premium',
+    lockedText: 'Met Premium check je de centering en zichtbare slijtage van je kaarten voordat je ze opstuurt.',
+    photosTitle: 'Je foto’s',
+    tips: {
+      flat: 'Leg de kaart plat op een effen, donkere ondergrond, uit de sleeve.',
+      straight: 'Houd je telefoon recht boven de kaart, zodat de randen recht in beeld staan.',
+      light: 'Gebruik gelijkmatig licht zonder schaduw of weerspiegeling.',
+      sleeve: 'Laat een beetje ruimte rond de kaart; de hele kaart moet in beeld zijn.',
+    },
+    front: 'Voorkant',
+    back: 'Achterkant',
+    replace: '{side} vervangen',
+    check: 'Controleren',
+    checking: 'Bezig met kijken…',
+    privacy: 'Je foto’s gaan alleen naar onze server en naar OpenAI, en worden niet bewaard.',
+    resultTitle: 'Resultaat',
+    dragHint:
+      'Blauw is de buitenrand van de kaart, oranje de binnenrand. Sleep de lijnen precies op de randen voor een nauwkeurige meting.',
+    unusable: 'Deze foto is lastig te beoordelen. Probeer een scherpere foto recht van boven.',
+    leftRight: 'Links/rechts',
+    topBottom: 'Boven/onder',
+    noFrame: 'We vonden geen gelijkmatige rand, zoals bij een full art of borderless kaart. Zet de oranje lijnen zelf op de rand die je wilt meten.',
+    wearTitle: 'Zichtbare slijtage',
+    noWear: 'Geen slijtage gezien op deze foto.',
+    maxGrade: 'Op centering kan deze kaart bij de gangbare 10-puntsschalen hooguit een {grade} halen.',
+    perfect: 'De centering is zo goed als perfect: ook bij de strengste schalen staat centering een topgrade niet in de weg.',
+    scaleNote:
+      'Gebaseerd op de centering-richtlijnen die grote gradingbedrijven publiceren (bijvoorbeeld 55/45 voor en 75/25 achter voor een 10). Andere gebreken kunnen de grade verder verlagen.',
+    conditions: { light: 'Licht', clear: 'Duidelijk', clean: 'Schoon' },
+    positions: {
+      top_left: 'Hoek linksboven',
+      top_right: 'Hoek rechtsboven',
+      bottom_left: 'Hoek linksonder',
+      bottom_right: 'Hoek rechtsonder',
+      top: 'Bovenrand',
+      right: 'Rechterrand',
+      bottom: 'Onderrand',
+      left: 'Linkerrand',
+      surface: 'Oppervlak',
+    },
+    lines: {
+      outer: { left: 'Buitenrand links', right: 'Buitenrand rechts', top: 'Buitenrand boven', bottom: 'Buitenrand onder' },
+      inner: { left: 'Binnenrand links', right: 'Binnenrand rechts', top: 'Binnenrand boven', bottom: 'Binnenrand onder' },
+    },
   },
   premium: {
     eyebrow: 'Premium',
