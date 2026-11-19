@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
@@ -8,12 +8,13 @@ import CardGrid from '../../components/catalog/CardGrid.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
 import NotFoundView from '../NotFoundView.vue'
-import PageLinks from '../../components/catalog/PageLinks.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import { pokedexApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { cardCountLabel, dexLabel, filterQuery, pageFromQuery } from '../../utils/catalog'
 import { formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { useInfiniteList } from '../../utils/infiniteList'
 import { usePageMeta } from '../../utils/pageMeta'
 
 const props = defineProps({
@@ -32,9 +33,7 @@ const router = useRouter()
 const session = useSession()
 
 const entry = ref(null)
-const cards = ref(null)
 const loadingEntry = ref(true)
-const loadingCards = ref(true)
 const notFound = ref(false)
 const error = ref('')
 
@@ -76,7 +75,6 @@ function clearFilters() {
 }
 
 let latestEntryRequest = 0
-let latestCardsRequest = 0
 
 async function loadEntry() {
   const request = ++latestEntryRequest
@@ -97,25 +95,23 @@ async function loadEntry() {
   }
 }
 
-async function loadCards() {
-  const request = ++latestCardsRequest
-  loadingCards.value = true
-  try {
-    const result = await pokedexApi.cards(props.dexNumber, { ...filters.value, page: currentPage.value - 1 })
-    if (request === latestCardsRequest) cards.value = result
-  } catch (exception) {
-    if (request !== latestCardsRequest) return
-    cards.value = null
-    // A Pokémon that doesn't exist already shows its message through loadEntry.
-    if (exception.status !== 404 && exception.status !== 400) error.value = exception.message
-  } finally {
-    if (request === latestCardsRequest) loadingCards.value = false
-  }
-}
+/** The cards of this Pokémon, 25 at a time while the customer scrolls (phase 11). */
+const cards = reactive(
+  useInfiniteList({
+    fetchPage: (page, size) => pokedexApi.cards(props.dexNumber, { ...filters.value, page, size }),
+    key: () => [props.dexNumber, filters.value],
+    page: () => currentPage.value,
+  }),
+)
+
+// A Pokémon that doesn't exist already shows its message through loadEntry.
+const cardsError = computed(() =>
+  cards.error && cards.error.status !== 404 && cards.error.status !== 400 ? cards.error.message : '',
+)
 
 function reload() {
   loadEntry()
-  loadCards()
+  cards.refresh()
 }
 
 function onCollectionChange(card, change) {
@@ -126,7 +122,7 @@ function onCollectionChange(card, change) {
 }
 
 watch(() => props.dexNumber, loadEntry, { immediate: true })
-watch(() => [props.dexNumber, filters.value, currentPage.value], loadCards, { immediate: true })
+
 
 usePageMeta(() =>
   entry.value
@@ -166,7 +162,7 @@ usePageMeta(() =>
     </CatalogBand>
 
     <div class="container page">
-      <CatalogNotice v-if="error" :title="error">
+      <CatalogNotice v-if="error || cardsError" :title="error || cardsError">
         <button class="btn btn-secondary" type="button" @click="reload">{{ t('catalog.retry') }}</button>
       </CatalogNotice>
 
@@ -180,12 +176,12 @@ usePageMeta(() =>
           @change="applyFilters"
           @clear="clearFilters"
         />
-        <p v-if="cards && !loadingCards" class="count" role="status">{{ cardCountLabel(cards.totalItems) }}</p>
+        <p v-if="cards.loaded && !cards.loading" class="count" role="status">{{ cardCountLabel(cards.totalItems) }}</p>
 
-        <CardGrid v-if="loadingCards || loadingEntry" loading />
+        <CardGrid v-if="cards.loading || loadingEntry" loading />
 
         <CatalogNotice
-          v-else-if="!cards?.items.length"
+          v-else-if="!cards.items.length"
           :title="t('pokedex.entry.emptyTitle')"
           :text="hasFilters ? t('pokedex.entry.emptyFilterText') : t('pokedex.entry.emptyText')"
         >
@@ -196,7 +192,7 @@ usePageMeta(() =>
 
         <template v-else>
           <CardGrid :cards="cards.items" show-set @change="onCollectionChange" />
-          <PageLinks :page="currentPage" :total-pages="cards.totalPages" />
+          <ListEnd :list="cards" />
         </template>
       </template>
     </div>

@@ -1,18 +1,19 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CardFilters from '../../components/catalog/CardFilters.vue'
 import CardGrid from '../../components/catalog/CardGrid.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
-import PageLinks from '../../components/catalog/PageLinks.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import GuestInvite from '../../components/collection/GuestInvite.vue'
 import ProductGrid from '../../components/shop/ProductGrid.vue'
 import { productWishlistApi, wishlistApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { cardCountLabel, filterQuery, pageFromQuery } from '../../utils/catalog'
 import { t } from '../../utils/i18n'
+import { useInfiniteList } from '../../utils/infiniteList'
 
 const props = defineProps({
   sort: { type: String, default: '' },
@@ -24,10 +25,8 @@ const props = defineProps({
 const router = useRouter()
 const session = useSession()
 
-const cards = ref(null)
 const products = ref(null)
 const productError = ref('')
-const loading = ref(true)
 const error = ref('')
 
 const loggedIn = computed(() => session.isLoggedIn.value)
@@ -48,30 +47,23 @@ function clearFilters() {
   router.push({ query: filterQuery({ sort: props.sort }) })
 }
 
-let latestRequest = 0
+/** The wished cards, 25 at a time while the customer scrolls (phase 11). */
+const cards = reactive(
+  useInfiniteList({
+    fetchPage: (page, size) =>
+      loggedIn.value ? wishlistApi.cards({ ...filters.value, page, size }) : { items: [], totalItems: 0, totalPages: 0 },
+    key: () => [loggedIn.value, filters.value],
+    page: () => currentPage.value,
+  }),
+)
 
-async function load() {
-  if (!loggedIn.value) return
-  const request = ++latestRequest
-  loading.value = true
-  error.value = ''
-  try {
-    const result = await wishlistApi.cards({ ...filters.value, page: currentPage.value - 1 })
-    if (request === latestRequest) cards.value = result
-  } catch (exception) {
-    if (request !== latestRequest) return
-    cards.value = null
-    error.value = exception.message
-  } finally {
-    if (request === latestRequest) loading.value = false
-  }
-}
+const loadError = computed(() => cards.error?.message ?? '')
 
 async function remove(card) {
   error.value = ''
   try {
     await wishlistApi.remove(card.id)
-    await load()
+    await cards.refresh()
   } catch (exception) {
     error.value = exception.message
   }
@@ -99,7 +91,6 @@ function onProductWished(product, wished) {
 }
 
 loadProducts()
-watch(() => [filters.value, currentPage.value], load, { immediate: true })
 </script>
 
 <template>
@@ -112,8 +103,8 @@ watch(() => [filters.value, currentPage.value], load, { immediate: true })
   <div class="container page">
     <GuestInvite v-if="!loggedIn" :title="t('wishlist.guestTitle')" :text="t('wishlist.guestText')" />
 
-    <CatalogNotice v-else-if="error" :title="error">
-      <button class="btn btn-secondary" type="button" @click="load">{{ t('catalog.retry') }}</button>
+    <CatalogNotice v-else-if="error || loadError" :title="error || loadError">
+      <button class="btn btn-secondary" type="button" @click="cards.refresh()">{{ t('catalog.retry') }}</button>
     </CatalogNotice>
 
     <template v-else>
@@ -140,12 +131,12 @@ watch(() => [filters.value, currentPage.value], load, { immediate: true })
         @change="applyFilters"
         @clear="clearFilters"
       />
-      <p v-if="cards && !loading" class="count" role="status">{{ cardCountLabel(cards.totalItems) }}</p>
+      <p v-if="cards.loaded && !cards.loading" class="count" role="status">{{ cardCountLabel(cards.totalItems) }}</p>
 
-      <CardGrid v-if="loading" loading />
+      <CardGrid v-if="cards.loading" loading />
 
       <CatalogNotice
-        v-else-if="!cards?.items.length && hasFilters"
+        v-else-if="!cards.items.length && hasFilters"
         :title="t('catalog.empty.filterTitle')"
         :text="t('catalog.empty.filterText')"
       >
@@ -153,7 +144,7 @@ watch(() => [filters.value, currentPage.value], load, { immediate: true })
       </CatalogNotice>
 
       <CatalogNotice
-        v-else-if="!cards?.items.length"
+        v-else-if="!cards.items.length"
         :title="t('wishlist.emptyTitle')"
         :text="t('wishlist.emptyText')"
       >
@@ -175,7 +166,7 @@ watch(() => [filters.value, currentPage.value], load, { immediate: true })
             </button>
           </template>
         </CardGrid>
-        <PageLinks :page="currentPage" :total-pages="cards.totalPages" />
+        <ListEnd :list="cards" />
       </template>
     </template>
   </div>

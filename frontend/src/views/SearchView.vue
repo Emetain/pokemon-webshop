@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import CardFilters from '../components/catalog/CardFilters.vue'
 import FormMessage from '../components/FormMessage.vue'
@@ -7,7 +7,7 @@ import CardGrid from '../components/catalog/CardGrid.vue'
 import CatalogBand from '../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../components/catalog/CatalogNotice.vue'
 import FilterSelect from '../components/catalog/FilterSelect.vue'
-import PageLinks from '../components/catalog/PageLinks.vue'
+import ListEnd from '../components/catalog/ListEnd.vue'
 import ProductGrid from '../components/shop/ProductGrid.vue'
 import { GAMES } from '../data/games'
 import { catalogApi, shopApi } from '../services/api'
@@ -15,6 +15,7 @@ import { formatNumber } from '../utils/format'
 import { useSession } from '../stores/session'
 import { cardCountLabel, filterQuery, pageFromQuery } from '../utils/catalog'
 import { t } from '../utils/i18n'
+import { useInfiniteList } from '../utils/infiniteList'
 
 const MIN_QUERY_LENGTH = 2
 const PRODUCT_PREVIEW = 6
@@ -35,10 +36,9 @@ const props = defineProps({
 const router = useRouter()
 const session = useSession()
 
-const result = ref(null)
+/** The filter choices that come with the results: rarities, kinds and colours of what was found. */
+const options = ref(null)
 const products = ref(null)
-const loading = ref(false)
-const error = ref('')
 const productError = ref('')
 
 const query = computed(() => props.q.trim())
@@ -74,45 +74,34 @@ const gameFilter = computed({
   set: (game) => applyFilters({ game, category: '', color: '', rarity: '', variant: '' }),
 })
 
-let latestRequest = 0
+const EMPTY = { items: [], totalItems: 0, totalPages: 0 }
 
-async function search() {
-  const request = ++latestRequest
-  error.value = ''
-  if (!canSearch.value) {
-    result.value = null
-    loading.value = false
-    return
-  }
-  loading.value = true
-  try {
-    const found = await catalogApi.search({
-      q: query.value,
-      ...filters.value,
-      page: currentPage.value - 1,
-    })
-    if (request === latestRequest) result.value = found
-  } catch (exception) {
-    if (request !== latestRequest) return
-    result.value = null
-    error.value = exception.message
-  } finally {
-    if (request === latestRequest) loading.value = false
-  }
-}
+/** The cards found, 25 at a time while the customer scrolls (phase 11). */
+const results = reactive(
+  useInfiniteList({
+    fetchPage: async (page, size) => {
+      if (!canSearch.value) return EMPTY
+      const found = await catalogApi.search({ q: query.value, ...filters.value, page, size })
+      if (page === 0) options.value = found
+      return found.results
+    },
+    key: () => [query.value, filters.value],
+    page: () => currentPage.value,
+  }),
+)
+
+const error = computed(() => results.error?.message ?? '')
 
 function onCollectionChange(card, change) {
   card.owned = change.entries
 }
 
-watch(() => [query.value, filters.value, currentPage.value], search, { immediate: true })
-
 let latestProductsRequest = 0
 
-/** Products that match go above the cards, on the first page only. A failure leaves just the cards. */
+/** Products that match go above the cards. A failure leaves just the cards. */
 async function searchProducts() {
   const request = ++latestProductsRequest
-  if (!canSearch.value || currentPage.value > 1) {
+  if (!canSearch.value) {
     products.value = null
     return
   }
@@ -126,7 +115,7 @@ async function searchProducts() {
 
 const allProductsLink = computed(() => ({ path: props.game ? `/${props.game}` : '/producten', query: { q: query.value } }))
 
-watch(() => [query.value, props.game, currentPage.value], searchProducts, { immediate: true })
+watch(() => [query.value, props.game], searchProducts, { immediate: true })
 </script>
 
 <template>
@@ -137,7 +126,7 @@ watch(() => [query.value, props.game, currentPage.value], searchProducts, { imme
 
   <div v-if="canSearch" class="container page">
     <CatalogNotice v-if="error" :title="error">
-      <button class="btn btn-secondary" type="button" @click="search">{{ t('catalog.retry') }}</button>
+      <button class="btn btn-secondary" type="button" @click="results.refresh()">{{ t('catalog.retry') }}</button>
     </CatalogNotice>
 
     <template v-else>
@@ -160,7 +149,7 @@ watch(() => [query.value, props.game, currentPage.value], searchProducts, { imme
       <CardFilters
         :game="game"
         :values="filters"
-        :options="result ?? {}"
+        :options="options ?? {}"
         default-sort="best-match"
         :tracking="session.isLoggedIn.value"
         @change="applyFilters"
@@ -173,12 +162,12 @@ watch(() => [query.value, props.game, currentPage.value], searchProducts, { imme
           :options="gameOptions"
         />
       </CardFilters>
-      <p v-if="result && !loading" class="count" role="status">{{ cardCountLabel(result.results.totalItems) }}</p>
+      <p v-if="results.loaded && !results.loading" class="count" role="status">{{ cardCountLabel(results.totalItems) }}</p>
 
-      <CardGrid v-if="loading" loading />
+      <CardGrid v-if="results.loading" loading />
 
       <CatalogNotice
-        v-else-if="!result?.results.items.length"
+        v-else-if="!results.items.length"
         :title="t('search.emptyTitle')"
         :text="t('search.emptyText')"
       >
@@ -188,8 +177,8 @@ watch(() => [query.value, props.game, currentPage.value], searchProducts, { imme
       </CatalogNotice>
 
       <template v-else>
-        <CardGrid :cards="result.results.items" show-set @change="onCollectionChange" />
-        <PageLinks :page="currentPage" :total-pages="result.results.totalPages" />
+        <CardGrid :cards="results.items" show-set @change="onCollectionChange" />
+        <ListEnd :list="results" />
       </template>
     </template>
   </div>

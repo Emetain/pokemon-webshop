@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AdSlot from '../../components/AdSlot.vue'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
@@ -8,7 +8,7 @@ import CardGrid from '../../components/catalog/CardGrid.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
 import NotFoundView from '../NotFoundView.vue'
-import PageLinks from '../../components/catalog/PageLinks.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import SetProgressPanel from '../../components/collection/SetProgressPanel.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import { findGame } from '../../data/games'
@@ -16,6 +16,7 @@ import { catalogApi, collectionApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { cardCountLabel, filterQuery, pageFromQuery, seriesLabel } from '../../utils/catalog'
 import { formatDate } from '../../utils/format'
+import { useInfiniteList } from '../../utils/infiniteList'
 import { t } from '../../utils/i18n'
 import { usePageMeta } from '../../utils/pageMeta'
 
@@ -39,9 +40,7 @@ const session = useSession()
 const detail = ref(null)
 /** A logo that didn't load is left out, instead of showing a broken image. */
 const failedLogo = ref('')
-const cards = ref(null)
 const loadingSet = ref(true)
-const loadingCards = ref(true)
 const notFound = ref(false)
 const error = ref('')
 const stats = ref(null)
@@ -91,7 +90,6 @@ const missingLink = computed(() => ({
 }))
 
 let latestSetRequest = 0
-let latestCardsRequest = 0
 
 async function loadSet() {
   const request = ++latestSetRequest
@@ -111,26 +109,18 @@ async function loadSet() {
   }
 }
 
-async function loadCards() {
-  const request = ++latestCardsRequest
-  loadingCards.value = true
-  error.value = ''
-  try {
-    const result = await catalogApi.cards(props.game, props.setCode, {
-      ...filters.value,
-      master: masterMode.value || undefined,
-      page: currentPage.value - 1,
-    })
-    if (request === latestCardsRequest) cards.value = result
-  } catch (exception) {
-    if (request !== latestCardsRequest) return
-    cards.value = null
-    // A set that doesn't exist already shows its message through loadSet.
-    if (exception.status !== 404) error.value = exception.message
-  } finally {
-    if (request === latestCardsRequest) loadingCards.value = false
-  }
-}
+/** The cards, 25 at a time while the customer scrolls (phase 11). */
+const cards = reactive(
+  useInfiniteList({
+    fetchPage: (page, size) =>
+      catalogApi.cards(props.game, props.setCode, { ...filters.value, master: masterMode.value || undefined, page, size }),
+    key: () => [props.game, props.setCode, filters.value, masterMode.value],
+    page: () => currentPage.value,
+  }),
+)
+
+// A set that doesn't exist already shows its message through loadSet.
+const cardsError = computed(() => (cards.error && cards.error.status !== 404 ? cards.error.message : ''))
 
 let latestStatsRequest = 0
 
@@ -148,7 +138,7 @@ async function loadStats() {
 
 function reload() {
   loadSet()
-  loadCards()
+  cards.refresh()
   loadStats()
 }
 
@@ -161,8 +151,8 @@ async function addPage() {
   addingPage.value = true
   pageMessage.value = ''
   try {
-    const { added } = await collectionApi.addBulk(cards.value.items.map((card) => card.id))
-    await Promise.all([loadCards(), loadStats()])
+    const { added } = await collectionApi.addBulk(cards.items.map((card) => card.id))
+    await Promise.all([cards.refresh(), loadStats()])
     if (added === 0) pageMessage.value = t('collection.set.addedNothing')
     else if (added === 1) pageMessage.value = t('collection.set.addedPageOne')
     else pageMessage.value = t('collection.set.addedPage', { count: added })
@@ -176,12 +166,10 @@ async function addPage() {
 watch(() => [props.game, props.setCode], loadSet, { immediate: true })
 watch(() => [props.game, props.setCode], loadStats, { immediate: true })
 watch(
-  () => [props.game, props.setCode, filters.value, masterMode.value, currentPage.value],
+  () => [props.game, props.setCode, filters.value, masterMode.value],
   () => {
     pageMessage.value = ''
-    loadCards()
   },
-  { immediate: true },
 )
 
 usePageMeta(() =>
@@ -224,7 +212,7 @@ usePageMeta(() =>
     </CatalogBand>
 
     <div class="container page">
-      <CatalogNotice v-if="error" :title="error">
+      <CatalogNotice v-if="error || cardsError" :title="error || cardsError">
         <button class="btn btn-secondary" type="button" @click="reload">{{ t('catalog.retry') }}</button>
       </CatalogNotice>
 
@@ -246,9 +234,9 @@ usePageMeta(() =>
           @clear="clearFilters"
         />
         <div class="list-head">
-          <p v-if="cards && !loadingCards" class="count" role="status">{{ cardCountLabel(cards.totalItems) }}</p>
+          <p v-if="cards.loaded && !cards.loading" class="count" role="status">{{ cardCountLabel(cards.totalItems) }}</p>
           <button
-            v-if="tracking && cards?.items.length && !loadingCards"
+            v-if="tracking && cards.items.length && !cards.loading"
             class="add-page"
             type="button"
             :disabled="addingPage"
@@ -259,10 +247,10 @@ usePageMeta(() =>
         </div>
         <FormMessage v-if="pageMessage" type="success" class="page-message">{{ pageMessage }}</FormMessage>
 
-        <CardGrid v-if="loadingCards || loadingSet" loading />
+        <CardGrid v-if="cards.loading || loadingSet" loading />
 
         <CatalogNotice
-          v-else-if="!cards?.items.length && hasFilters"
+          v-else-if="!cards.items.length && hasFilters"
           :title="t('catalog.empty.filterTitle')"
           :text="t('catalog.empty.filterText')"
         >
@@ -270,14 +258,14 @@ usePageMeta(() =>
         </CatalogNotice>
 
         <CatalogNotice
-          v-else-if="!cards?.items.length"
+          v-else-if="!cards.items.length"
           :title="t('catalog.empty.setTitle')"
           :text="t('catalog.empty.setText')"
         />
 
         <template v-else>
           <CardGrid :cards="cards.items" :master="masterMode" @change="onCollectionChange" />
-          <PageLinks :page="currentPage" :total-pages="cards.totalPages" />
+          <ListEnd :list="cards" />
         </template>
       </template>
       <AdSlot place="catalog" />

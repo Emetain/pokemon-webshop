@@ -1134,7 +1134,7 @@ export default {
       masterHint: 'Elke variant telt apart.',
       value: 'Waarde in deze set',
       missingList: 'Lijst van kaarten nog niet in bezit',
-      addPage: 'Alles op deze pagina toevoegen',
+      addPage: 'Alle getoonde kaarten toevoegen',
       addedPage: '{count} kaarten toegevoegd.',
       addedPageOne: '1 kaart toegevoegd.',
       addedNothing: 'Je had alle kaarten op deze pagina al.',

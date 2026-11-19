@@ -1,12 +1,12 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { BookOpen } from 'lucide-vue-next'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
 import NotFoundView from '../NotFoundView.vue'
-import PageLinks from '../../components/catalog/PageLinks.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import ProductFilters from '../../components/shop/ProductFilters.vue'
 import ProductGrid from '../../components/shop/ProductGrid.vue'
@@ -26,9 +26,8 @@ import { useShopNavigation } from '../../stores/shopNavigation'
 import { filterQuery, pageFromQuery } from '../../utils/catalog'
 import { formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { PAGE_SIZE, useInfiniteList } from '../../utils/infiniteList'
 import { usePageMeta } from '../../utils/pageMeta'
-
-const PAGE_SIZE = 24
 
 /**
  * Every list of products: a game, a kind of product in a game, a series or set, accessories, pre-orders, and
@@ -56,9 +55,9 @@ const props = defineProps({
 const router = useRouter()
 const { seriesByGame, loadSeries } = useShopNavigation()
 
+/** The first page's answer, for its facets: the languages to filter on. */
 const result = ref(null)
 const seriesDetail = ref(null)
-const loading = ref(true)
 const notFound = ref(false)
 /** A set logo that didn't load is left out, instead of showing a broken image. */
 const failedLogo = ref('')
@@ -172,33 +171,38 @@ const requestParams = computed(() => ({
   inStock: filters.value.stock || undefined,
   sale: filters.value.sale || undefined,
   preOrder: preOrderPage.value || filters.value.preorder || undefined,
-  page: currentPage.value - 1,
-  size: PAGE_SIZE,
 }))
 
-let latestRequest = 0
+const EMPTY = { items: [], totalItems: 0, totalPages: 0 }
 
-async function load() {
-  if (unknownPath.value) {
-    notFound.value = true
-    loading.value = false
-    return
-  }
-  const request = ++latestRequest
-  loading.value = true
-  notFound.value = false
-  error.value = ''
-  try {
-    const value = await shopApi.products(requestParams.value)
-    if (request === latestRequest) result.value = value
-  } catch (exception) {
-    if (request !== latestRequest) return
-    result.value = null
-    if (exception.status === 404) notFound.value = true
-    else error.value = exception.message
-  } finally {
-    if (request === latestRequest) loading.value = false
-  }
+/** The products, 25 at a time while the customer scrolls (phase 11). */
+const products = reactive(
+  useInfiniteList({
+    fetchPage: async (page, size) => {
+      if (unknownPath.value) return EMPTY
+      const value = await shopApi.products({ ...requestParams.value, page, size })
+      if (page === 0) result.value = value
+      return value.results
+    },
+    key: () => [unknownPath.value, requestParams.value],
+    page: () => currentPage.value,
+    pageSize: PAGE_SIZE,
+  }),
+)
+
+const loading = computed(() => products.loading)
+
+watch(
+  () => [unknownPath.value, products.error],
+  ([unknown, failure]) => {
+    notFound.value = unknown || failure?.status === 404
+    error.value = failure && failure.status !== 404 ? failure.message : ''
+  },
+  { immediate: true },
+)
+
+function load() {
+  products.refresh()
 }
 
 let latestSeriesRequest = 0
@@ -224,7 +228,6 @@ function onWished(product, wished) {
   product.wished = wished
 }
 
-watch(requestParams, load, { immediate: true, deep: true })
 watch(() => [props.game, props.series], loadSeriesDetail, { immediate: true })
 watch(
   () => props.game,
@@ -307,11 +310,11 @@ usePageMeta(() =>
 
         <template v-else>
           <div class="list-head">
-            <p v-if="result && !loading" class="count" role="status">
+            <p v-if="products.loaded && !loading" class="count" role="status">
               {{
-                result.results.totalItems === 1
+                products.totalItems === 1
                   ? t('shop.oneProduct')
-                  : t('shop.productCount', { count: formatNumber(result.results.totalItems) })
+                  : t('shop.productCount', { count: formatNumber(products.totalItems) })
               }}
             </p>
             <router-link
@@ -327,7 +330,7 @@ usePageMeta(() =>
           <ProductGrid v-if="loading" loading narrow />
 
           <CatalogNotice
-            v-else-if="!result?.results.items.length && hasFilters"
+            v-else-if="!products.items.length && hasFilters"
             :title="t('shop.empty.filterTitle')"
             :text="t('shop.empty.filterText')"
           >
@@ -335,7 +338,7 @@ usePageMeta(() =>
           </CatalogNotice>
 
           <CatalogNotice
-            v-else-if="!result?.results.items.length"
+            v-else-if="!products.items.length"
             :title="q ? t('shop.empty.filterTitle') : t('shop.empty.title')"
             :text="q ? t('shop.empty.searchText') : t('shop.empty.text')"
           >
@@ -346,8 +349,8 @@ usePageMeta(() =>
 
           <template v-else>
             <FormMessage v-if="error">{{ error }}</FormMessage>
-            <ProductGrid :products="result.results.items" narrow @wished="onWished" @error="error = $event" />
-            <PageLinks :page="currentPage" :total-pages="result.results.totalPages" />
+            <ProductGrid :products="products.items" narrow @wished="onWished" @error="error = $event" />
+            <ListEnd :list="products" />
           </template>
         </template>
       </section>

@@ -45,6 +45,27 @@ function gameShopRoutes() {
 // Leaves room for the sticky header above the element.
 const HASH_SCROLL_OFFSET = 160
 
+// How long the back button waits for a list to load again before it scrolls anyway.
+const RESTORE_WAIT_MS = 4000
+
+/**
+ * The back button returns to a list that loads again first (phase 11: lists keep loading). Scrolling right away would
+ * stop at the bottom of the skeleton, so this waits until nothing on the page is loading and there's room.
+ */
+function whenThereIsRoom(position) {
+  return new Promise((resolve) => {
+    const start = performance.now()
+    const check = () => {
+      const busy = document.querySelector('[aria-busy="true"]')
+      const room = document.documentElement.scrollHeight >= position.top + window.innerHeight
+      if ((!busy && room) || performance.now() - start > RESTORE_WAIT_MS) resolve(position)
+      else requestAnimationFrame(check)
+    }
+    // The new view mounts after this is called.
+    requestAnimationFrame(check)
+  })
+}
+
 /** Menu destinations that have no real page yet. */
 function placeholderPages() {
   return navDestinations().map(({ to, labelKey, game }) => placeholder(to.slice(1), labelKey, { game }))
@@ -53,7 +74,7 @@ function placeholderPages() {
 const router = createRouter({
   history: createWebHistory(),
   scrollBehavior(to, from, savedPosition) {
-    if (savedPosition) return savedPosition
+    if (savedPosition) return savedPosition.top > window.innerHeight ? whenThereIsRoom(savedPosition) : savedPosition
     return to.hash ? { el: to.hash, top: HASH_SCROLL_OFFSET } : { top: 0 }
   },
   routes: [
