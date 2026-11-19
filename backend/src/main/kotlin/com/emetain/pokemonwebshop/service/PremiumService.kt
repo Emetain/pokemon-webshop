@@ -88,6 +88,7 @@ class PremiumService(
     private val subscriptionRepository: PremiumSubscriptionRepository,
     private val gateway: SubscriptionGateway,
     private val transaction: TransactionTemplate,
+    private val salesGate: SalesGate,
     private val clock: Clock,
     properties: AppProperties,
 ) {
@@ -128,6 +129,8 @@ class PremiumService(
 
     /** Starts Stripe's payment page for Premium. Returns its address. */
     fun startCheckout(user: User, plan: PremiumPlan, consent: Boolean): String {
+        // Online without the preview login but not open yet, only admins may pay, and they have Premium already.
+        salesGate.requireCanOrder(user)
         if (!consent) throw ApiException.validation("Geef toestemming dat Premium direct begint.")
         if (!gateway.configured) {
             throw ApiException(HttpStatus.SERVICE_UNAVAILABLE, "payments_unavailable", "Online betalen staat nog uit.")

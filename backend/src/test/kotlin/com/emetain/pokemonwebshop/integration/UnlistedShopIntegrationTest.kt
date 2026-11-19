@@ -42,4 +42,11 @@ class UnlistedShopIntegrationTest : IntegrationTest() {
         mockMvc.perform(post("/v1/checkout").with(fromRandomIp()).cookie(loggedInUser(Role.ADMIN)).json(body))
             .andExpect(jsonPath("$.error").value(not("shop_not_open")))
     }
+
+    @Test
+    fun `nobody buys Premium with a test card before the shop opens`() {
+        mockMvc.perform(post("/v1/premium/checkout").with(fromRandomIp()).cookie(loggedInUser()).json(mapOf("plan" to "MONTHLY", "consent" to true)))
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.error").value("shop_not_open"))
+    }
 }

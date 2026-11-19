@@ -132,7 +132,8 @@ class PregradeService(
         private val INSTRUCTIONS = """
             You look at photos of one physical trading card (Pokémon, Magic: The Gathering, Disney Lorcana, One Piece or
             Riftbound) for a pre-grade indication in a Dutch card shop. You get the front first, then the back. You
-            never give a grade.
+            never give a grade. The card may be in a sleeve, a toploader or a graded slab: then the boxes are about the
+            card itself, never the holder's edges or a slab's label, and scratches on the holder are not the card's.
 
             For each side:
             - usable: true when the whole card is in the photo, sharp, and taken roughly straight from above.
