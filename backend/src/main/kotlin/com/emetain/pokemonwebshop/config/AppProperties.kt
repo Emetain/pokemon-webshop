@@ -8,10 +8,11 @@ import java.time.Duration
 import java.time.LocalDate
 
 /**
- * Who gets into the shop: the closed preview behind one shared login (the default), or everyone. Caddy reads the same
- * SHOP_ACCESS for the login and robots.txt; the backend uses it to only accept the Stripe key that fits.
+ * Who gets into the shop: the closed preview behind one shared login (the default), the site online without that login
+ * but not open yet (search engines kept out, only admins can order), or everyone. Caddy reads the same SHOP_ACCESS for
+ * the login and robots.txt; the backend uses it to only accept the Stripe key that fits, and for [SalesGate].
  */
-enum class ShopAccess { PREVIEW, OPEN }
+enum class ShopAccess { PREVIEW, UNLISTED, OPEN }
 
 /**
  * Whether the free card pages show other companies' ads: not at all (the default), or through Google AdSense. Caddy

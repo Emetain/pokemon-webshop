@@ -25,6 +25,10 @@ are in [phases/phase-10.md](phases/phase-10.md).
 
 ## Where things stand
 
+- **2026-11-19:** a third access mode, `SHOP_ACCESS=unlisted` (online without the shared login, search engines kept
+  out, only admins can order), on branch `feature/open-without-login`. See "Online without the login" in
+  [phases/phase-10.md](phases/phase-10.md).
+
 - **Branch:** `feature/phase-10-go-live`, made from `main` at `71b8d5d` (tag `phase-9`). Not pushed, not merged into
   `main`, no `phase-10` tag: the phase isn't done.
 - **The shop is still a closed preview** on the VPS, at `<ip-with-dashes>.sslip.io` behind the shared login. Nothing

@@ -5,14 +5,16 @@
 #
 #   preview  (the default) The closed preview of phase 7: one shared login for every page, and search engines are
 #            kept out with an X-Robots-Tag header and a robots.txt that disallows everything.
+#   unlisted Online without that login, but not open yet: search engines are kept out like in the preview, and the
+#            backend only lets admins order (SalesGate), so nobody "pays" with Stripe's test cards.
 #   open     The live shop: no login, and search engines get the shop's own robots.txt and sitemap.
 #
 # Ads are a second switch, ADS: "off" (the default) or "adsense". It only changes the Content-Security-Policy, which
 # has to let Google's ad scripts and frames in. The backend reads the same value and tells the app whether to show ads.
 #
 # Open the shop only after the legal check, with /opt/poketopia/bin/shop-access.sh (see docs/phases/phase-10.md).
-# Any other value stops Caddy from starting, so a typo never opens the shop. The lines that differ between the two
-# are the snippets marked "preview" below; everything else is the same for both.
+# Any other value stops Caddy from starting, so a typo never opens the shop. The lines that differ between the modes
+# are the snippets marked "preview" below and their "unlisted" and "open" twins; everything else is the same.
 
 # Security headers. Also used for the error pages below, because Caddy doesn't add them to an error by itself.
 (headers) {
@@ -46,6 +48,10 @@
 	header X-Robots-Tag "noindex, nofollow"
 }
 
+(unlisted_headers) {
+	header X-Robots-Tag "noindex, nofollow"
+}
+
 (open_headers) {
 }
 
@@ -62,6 +68,16 @@ Disallow: /
 	@login not path /robots.txt
 	basic_auth @login {
 		{$PREVIEW_USER} {$PREVIEW_PASSWORD_HASH}
+	}
+}
+
+# unlisted: the same robots.txt as the preview, without the login
+(unlisted_gate) {
+	handle /robots.txt {
+		header Content-Type "text/plain; charset=utf-8"
+		respond "User-agent: *
+Disallow: /
+"
 	}
 }
 

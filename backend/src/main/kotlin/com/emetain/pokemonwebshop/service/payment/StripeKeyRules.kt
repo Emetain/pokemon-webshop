@@ -4,7 +4,8 @@ import com.emetain.pokemonwebshop.config.ShopAccess
 
 /**
  * Which Stripe key fits how open the shop is (`SHOP_ACCESS`). A live key in the closed preview would take real money
- * while Stripe's webhooks can't get past the preview login, so paid orders would stay unpaid. A test key in the open
+ * while Stripe's webhooks can't get past the preview login, so paid orders would stay unpaid; online without the login
+ * but not open yet (`unlisted`) the shop isn't ready to take real money either. A test key in the open
  * shop would let customers "pay" with Stripe's test cards and get their order. Either way the shop keeps online
  * payment off, logs why, and the admin dashboard says so.
  */
@@ -17,8 +18,8 @@ object StripeKeyRules {
     ) {
         LIVE_KEY_IN_PREVIEW(
             "live_key_in_preview",
-            "STRIPE_SECRET_KEY is a live key, but SHOP_ACCESS is preview: Stripe's webhooks can't get past the preview " +
-                "login, so online payment stays off. Use a test key in the preview, or open the shop.",
+            "STRIPE_SECRET_KEY is a live key, but SHOP_ACCESS isn't open: the shop doesn't take real money before it " +
+                "opens, so online payment stays off. Use a test key until then, or open the shop.",
         ),
         TEST_KEY_IN_OPEN_SHOP(
             "test_key_in_open_shop",
@@ -32,7 +33,7 @@ object StripeKeyRules {
         if (secretKey.isBlank()) return null
         val live = LIVE_PREFIXES.any { secretKey.trim().startsWith(it) }
         return when {
-            access == ShopAccess.PREVIEW && live -> Problem.LIVE_KEY_IN_PREVIEW
+            access != ShopAccess.OPEN && live -> Problem.LIVE_KEY_IN_PREVIEW
             access == ShopAccess.OPEN && !live -> Problem.TEST_KEY_IN_OPEN_SHOP
             else -> null
         }

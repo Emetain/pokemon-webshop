@@ -78,7 +78,7 @@ Keep API keys on the backend. Anything in a `VITE_` variable ends up in the brow
 | `AUTH_COOKIE_SECURE` | off locally, on in `prod` | `Secure` flag of the session cookie |
 | `FORWARD_HEADERS_STRATEGY` | `none` | `native` behind a proxy, so rate limits see the visitor's address |
 | `SEO_INDEX_FILE` | empty; `/app/index.html` in `prod` | The built `index.html` the backend fills in for link previews |
-| `SHOP_ACCESS` | `preview` | `preview` or `open`: the one switch that opens the shop, see [Preview server and deploys](#preview-server-and-deploys). The backend only takes a Stripe test key with `preview` and a live key with `open` |
+| `SHOP_ACCESS` | `preview` | `preview`, `unlisted` or `open`: the one switch that opens the shop, see [Preview server and deploys](#preview-server-and-deploys). The backend only takes a Stripe test key before `open` and a live key with `open`; with `unlisted` only admins can order |
 | `ADS`, `ADSENSE_CLIENT`, `ADSENSE_SLOT_CATALOG`, `ADSENSE_SLOT_CONTENT` | `off`, empty | Google AdSense on the free card and news pages: `off` or `adsense`, the publisher id and the ad units |
 | `COMPANY_LEGAL_NAME`, `COMPANY_ADDRESS`, `COMPANY_KVK_NUMBER`, `COMPANY_VAT_NUMBER` | empty | The business details in the footer; empty shows nothing |
 | `CHECKOUT_MAX_OPEN_PER_CUSTOMER`, `CHECKOUT_MAX_OPEN_PER_IP` | `2`, `5` | Checkouts waiting for payment at once, see [Orders and payments](#orders-and-payments) |
@@ -230,7 +230,8 @@ search engines and link previews, which don't run JavaScript, the backend serves
 `/api/v1/seo/robots.txt`, and the product, drop and news pages as `index.html` with their title, text and picture
 filled in. Caddy sends `/sitemap.xml`, `/robots.txt`, `/product/…`, `/drops/…` and `/nieuws/…` there. A drop's preview
 never shows a price or stock. When the backend doesn't answer, those pages get Caddy's own `index.html` with 503, so the
-app still loads. While `SHOP_ACCESS=preview`, Caddy's own robots.txt keeps everyone out; `open` uses the backend's.
+app still loads. While `SHOP_ACCESS` is `preview` or `unlisted`, Caddy's own robots.txt keeps everyone out; `open` uses
+the backend's.
 
 ## Limits
 
@@ -249,8 +250,10 @@ When both pass, the images go to GitHub's container registry and the server star
 version by itself when the new one doesn't get healthy or a product page doesn't come back as the app.
 
 Opening the shop is one switch, `SHOP_ACCESS` in the server's `.env`: `preview` (the default) keeps the login, the
-`X-Robots-Tag: noindex` header and the "keep out" robots.txt; `open` drops all three. Any other value stops Caddy
-instead of opening the shop. Change it only with `/opt/poketopia/bin/shop-access.sh open`, which refuses while the
+`X-Robots-Tag: noindex` header and the "keep out" robots.txt; `unlisted` drops only the login, and only admins can order
+(`SalesGate`), so nobody pays with Stripe's test cards; `open` drops all three. Any other value stops Caddy instead of
+opening the shop. `/opt/poketopia/bin/shop-access.sh unlisted` switches to the middle one (it refuses a live Stripe
+key). Change it only with `/opt/poketopia/bin/shop-access.sh open`, which refuses while the
 domain, a live Stripe key, real mail or the KVK number are missing and asks to confirm the legal check. Everything the
 owner still has to bring for that, in order, is in [docs/phases/phase-10.md](docs/phases/phase-10.md).
 

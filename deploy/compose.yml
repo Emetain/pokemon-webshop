@@ -1,4 +1,5 @@
-# The shop on the server: the closed preview of phase 7, and the live shop once SHOP_ACCESS=open (phase 10).
+# The shop on the server: the closed preview of phase 7, online without its login (SHOP_ACCESS=unlisted), and the
+# live shop once SHOP_ACCESS=open (phase 10).
 #
 # Don't run this file by hand on the server: deploy.sh sets IMAGE_TAG to the commit, and compose.sh runs commands on
 # the version that is live. Every version carries its own copy of this file inside its web image, so a deploy and a

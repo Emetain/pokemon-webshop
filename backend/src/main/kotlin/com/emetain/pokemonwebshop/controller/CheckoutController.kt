@@ -24,7 +24,7 @@ class CheckoutController(
 ) {
 
     @GetMapping("/options")
-    fun options(): CheckoutOptionsDto = checkoutOrchestrator.options()
+    fun options(@CurrentUser viewer: User?): CheckoutOptionsDto = checkoutOrchestrator.options(viewer)
 
     /** Reserves the stock and returns the Stripe page to send the customer to. */
     @PostMapping

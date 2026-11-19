@@ -3,6 +3,7 @@
 #
 #   shop-access.sh status    how the shop is set up now, and what opening it still needs
 #   shop-access.sh open      checks the settings, asks you to confirm the legal check, then opens the shop
+#   shop-access.sh unlisted  online without the shared login, but not open: search engines kept out, only admins order
 #   shop-access.sh preview   back to the closed preview: the shared login and "keep out" for search engines
 #
 # It changes one line in /opt/poketopia/.env (SHOP_ACCESS) and restarts the containers that read it, which takes the
@@ -88,7 +89,7 @@ set_access() {
   if grep -qE '^SHOP_ACCESS=' "$ENV_FILE"; then
     sed -i "s/^SHOP_ACCESS=.*/SHOP_ACCESS=$new/" "$ENV_FILE"
   else
-    printf '\n# Who gets in: preview or open. Change it with shop-access.sh.\nSHOP_ACCESS=%s\n' "$new" >>"$ENV_FILE"
+    printf '\n# Who gets in: preview, unlisted or open. Change it with shop-access.sh.\nSHOP_ACCESS=%s\n' "$new" >>"$ENV_FILE"
   fi
   # sed -i writes a new file: keep it readable for the deploy user only.
   chown deploy:deploy "$ENV_FILE"
@@ -134,6 +135,22 @@ case ${1:-} in
     echo "The shop is open. Next: place a small real order with iDEAL and refund it from admin (phase-10.md)."
     ;;
 
+  unlisted)
+    if [[ $(stripe_mode "$(value STRIPE_SECRET_KEY)") == live ]]; then
+      echo "STRIPE_SECRET_KEY is a live key: put the test key back first, the shop isn't open yet." >&2
+      exit 1
+    fi
+    echo "This puts the site online without the shared login. Anyone with the address can look around and make an"
+    echo "account. Search engines are still asked to stay out, and only admins can order or pay (Stripe test mode)."
+    read -r -p "Type 'without login' to go on: " answer
+    [[ $answer == "without login" ]] || { echo "Nothing changed."; exit 1; }
+    set_access unlisted
+    site=$(value SITE_ADDRESS)
+    echo "Home page without a login: $(answer_of "https://$site/") (should be 200)"
+    echo "robots.txt keeps search engines out: $(curl --silent --max-time 15 "https://$site/robots.txt" | grep -c '^Disallow: /$' || true) (should be 1)"
+    echo "Online without the login. Back behind it: shop-access.sh preview"
+    ;;
+
   preview)
     set_access preview
     echo "Home page without a login: $(answer_of "https://$(value SITE_ADDRESS)/") (should be 401)"
@@ -141,7 +158,7 @@ case ${1:-} in
     ;;
 
   *)
-    echo "usage: shop-access.sh status | open | preview" >&2
+    echo "usage: shop-access.sh status | open | unlisted | preview" >&2
     exit 2
     ;;
 esac

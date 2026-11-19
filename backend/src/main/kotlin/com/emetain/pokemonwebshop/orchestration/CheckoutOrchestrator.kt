@@ -14,6 +14,7 @@ import com.emetain.pokemonwebshop.service.CheckoutService
 import com.emetain.pokemonwebshop.service.OpenCheckoutService
 import com.emetain.pokemonwebshop.service.OrderPaymentService
 import com.emetain.pokemonwebshop.service.PaymentMethods
+import com.emetain.pokemonwebshop.service.SalesGate
 import com.emetain.pokemonwebshop.service.ShippingRateService
 import com.emetain.pokemonwebshop.service.payment.CheckoutRequest
 import com.emetain.pokemonwebshop.service.payment.PaymentDiscount
@@ -36,12 +37,14 @@ class CheckoutOrchestrator(
     private val shippingRateService: ShippingRateService,
     private val orderRepository: OrderRepository,
     private val gateway: PaymentGateway,
+    private val salesGate: SalesGate,
     private val properties: AppProperties,
     private val clock: Clock,
 ) {
 
-    fun options(): CheckoutOptionsDto = CheckoutOptionsDto(
+    fun options(viewer: User?): CheckoutOptionsDto = CheckoutOptionsDto(
         paymentsEnabled = gateway.configured,
+        canOrder = salesGate.canOrder(viewer),
         countries = shippingRateService.all().filter { it.active }.map {
             CheckoutCountryDto(it.country, it.priceCents, it.freeFromCents, it.deliveryTime, PaymentMethods.forCountry(it.country))
         },
@@ -53,6 +56,7 @@ class CheckoutOrchestrator(
      * that wasn't paid is closed first, so a customer who goes back and tries again doesn't block their own stock.
      */
     fun start(viewer: User?, httpRequest: HttpServletRequest, request: StartCheckoutRequest): CheckoutStartDto {
+        salesGate.requireCanOrder(viewer)
         if (!gateway.configured) {
             throw ApiException(HttpStatus.SERVICE_UNAVAILABLE, "payments_unavailable", "Online betalen is nog niet ingesteld. Probeer het later opnieuw.")
         }
