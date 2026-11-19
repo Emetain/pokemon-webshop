@@ -1,39 +1,34 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import FormMessage from '../../components/FormMessage.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import { adminShopApi } from '../../services/api'
 import { reasonLabel, signed } from '../../utils/admin'
 import { formatDateTime, formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { useAdminList } from '../../utils/infiniteList'
 
 const low = ref(null)
-const movements = ref(null)
-const page = ref(0)
-const error = ref('')
+const lowError = ref('')
 
 async function loadLow() {
   try {
     low.value = await adminShopApi.lowStock()
   } catch (exception) {
-    error.value = exception.message
+    lowError.value = exception.message
   }
 }
 
-async function loadMovements() {
-  try {
-    movements.value = await adminShopApi.latestMovements(page.value)
-  } catch (exception) {
-    error.value = exception.message
-  }
-}
-
-function goTo(number) {
-  page.value = number
-  loadMovements()
-}
+/** More movements load while scrolling (phase 11). */
+const movements = useAdminList({
+  fetchPage: (page) => adminShopApi.latestMovements(page),
+  key: () => 'latest',
+  page: () => 1,
+  syncUrl: false,
+})
+const error = computed(() => lowError.value || movements.error?.message || '')
 
 loadLow()
-loadMovements()
 </script>
 
 <template>
@@ -70,8 +65,8 @@ loadMovements()
 
   <section class="admin-panel" aria-labelledby="stock-latest">
     <h2 id="stock-latest">{{ t('admin.stock.latestTitle') }}</h2>
-    <p v-if="movements && !movements.items.length" class="empty">{{ t('admin.stock.latestEmpty') }}</p>
-    <div v-else-if="movements" class="admin-table-scroll">
+    <p v-if="movements.loaded && !movements.items.length" class="empty">{{ t('admin.stock.latestEmpty') }}</p>
+    <div v-else-if="movements.items.length" class="admin-table-scroll">
       <table class="admin-table">
         <thead>
           <tr>
@@ -96,15 +91,7 @@ loadMovements()
         </tbody>
       </table>
     </div>
-    <div v-if="movements && movements.totalPages > 1" class="admin-actions">
-      <button class="link-button" type="button" :disabled="page === 0" @click="goTo(page - 1)">
-        {{ t('catalog.pagination.previous') }}
-      </button>
-      <span class="admin-hint">{{ t('catalog.pagination.page', { page: page + 1 }) }} / {{ movements.totalPages }}</span>
-      <button class="link-button" type="button" :disabled="page + 1 >= movements.totalPages" @click="goTo(page + 1)">
-        {{ t('catalog.pagination.next') }}
-      </button>
-    </div>
+    <ListEnd v-if="movements.items.length" :list="movements" />
   </section>
 </template>
 

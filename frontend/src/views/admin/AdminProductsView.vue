@@ -2,7 +2,7 @@
 import { computed, ref, useId, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus } from 'lucide-vue-next'
-import PageLinks from '../../components/catalog/PageLinks.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import { GAMES } from '../../data/games'
 import { PRODUCT_TYPES, accessoryLabel, languageLabel, typeLabel } from '../../data/shop'
@@ -11,6 +11,7 @@ import { statusLabel } from '../../utils/admin'
 import { filterQuery, pageFromQuery } from '../../utils/catalog'
 import { formatMoney, formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { useAdminList } from '../../utils/infiniteList'
 
 const SEARCH_DELAY_MS = 350
 const PAGE_SIZES = [25, 50, 100]
@@ -41,9 +42,6 @@ const ids = {
   size: useId(),
 }
 
-const products = ref(null)
-const loading = ref(false)
-const error = ref('')
 const searchText = ref(props.q)
 
 const pageSize = computed(() => (PAGE_SIZES.includes(Number(props.size)) ? Number(props.size) : PAGE_SIZES[0]))
@@ -96,21 +94,14 @@ function clear() {
   router.push({ query: filterQuery({ sort: props.sort, size: props.size }) })
 }
 
-let latestRequest = 0
-
-async function load() {
-  const request = ++latestRequest
-  loading.value = true
-  error.value = ''
-  try {
-    const result = await adminShopApi.products({ ...values.value, size: pageSize.value, page: currentPage.value - 1 })
-    if (request === latestRequest) products.value = result
-  } catch (exception) {
-    if (request === latestRequest) error.value = exception.message
-  } finally {
-    if (request === latestRequest) loading.value = false
-  }
-}
+/** More products load while scrolling (phase 11); the size is how many per load. */
+const products = useAdminList({
+  fetchPage: (page) => adminShopApi.products({ ...values.value, size: pageSize.value, page }),
+  key: () => values.value,
+  page: () => currentPage.value,
+})
+const loading = computed(() => products.loading)
+const error = computed(() => products.error?.message ?? '')
 
 const kindOf = (product) => (product.accessoryType ? accessoryLabel(product.accessoryType) : typeLabel(product.type))
 
@@ -120,12 +111,10 @@ const gameLabel = (slug) => {
 }
 
 const countText = computed(() =>
-  products.value?.totalItems === 1
+  products.totalItems === 1
     ? t('admin.products.oneCount')
-    : t('admin.products.count', { count: formatNumber(products.value?.totalItems ?? 0) }),
+    : t('admin.products.count', { count: formatNumber(products.totalItems ?? 0) }),
 )
-
-watch(() => [values.value, currentPage.value], load, { immediate: true, deep: true })
 </script>
 
 <template>
@@ -209,7 +198,7 @@ watch(() => [values.value, currentPage.value], load, { immediate: true, deep: tr
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
 
   <div class="list-bar">
-    <p v-if="products" class="count" role="status">{{ countText }}</p>
+    <p v-if="products.loaded" class="count" role="status">{{ countText }}</p>
     <label class="per-page">
       {{ t('admin.products.perPage') }}
       <select :id="ids.size" v-model="sizeFilter" class="admin-input">
@@ -218,12 +207,12 @@ watch(() => [values.value, currentPage.value], load, { immediate: true, deep: tr
     </label>
   </div>
 
-  <p v-if="loading && !products" class="count">{{ t('admin.images.loading') }}</p>
-  <p v-else-if="products && !products.items.length" class="count">
+  <p v-if="loading && !products.items.length" class="count">{{ t('admin.images.loading') }}</p>
+  <p v-else-if="products.loaded && !products.items.length" class="count">
     {{ hasFilters ? t('admin.products.noResults') : t('admin.products.empty') }}
   </p>
 
-  <div v-else-if="products" class="admin-table-scroll" :aria-busy="loading">
+  <div v-else-if="products.items.length" class="admin-table-scroll" :aria-busy="loading">
     <table class="admin-table">
       <thead>
         <tr>
@@ -277,7 +266,7 @@ watch(() => [values.value, currentPage.value], load, { immediate: true, deep: tr
     </table>
   </div>
 
-  <PageLinks v-if="products" :page="currentPage" :total-pages="products.totalPages" />
+  <ListEnd v-if="products.items.length" :list="products" />
 </template>
 
 <style scoped>

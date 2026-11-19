@@ -3,11 +3,12 @@ import { computed, ref, useId, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { RotateCcw, Upload } from 'lucide-vue-next'
 import CardImage from '../../components/catalog/CardImage.vue'
-import PageLinks from '../../components/catalog/PageLinks.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import { GAMES } from '../../data/games'
 import { adminApi, catalogApi } from '../../services/api'
 import { dexLabel, filterQuery, pageFromQuery } from '../../utils/catalog'
+import { useAdminList } from '../../utils/infiniteList'
 import { formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
@@ -31,9 +32,9 @@ const props = defineProps({
 const router = useRouter()
 const ids = { search: useId(), game: useId(), set: useId(), image: useId(), sort: useId(), size: useId() }
 
-const cards = ref(null)
 const sets = ref([])
-const loading = ref(false)
+/** Goes up when the sets of another game have arrived, so their list starts over. */
+const setsVersion = ref(0)
 const busyItem = ref(null)
 const error = ref('')
 const message = ref('')
@@ -58,7 +59,7 @@ const countLabel = (count, one, many) => (count === 1 ? t(one) : t(many, { count
 
 const countText = computed(() => {
   if (showingSets.value) return countLabel(matchingSets.value.length, 'admin.images.oneSet', 'admin.images.setCount')
-  return cards.value && !loading.value ? countLabel(cards.value.totalItems, 'admin.images.oneCard', 'admin.images.cardCount') : ''
+  return cards.loaded && !loading.value ? countLabel(cards.totalItems, 'admin.images.oneCard', 'admin.images.cardCount') : ''
 })
 
 /** Changes the URL. Leaving out the page starts at page 1, because the list has changed. The default size stays out of the URL. */
@@ -99,33 +100,39 @@ const matchingSets = computed(() => {
   })
 })
 
-const setPages = computed(() => Math.max(Math.ceil(matchingSets.value.length / pageSize.value), 1))
-const shownSets = computed(() =>
-  matchingSets.value.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value),
-)
+const EMPTY = { items: [], totalItems: 0, totalPages: 0 }
 
-let latestCards = 0
-
-async function loadCards() {
-  const request = ++latestCards
-  loading.value = true
-  try {
-    const result = await adminApi.imageCards({
+/** The cards, more while scrolling (phase 11). */
+const cards = useAdminList({
+  fetchPage: async (page) => {
+    if (showingSets.value) return EMPTY
+    return adminApi.imageCards({
       q: props.q,
       game: props.game,
       set: props.set,
       image: props.image,
       sort: props.sort,
       size: pageSize.value,
-      page: currentPage.value - 1,
+      page,
     })
-    if (request === latestCards) cards.value = result
-  } catch (exception) {
-    if (request === latestCards) error.value = exception.message
-  } finally {
-    if (request === latestCards) loading.value = false
-  }
-}
+  },
+  key: () => [props.kind, props.q, props.game, props.set, props.image, props.sort, pageSize.value],
+  page: () => currentPage.value,
+})
+const loading = computed(() => cards.loading)
+
+/** The sets come from the catalog all at once, and still show a page at a time while scrolling, like the cards. */
+const setList = useAdminList({
+  fetchPage: async (page) => {
+    if (!showingSets.value) return EMPTY
+    const all = matchingSets.value
+    const size = pageSize.value
+    return { items: all.slice(page * size, (page + 1) * size), totalItems: all.length, totalPages: Math.ceil(all.length / size) }
+  },
+  key: () => [props.kind, setGame.value, props.q, props.image, pageSize.value, setsVersion.value],
+  page: () => currentPage.value,
+})
+const listError = computed(() => cards.error?.message || setList.error?.message || '')
 
 let latestSets = 0
 
@@ -138,7 +145,10 @@ async function loadSets() {
   const request = ++latestSets
   try {
     const result = await catalogApi.sets(game)
-    if (request === latestSets) sets.value = result
+    if (request === latestSets) {
+      sets.value = result
+      setsVersion.value += 1
+    }
   } catch (exception) {
     if (request === latestSets) error.value = exception.message
   }
@@ -218,14 +228,6 @@ watch(() => props.q, (value) => {
   if (value !== searchText.value.trim()) searchText.value = value
 })
 
-watch(
-  () => [props.kind, props.q, props.game, props.set, props.image, props.sort, pageSize.value, currentPage.value],
-  () => {
-    if (!showingSets.value) loadCards()
-  },
-  { immediate: true },
-)
-
 watch([() => props.kind, setGame], loadSets, { immediate: true })
 </script>
 
@@ -302,7 +304,7 @@ watch([() => props.kind, setGame], loadSets, { immediate: true })
 
   <p v-if="!showingSets && image === 'missing'" class="hint">{{ t('admin.images.missingHint') }}</p>
 
-  <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
+  <FormMessage v-if="error || listError" class="message">{{ error || listError }}</FormMessage>
   <FormMessage v-if="message" class="message" type="success">{{ message }}</FormMessage>
 
   <div class="list-bar">
@@ -316,10 +318,10 @@ watch([() => props.kind, setGame], loadSets, { immediate: true })
   </div>
 
   <template v-if="!showingSets">
-    <p v-if="loading && !cards" class="hint" role="status">{{ t('admin.images.loading') }}</p>
-    <p v-else-if="cards && !cards.items.length" class="hint">{{ t('admin.images.noResults') }}</p>
+    <p v-if="loading && !cards.items.length" class="hint" role="status">{{ t('admin.images.loading') }}</p>
+    <p v-else-if="cards.loaded && !cards.items.length" class="hint">{{ t('admin.images.noResults') }}</p>
 
-    <ul v-else-if="cards" class="items" :aria-busy="loading">
+    <ul v-else-if="cards.items.length" class="items" :aria-busy="loading">
       <li v-for="card in cards.items" :key="card.id" class="item">
         <CardImage class="thumb" :src="card.imageUrl" :alt="card.name" />
         <div class="text">
@@ -354,14 +356,14 @@ watch([() => props.kind, setGame], loadSets, { immediate: true })
         </div>
       </li>
     </ul>
-    <PageLinks v-if="cards" :page="currentPage" :total-pages="cards.totalPages" />
+    <ListEnd v-if="cards.items.length" :list="cards" />
   </template>
 
   <template v-else>
-    <p v-if="!shownSets.length" class="hint">{{ t('admin.images.noResults') }}</p>
+    <p v-if="setList.loaded && !setList.loading && !setList.items.length" class="hint">{{ t('admin.images.noResults') }}</p>
 
     <ul v-else class="items">
-      <li v-for="item in shownSets" :key="item.code" class="item">
+      <li v-for="item in setList.items" :key="item.code" class="item">
         <span class="logo-box">
           <img v-if="item.logoUrl" class="logo" :src="item.logoUrl" alt="" loading="lazy" decoding="async" />
           <span v-else class="code">{{ item.code }}</span>
@@ -398,7 +400,7 @@ watch([() => props.kind, setGame], loadSets, { immediate: true })
         </div>
       </li>
     </ul>
-    <PageLinks :page="currentPage" :total-pages="setPages" />
+    <ListEnd v-if="setList.items.length" :list="setList" />
   </template>
 </template>
 

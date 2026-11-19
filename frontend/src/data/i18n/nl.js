@@ -2283,9 +2283,7 @@ export default {
       use: 'Deze gebruiken',
       none: 'Geen van deze',
       enlarge: 'Groot bekijken',
-      previous: 'Vorige',
-      next: 'Volgende',
-      page: 'Pagina {page} van {total} ({count} in totaal)',
+      total: '{count} twijfelgevallen in totaal',
     },
     images: {
       nav: 'Afbeeldingen',
@@ -2354,9 +2352,6 @@ export default {
       reset: 'Terug naar automatisch',
       resetHint: 'De volgende sync kiest dan zelf weer.',
       saved: '{name} is gekoppeld.',
-      previous: 'Vorige',
-      next: 'Volgende',
-      page: 'Pagina {page} van {total}',
       source: {
         CARDMARKET: 'Cardmarket',
         TCGPLAYER: 'TCGplayer',

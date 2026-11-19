@@ -1,16 +1,18 @@
 <script setup>
-import { ref, useId, watch } from 'vue'
+import { computed, ref, useId } from 'vue'
 import FormMessage from '../FormMessage.vue'
+import ListEnd from '../catalog/ListEnd.vue'
 import { adminShopApi } from '../../services/api'
 import { reasonLabel, signed } from '../../utils/admin'
 import { formatDateTime, formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { useAdminList } from '../../utils/infiniteList'
 
 const REASONS = ['PURCHASE', 'RETURN', 'CORRECTION']
 
 /**
  * The stock of one product: change it with a reason, set a counted number, and the log of every change.
- * The log pages with buttons, so its page doesn't end up in the URL of the product form.
+ * The log loads on while scrolling (phase 11), without its depth in the URL of the product form.
  */
 const props = defineProps({
   productId: { type: Number, required: true },
@@ -28,30 +30,27 @@ const count = ref('')
 const countNote = ref('')
 const busy = ref(false)
 const message = ref('')
-const error = ref('')
-const movements = ref(null)
-const page = ref(0)
+const actionError = ref('')
 
-async function loadMovements() {
-  try {
-    movements.value = await adminShopApi.movements(props.productId, page.value)
-  } catch (exception) {
-    error.value = exception.message
-  }
-}
+const movements = useAdminList({
+  fetchPage: (page) => adminShopApi.movements(props.productId, page),
+  key: () => props.productId,
+  page: () => 1,
+  syncUrl: false,
+})
+const error = computed(() => actionError.value || movements.error?.message || '')
 
 async function submit(action, done) {
   busy.value = true
   message.value = ''
-  error.value = ''
+  actionError.value = ''
   try {
     const result = await action()
     emit('change', result.stock)
     message.value = done(result)
-    page.value = 0
-    await loadMovements()
+    await movements.reset(1)
   } catch (exception) {
-    error.value = exception.message
+    actionError.value = exception.message
   } finally {
     busy.value = false
   }
@@ -60,7 +59,7 @@ async function submit(action, done) {
 function adjust() {
   const amount = Number.parseInt(change.value, 10)
   if (!Number.isFinite(amount)) {
-    error.value = t('admin.stock.changeHint')
+    actionError.value = t('admin.stock.changeHint')
     return
   }
   submit(
@@ -76,7 +75,7 @@ function adjust() {
 function setCount() {
   const amount = Number.parseInt(count.value, 10)
   if (!Number.isFinite(amount) || amount < 0) {
-    error.value = t('admin.stock.countHint')
+    actionError.value = t('admin.stock.countHint')
     return
   }
   submit(
@@ -89,15 +88,7 @@ function setCount() {
   )
 }
 
-function goTo(number) {
-  page.value = number
-  loadMovements()
-}
 
-watch(() => props.productId, () => {
-  page.value = 0
-  loadMovements()
-}, { immediate: true })
 </script>
 
 <template>
@@ -167,8 +158,8 @@ watch(() => props.productId, () => {
     <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
 
     <h3 class="form-title history-title">{{ t('admin.stock.history') }}</h3>
-    <p v-if="movements && !movements.items.length" class="admin-hint">{{ t('admin.stock.historyEmpty') }}</p>
-    <div v-else-if="movements" class="admin-table-scroll">
+    <p v-if="movements.loaded && !movements.items.length" class="admin-hint">{{ t('admin.stock.historyEmpty') }}</p>
+    <div v-else-if="movements.items.length" class="admin-table-scroll">
       <table class="admin-table">
         <thead>
           <tr>
@@ -195,15 +186,7 @@ watch(() => props.productId, () => {
         </tbody>
       </table>
     </div>
-    <div v-if="movements && movements.totalPages > 1" class="admin-actions">
-      <button class="link-button" type="button" :disabled="page === 0" @click="goTo(page - 1)">
-        {{ t('catalog.pagination.previous') }}
-      </button>
-      <span class="admin-hint">{{ t('catalog.pagination.page', { page: page + 1 }) }} / {{ movements.totalPages }}</span>
-      <button class="link-button" type="button" :disabled="page + 1 >= movements.totalPages" @click="goTo(page + 1)">
-        {{ t('catalog.pagination.next') }}
-      </button>
-    </div>
+    <ListEnd v-if="movements.items.length" :list="movements" />
   </section>
 </template>
 

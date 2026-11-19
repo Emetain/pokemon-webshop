@@ -2,10 +2,12 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ChevronLeft, ExternalLink, Search } from 'lucide-vue-next'
 import FormMessage from '../../components/FormMessage.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import { GAMES, findGame } from '../../data/games'
 import { adminPictureApi } from '../../services/api'
 import { formatDateTime, formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { useAdminList } from '../../utils/infiniteList'
 
 /**
  * Pictures from TCGplayer for cards and products without one. A search per game fills in the sure matches by itself
@@ -14,11 +16,9 @@ import { t } from '../../utils/i18n'
 const POLL_MS = 3000
 
 const overview = ref([])
-const suggestions = ref(null)
 const gameFilter = ref('')
-const page = ref(0)
 const busyId = ref(null)
-const error = ref('')
+const actionError = ref('')
 let poll = null
 
 const running = computed(() => overview.value.some((row) => row.search?.running))
@@ -28,7 +28,7 @@ async function loadOverview() {
   try {
     overview.value = await adminPictureApi.overview()
   } catch (exception) {
-    error.value = exception.message
+    actionError.value = exception.message
   }
   clearTimeout(poll)
   if (running.value) poll = setTimeout(refreshWhileRunning, POLL_MS)
@@ -40,34 +40,43 @@ async function refreshWhileRunning() {
   if (!running.value) loadSuggestions()
 }
 
-async function loadSuggestions() {
-  try {
-    suggestions.value = await adminPictureApi.suggestions({ game: gameFilter.value || undefined, page: page.value })
-  } catch (exception) {
-    error.value = exception.message
-  }
+/** The doubtful pictures, more while scrolling (phase 11). The game filter isn't in the URL, so neither is the depth. */
+const suggestions = useAdminList({
+  fetchPage: async (page) => {
+    const result = await adminPictureApi.suggestions({ game: gameFilter.value || undefined, page })
+    return { items: result.suggestions, totalPages: result.totalPages, totalItems: result.total }
+  },
+  key: () => [gameFilter.value],
+  page: () => 1,
+  syncUrl: false,
+})
+const error = computed(() => actionError.value || suggestions.error?.message || '')
+
+function loadSuggestions() {
+  return suggestions.refresh()
 }
 
 async function start(game) {
-  error.value = ''
+  actionError.value = ''
   try {
     await adminPictureApi.start(game)
     await loadOverview()
   } catch (exception) {
-    error.value = exception.message
+    actionError.value = exception.message
   }
 }
 
 async function decide(suggestion, action) {
   busyId.value = suggestion.id
-  error.value = ''
+  actionError.value = ''
   try {
     await action()
-    suggestions.value.suggestions = suggestions.value.suggestions.filter((item) => item.id !== suggestion.id)
-    if (!suggestions.value.suggestions.length) await loadSuggestions()
+    // Gone from the list at once; the reload keeps the pages after it in step with the server.
+    suggestions.items = suggestions.items.filter((item) => item.id !== suggestion.id)
+    loadSuggestions()
     loadOverview()
   } catch (exception) {
-    error.value = exception.message
+    actionError.value = exception.message
   } finally {
     busyId.value = null
   }
@@ -78,16 +87,7 @@ function detail(suggestion) {
   return suggestion.detail ? t(`shop.types.${suggestion.detail}`) : ''
 }
 
-watch(gameFilter, () => {
-  page.value = 0
-  loadSuggestions()
-})
-watch(page, loadSuggestions)
-
-onMounted(() => {
-  loadOverview()
-  loadSuggestions()
-})
+onMounted(loadOverview)
 
 onBeforeUnmount(() => clearTimeout(poll))
 </script>
@@ -154,9 +154,11 @@ onBeforeUnmount(() => clearTimeout(poll))
       </label>
     </div>
 
-    <p v-if="suggestions && !suggestions.suggestions.length" class="admin-intro">{{ t('admin.pictures.reviewEmpty') }}</p>
-    <ul v-else-if="suggestions" class="suggestions">
-      <li v-for="suggestion in suggestions.suggestions" :key="suggestion.id" class="suggestion admin-panel">
+    <p v-if="suggestions.loaded && !suggestions.loading && !suggestions.items.length" class="admin-intro">
+      {{ t('admin.pictures.reviewEmpty') }}
+    </p>
+    <ul v-else-if="suggestions.items.length" class="suggestions">
+      <li v-for="suggestion in suggestions.items" :key="suggestion.id" class="suggestion admin-panel">
         <div class="ours">
           <p class="name">
             <router-link v-if="suggestion.productId" :to="`/admin/producten/${suggestion.productId}`">{{ suggestion.name }}</router-link>
@@ -186,11 +188,10 @@ onBeforeUnmount(() => clearTimeout(poll))
         </ul>
       </li>
     </ul>
-    <div v-if="suggestions?.totalPages > 1" class="pages">
-      <button class="btn btn-secondary btn-small" type="button" :disabled="page === 0" @click="page--">{{ t('admin.pictures.previous') }}</button>
-      <span class="admin-hint">{{ t('admin.pictures.page', { page: page + 1, total: suggestions.totalPages, count: formatNumber(suggestions.total) }) }}</span>
-      <button class="btn btn-secondary btn-small" type="button" :disabled="page + 1 >= suggestions.totalPages" @click="page++">{{ t('admin.pictures.next') }}</button>
-    </div>
+    <p v-if="suggestions.totalItems" class="admin-hint count">
+      {{ t('admin.pictures.total', { count: formatNumber(suggestions.totalItems) }) }}
+    </p>
+    <ListEnd v-if="suggestions.items.length" :list="suggestions" />
   </section>
 </template>
 
@@ -351,12 +352,8 @@ progress {
   overflow-wrap: anywhere;
 }
 
-.pages {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-  margin-top: var(--space-4);
+.count {
+  margin-top: var(--space-3);
 }
 
 @media (min-width: 900px) {

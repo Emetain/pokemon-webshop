@@ -1,11 +1,13 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import FormMessage from '../../components/FormMessage.vue'
-import PageLinks from '../../components/catalog/PageLinks.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import StarRating from '../../components/reviews/StarRating.vue'
 import { adminContentApi } from '../../services/api'
+import { pageFromQuery } from '../../utils/catalog'
 import { formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { useAdminList } from '../../utils/infiniteList'
 
 /** Reviews wait here until an admin approves them. Pending ones come first by default. */
 const props = defineProps({
@@ -15,31 +17,33 @@ const props = defineProps({
 
 const STATUSES = ['PENDING', 'APPROVED', 'REJECTED']
 
-const result = ref(null)
-const error = ref('')
+const pendingCount = ref(0)
+const actionError = ref('')
 const busy = ref(false)
 
 const current = () => props.status ?? 'PENDING'
 
-async function load() {
-  try {
+/** More reviews load while scrolling (phase 11). */
+const reviews = useAdminList({
+  fetchPage: async (page) => {
     const status = current() === 'ALL' ? undefined : current()
-    result.value = await adminContentApi.reviews({ status, page: props.page ? Number(props.page) - 1 : 0 })
-  } catch (exception) {
-    error.value = exception.message
-  }
-}
-
-watch(() => [props.status, props.page], load, { immediate: true })
+    const result = await adminContentApi.reviews({ status, page })
+    if (page === 0) pendingCount.value = result.pendingCount
+    return { items: result.reviews, totalPages: result.totalPages, totalItems: result.totalElements }
+  },
+  key: () => [current()],
+  page: () => pageFromQuery(props.page),
+})
+const error = computed(() => actionError.value || reviews.error?.message || '')
 
 async function act(action) {
   busy.value = true
-  error.value = ''
+  actionError.value = ''
   try {
     await action()
-    await load()
+    await reviews.refresh()
   } catch (exception) {
-    error.value = exception.message
+    actionError.value = exception.message
   } finally {
     busy.value = false
   }
@@ -63,15 +67,15 @@ function remove(review) {
       :to="{ query: { status } }"
     >
       {{ t(`admin.reviews.statuses.${status}`) }}
-      <span v-if="status === 'PENDING' && result?.pendingCount" class="count">{{ result.pendingCount }}</span>
+      <span v-if="status === 'PENDING' && pendingCount" class="count">{{ pendingCount }}</span>
     </router-link>
   </nav>
 
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
-  <p v-if="result && !result.reviews.length" class="admin-intro message">{{ t('admin.reviews.empty') }}</p>
+  <p v-if="reviews.loaded && !reviews.loading && !reviews.items.length" class="admin-intro message">{{ t('admin.reviews.empty') }}</p>
 
-  <ul v-if="result?.reviews.length" class="list">
-    <li v-for="review in result.reviews" :key="review.id" class="review admin-panel">
+  <ul v-if="reviews.items.length" class="list">
+    <li v-for="review in reviews.items" :key="review.id" class="review admin-panel">
       <div class="top">
         <StarRating :rating="review.rating" />
         <router-link :to="`/product/${review.productSlug}`" target="_blank">{{ review.productName }}</router-link>
@@ -107,7 +111,7 @@ function remove(review) {
       </div>
     </li>
   </ul>
-  <PageLinks v-if="result?.totalPages > 1" :page="result.page + 1" :total-pages="result.totalPages" />
+  <ListEnd v-if="reviews.items.length" :list="reviews" />
 </template>
 
 <style scoped>

@@ -1,11 +1,13 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { Download } from 'lucide-vue-next'
 import FormMessage from '../../components/FormMessage.vue'
-import PageLinks from '../../components/catalog/PageLinks.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import { adminContentApi } from '../../services/api'
+import { pageFromQuery } from '../../utils/catalog'
 import { formatDateTime, formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { useAdminList } from '../../utils/infiniteList'
 
 const props = defineProps({
   status: { type: String, default: undefined },
@@ -14,26 +16,29 @@ const props = defineProps({
 
 const STATUSES = ['CONFIRMED', 'PENDING', 'UNSUBSCRIBED']
 
-const result = ref(null)
-const error = ref('')
+const counts = ref(null)
+const actionError = ref('')
 
-async function load() {
-  try {
-    result.value = await adminContentApi.subscribers({ status: props.status, page: props.page ? Number(props.page) - 1 : 0 })
-  } catch (exception) {
-    error.value = exception.message
-  }
-}
-
-watch(() => [props.status, props.page], load, { immediate: true })
+/** More subscribers load while scrolling (phase 11). */
+const subscribers = useAdminList({
+  fetchPage: async (page) => {
+    const result = await adminContentApi.subscribers({ status: props.status, page })
+    if (page === 0) counts.value = result.counts
+    return { items: result.subscribers, totalPages: result.totalPages, totalItems: null }
+  },
+  key: () => [props.status],
+  page: () => pageFromQuery(props.page),
+})
+const error = computed(() => actionError.value || subscribers.error?.message || '')
 
 async function remove(subscriber) {
   if (!window.confirm(t('admin.newsletter.deleteConfirm', { email: subscriber.email }))) return
+  actionError.value = ''
   try {
     await adminContentApi.deleteSubscriber(subscriber.id)
-    await load()
+    await subscribers.refresh()
   } catch (exception) {
-    error.value = exception.message
+    actionError.value = exception.message
   }
 }
 </script>
@@ -52,10 +57,10 @@ async function remove(subscriber) {
 
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
 
-  <dl v-if="result" class="counts">
+  <dl v-if="counts" class="counts">
     <div v-for="status in STATUSES" :key="status">
       <dt>{{ t(`admin.newsletter.statuses.${status}`) }}</dt>
-      <dd>{{ formatNumber(result.counts[status] ?? 0) }}</dd>
+      <dd>{{ formatNumber(counts[status] ?? 0) }}</dd>
     </div>
   </dl>
 
@@ -72,7 +77,7 @@ async function remove(subscriber) {
     </router-link>
   </nav>
 
-  <div v-if="result?.subscribers.length" class="admin-table-scroll">
+  <div v-if="subscribers.items.length" class="admin-table-scroll">
     <table class="admin-table">
       <thead>
         <tr>
@@ -84,7 +89,7 @@ async function remove(subscriber) {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="subscriber in result.subscribers" :key="subscriber.id">
+        <tr v-for="subscriber in subscribers.items" :key="subscriber.id">
           <th scope="row">{{ subscriber.email }}</th>
           <td>{{ t(`admin.newsletter.statuses.${subscriber.status}`) }}</td>
           <td>{{ formatDateTime(subscriber.createdAt) }}</td>
@@ -94,8 +99,8 @@ async function remove(subscriber) {
       </tbody>
     </table>
   </div>
-  <p v-else-if="result" class="admin-intro message">{{ t('admin.newsletter.empty') }}</p>
-  <PageLinks v-if="result?.totalPages > 1" :page="result.page + 1" :total-pages="result.totalPages" />
+  <p v-else-if="subscribers.loaded && !subscribers.loading" class="admin-intro message">{{ t('admin.newsletter.empty') }}</p>
+  <ListEnd v-if="subscribers.items.length" :list="subscribers" />
   <p class="admin-hint note">{{ t('admin.newsletter.privacy') }}</p>
 </template>
 

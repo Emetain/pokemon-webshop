@@ -144,6 +144,12 @@ phase 12 can keep daily rows for a year and weekly ones after that.
   clicking it allows three more.
 - The page links stay below the list for search engines and keyboard users. The ad slot stays one, below the list.
 - Filters and sorting are unchanged; a change starts the list over.
+- **Admin lists** (added on 2026-11-19, the owner saw them still paging): products, orders, stock movements (also the
+  log on a product page), price links, images (cards and sets), picture search, tickets, reviews and the newsletter use
+  `useAdminList`: the same loading, without "Meer laden", because the admin pages have no footer to reach. Products and
+  images keep their size choice as the number per load. Lists whose filter isn't in the URL (picture search, stock)
+  don't write their depth there (`syncUrl: false`). Checked in the browser on a database copy: products 25 → 125,
+  price links 25 → 75 and back at that depth after a reload, image cards and sets, stock 25 → 29, no console errors.
 
 ### 5. Premium
 

@@ -1,11 +1,13 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import FormMessage from '../../components/FormMessage.vue'
-import PageLinks from '../../components/catalog/PageLinks.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import TicketStatusBadge from '../../components/support/TicketStatusBadge.vue'
 import { adminTicketApi } from '../../services/api'
+import { pageFromQuery } from '../../utils/catalog'
 import { formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { useAdminList } from '../../utils/infiniteList'
 
 /** Tickets from customers. Open ones first, the longest waiting on top. */
 const props = defineProps({
@@ -15,21 +17,22 @@ const props = defineProps({
 
 const STATUSES = ['OPEN', 'ANSWERED', 'CLOSED']
 
-const result = ref(null)
-const error = ref('')
+const counts = ref(null)
 
 const current = () => props.status ?? 'OPEN'
 
-async function load() {
-  try {
+/** More tickets load while scrolling (phase 11). */
+const tickets = useAdminList({
+  fetchPage: async (page) => {
     const status = current() === 'ALL' ? undefined : current()
-    result.value = await adminTicketApi.list({ status, page: props.page ? Number(props.page) - 1 : 0 })
-  } catch (exception) {
-    error.value = exception.message
-  }
-}
-
-watch(() => [props.status, props.page], load, { immediate: true })
+    const result = await adminTicketApi.list({ status, page })
+    if (page === 0) counts.value = result.counts
+    return { items: result.tickets, totalPages: result.totalPages, totalItems: null }
+  },
+  key: () => [current()],
+  page: () => pageFromQuery(props.page),
+})
+const error = computed(() => tickets.error?.message ?? '')
 </script>
 
 <template>
@@ -45,15 +48,15 @@ watch(() => [props.status, props.page], load, { immediate: true })
       :to="{ query: { status } }"
     >
       {{ t(`admin.tickets.statuses.${status}`) }}
-      <span v-if="status === 'OPEN' && result?.counts.OPEN" class="count">{{ result.counts.OPEN }}</span>
+      <span v-if="status === 'OPEN' && counts?.OPEN" class="count">{{ counts.OPEN }}</span>
     </router-link>
   </nav>
 
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
-  <p v-if="result && !result.tickets.length" class="admin-intro message">{{ t('admin.tickets.empty') }}</p>
+  <p v-if="tickets.loaded && !tickets.loading && !tickets.items.length" class="admin-intro message">{{ t('admin.tickets.empty') }}</p>
 
-  <ul v-if="result?.tickets.length" class="list">
-    <li v-for="ticket in result.tickets" :key="ticket.number">
+  <ul v-if="tickets.items.length" class="list">
+    <li v-for="ticket in tickets.items" :key="ticket.number">
       <router-link class="ticket admin-panel" :to="`/admin/tickets/${ticket.number}`">
         <span class="top">
           <span class="number">{{ ticket.number }}</span>
@@ -67,7 +70,7 @@ watch(() => [props.status, props.page], load, { immediate: true })
       </router-link>
     </li>
   </ul>
-  <PageLinks v-if="result?.totalPages > 1" :page="result.page + 1" :total-pages="result.totalPages" />
+  <ListEnd v-if="tickets.items.length" :list="tickets" />
 </template>
 
 <style scoped>

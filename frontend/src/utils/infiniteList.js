@@ -1,4 +1,4 @@
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 /** Items per load (phase 11). */
@@ -19,8 +19,9 @@ const LOOK_AHEAD = '800px 0px'
  * @param fetchPage (pageIndex starting at 0, size) => Promise<{ items, totalItems, totalPages }>
  * @param key () => anything that, when it changes, means a new list (game, set, filters). Compared as JSON.
  * @param page () => the page number in the URL, starting at 1
+ * @param syncUrl false for a list inside another page (an admin panel), whose depth doesn't belong in that page's URL
  */
-export function useInfiniteList({ fetchPage, key, page, pageSize = PAGE_SIZE, autoLoads = AUTO_LOADS }) {
+export function useInfiniteList({ fetchPage, key, page, pageSize = PAGE_SIZE, autoLoads = AUTO_LOADS, syncUrl = true }) {
   const route = useRoute()
   const router = useRouter()
 
@@ -86,7 +87,7 @@ export function useInfiniteList({ fetchPage, key, page, pageSize = PAGE_SIZE, au
       totalPages.value = result.totalPages
       loadedPages.value += 1
       autoLeft.value = auto ? autoLeft.value - 1 : autoLoads
-      router.replace({ query: { ...route.query, page: String(loadedPages.value) } })
+      if (syncUrl) router.replace({ query: { ...route.query, page: String(loadedPages.value) } })
     } catch (exception) {
       if (run === generation) moreError.value = exception
     } finally {
@@ -153,6 +154,14 @@ export function useInfiniteList({ fetchPage, key, page, pageSize = PAGE_SIZE, au
     refresh,
     reset,
   }
+}
+
+/**
+ * An admin list that keeps loading while the admin scrolls, without "Meer laden": the admin pages have no footer that
+ * has to stay reachable. Same arguments as [useInfiniteList]; returns it reactive, ready for `ListEnd`.
+ */
+export function useAdminList(options) {
+  return reactive(useInfiniteList({ ...options, autoLoads: Number.POSITIVE_INFINITY }))
 }
 
 /** A list can shift between two loads (a new card, a price that changed the order): never show an item twice. */

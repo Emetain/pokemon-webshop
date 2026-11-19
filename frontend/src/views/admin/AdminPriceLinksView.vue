@@ -1,12 +1,14 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { GAMES } from '../../data/games'
 import CardImage from '../../components/catalog/CardImage.vue'
-import PageLinks from '../../components/catalog/PageLinks.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import { adminPriceLinkApi } from '../../services/api'
+import { pageFromQuery } from '../../utils/catalog'
 import { formatDate, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { useAdminList } from '../../utils/infiniteList'
 
 /**
  * Pokémon and Magic cards whose Cardmarket product the sync couldn't trust (phase 11). They show their TCGplayer price
@@ -21,8 +23,8 @@ const props = defineProps({
 const STATUSES = ['doubtful', 'manual']
 const LINKED_GAMES = GAMES.filter((item) => ['pokemon', 'magic'].includes(item.slug))
 
-const result = ref(null)
-const error = ref('')
+const counts = ref(null)
+const actionError = ref('')
 const notice = ref('')
 const busyId = ref(null)
 const typed = ref({})
@@ -30,31 +32,28 @@ const typed = ref({})
 const current = () => (STATUSES.includes(props.status) ? props.status : 'doubtful')
 const currentGame = () => (LINKED_GAMES.some((item) => item.slug === props.game) ? props.game : 'pokemon')
 
-async function load() {
-  error.value = ''
-  try {
-    result.value = await adminPriceLinkApi.list({
-      game: currentGame(),
-      status: current(),
-      page: props.page ? Number(props.page) - 1 : 0,
-    })
-  } catch (exception) {
-    error.value = exception.message
-  }
-}
-
-watch(() => [props.game, props.status, props.page], load, { immediate: true })
+/** More cards load while scrolling (phase 11). */
+const links = useAdminList({
+  fetchPage: async (page) => {
+    const result = await adminPriceLinkApi.list({ game: currentGame(), status: current(), page })
+    if (page === 0) counts.value = { doubtful: result.doubtful, manual: result.manual }
+    return result
+  },
+  key: () => [currentGame(), current()],
+  page: () => pageFromQuery(props.page),
+})
+const error = computed(() => actionError.value || links.error?.message || '')
 
 async function act(item, action) {
   busyId.value = item.cardId
-  error.value = ''
+  actionError.value = ''
   notice.value = ''
   try {
     await action()
     notice.value = t('admin.priceLinks.saved', { name: `${item.name} (${item.setName} ${item.number})` })
-    await load()
+    await links.refresh()
   } catch (exception) {
-    error.value = exception.message
+    actionError.value = exception.message
   } finally {
     busyId.value = null
   }
@@ -97,18 +96,18 @@ const price = (cents, currency = 'EUR') => (cents == null ? t('admin.priceLinks.
       :class="{ active: current() === status }"
       :to="{ query: { game: currentGame(), status } }"
     >
-      {{ t(`admin.priceLinks.${status}`, { count: result ? result[status] : '…' }) }}
+      {{ t(`admin.priceLinks.${status}`, { count: counts ? counts[status] : '…' }) }}
     </router-link>
   </nav>
 
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
   <FormMessage v-if="notice" class="message" type="success">{{ notice }}</FormMessage>
-  <p v-if="result && !result.items.length" class="admin-intro message">
+  <p v-if="links.loaded && !links.loading && !links.items.length" class="admin-intro message">
     {{ current() === 'manual' ? t('admin.priceLinks.emptyManual') : t('admin.priceLinks.empty') }}
   </p>
 
-  <ul v-if="result?.items.length" class="list">
-    <li v-for="item in result.items" :key="item.cardId" class="item admin-panel">
+  <ul v-if="links.items.length" class="list">
+    <li v-for="item in links.items" :key="item.cardId" class="item admin-panel">
       <router-link class="picture" :to="`/kaarten/${item.game}/${encodeURIComponent(item.setCode)}/${item.cardId}`" target="_blank">
         <CardImage :src="item.imageUrl" :alt="item.name" />
       </router-link>
@@ -191,7 +190,7 @@ const price = (cents, currency = 'EUR') => (cents == null ? t('admin.priceLinks.
       </div>
     </li>
   </ul>
-  <PageLinks v-if="result?.totalPages > 1" :page="result.page + 1" :total-pages="result.totalPages" />
+  <ListEnd v-if="links.items.length" :list="links" />
 </template>
 
 <style scoped>

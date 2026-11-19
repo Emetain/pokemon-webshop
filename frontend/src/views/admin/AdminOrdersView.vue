@@ -1,13 +1,14 @@
 <script setup>
 import { computed, ref, useId, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import PageLinks from '../../components/catalog/PageLinks.vue'
+import ListEnd from '../../components/catalog/ListEnd.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import OrderStatusBadge from '../../components/order/OrderStatusBadge.vue'
 import { adminOrderApi } from '../../services/api'
 import { filterQuery, pageFromQuery } from '../../utils/catalog'
 import { formatDateTime, formatMoney, formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { useAdminList } from '../../utils/infiniteList'
 
 const SEARCH_DELAY_MS = 350
 const STATUSES = ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'PENDING_PAYMENT', 'CANCELLED', 'REFUNDED', 'ABANDONED']
@@ -22,9 +23,6 @@ const props = defineProps({
 const router = useRouter()
 const searchId = useId()
 
-const orders = ref(null)
-const loading = ref(false)
-const error = ref('')
 const searchText = ref(props.q)
 
 const currentPage = computed(() => pageFromQuery(props.page))
@@ -44,23 +42,13 @@ watch(searchText, (text) => {
 })
 watch(() => props.q, (q) => (searchText.value = q))
 
-let latestRequest = 0
-
-async function load() {
-  const request = ++latestRequest
-  loading.value = true
-  error.value = ''
-  try {
-    const result = await adminOrderApi.list({ q: props.q, status: props.status, page: currentPage.value - 1 })
-    if (request === latestRequest) orders.value = result
-  } catch (exception) {
-    if (request === latestRequest) error.value = exception.message
-  } finally {
-    if (request === latestRequest) loading.value = false
-  }
-}
-
-watch(() => [props.q, props.status, currentPage.value], load, { immediate: true })
+/** More orders load while scrolling (phase 11). */
+const orders = useAdminList({
+  fetchPage: (page) => adminOrderApi.list({ q: props.q, status: props.status, page }),
+  key: () => [props.q, props.status],
+  page: () => currentPage.value,
+})
+const error = computed(() => orders.error?.message ?? '')
 </script>
 
 <template>
@@ -95,10 +83,10 @@ watch(() => [props.q, props.status, currentPage.value], load, { immediate: true 
   </nav>
 
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
-  <p v-else-if="loading && !orders" class="muted">{{ t('admin.orders.loading') }}</p>
-  <p v-else-if="orders && !orders.items.length" class="muted">{{ t('admin.orders.empty') }}</p>
+  <p v-else-if="orders.loading && !orders.items.length" class="muted">{{ t('admin.orders.loading') }}</p>
+  <p v-else-if="orders.loaded && !orders.items.length" class="muted">{{ t('admin.orders.empty') }}</p>
 
-  <template v-if="orders?.items.length">
+  <template v-if="orders.items.length">
     <p class="count">{{ formatNumber(orders.totalItems) }} {{ t('admin.orders.title').toLowerCase() }}</p>
     <div class="admin-table-scroll">
       <table class="admin-table">
@@ -135,7 +123,7 @@ watch(() => [props.q, props.status, currentPage.value], load, { immediate: true 
         </tbody>
       </table>
     </div>
-    <PageLinks class="pages" :page="orders.page + 1" :total-pages="orders.totalPages" />
+    <ListEnd :list="orders" />
   </template>
 </template>
 
@@ -212,9 +200,5 @@ watch(() => [props.q, props.status, currentPage.value], load, { immediate: true 
   display: block;
   color: var(--color-ink-soft);
   font-size: var(--text-xs);
-}
-
-.pages {
-  margin-top: var(--space-4);
 }
 </style>
