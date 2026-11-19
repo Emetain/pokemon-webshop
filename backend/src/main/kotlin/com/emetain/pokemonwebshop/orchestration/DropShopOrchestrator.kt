@@ -23,6 +23,7 @@ import com.emetain.pokemonwebshop.service.DropRules
 import com.emetain.pokemonwebshop.service.OrderPaymentService
 import com.emetain.pokemonwebshop.service.ProductRules
 import com.emetain.pokemonwebshop.service.RateLimitService
+import com.emetain.pokemonwebshop.service.SalesGate
 import com.emetain.pokemonwebshop.service.payment.PaymentGateway
 import com.emetain.pokemonwebshop.service.payment.PaymentUnavailableException
 import jakarta.servlet.http.HttpServletRequest
@@ -46,6 +47,7 @@ class DropShopOrchestrator(
     private val gateway: PaymentGateway,
     private val cookies: DropCookieService,
     private val rateLimitService: RateLimitService,
+    private val salesGate: SalesGate,
     private val properties: AppProperties,
     private val clock: Clock,
 ) {
@@ -70,6 +72,7 @@ class DropShopOrchestrator(
      */
     fun checkout(slug: String, viewer: User?, httpRequest: HttpServletRequest, request: StartDropCheckoutRequest): CheckoutStartDto {
         checkHoneypot(request, "drop checkout")
+        salesGate.requireCanOrder(viewer)
         viewer?.let { rateLimitService.checkAccount("drop-checkout-account", it.id) }
         if (!gateway.configured) {
             throw ApiException(HttpStatus.SERVICE_UNAVAILABLE, "payments_unavailable", "Online betalen is nog niet ingesteld. Probeer het later opnieuw.")

@@ -15,6 +15,8 @@ data class CheckoutCountryDto(
 data class CheckoutOptionsDto(
     /** False while no Stripe key is set: the checkout then says online payment isn't available yet. */
     val paymentsEnabled: Boolean,
+    /** False while the site is online but the shop isn't open yet, for everyone but admins (`SHOP_ACCESS=unlisted`). */
+    val canOrder: Boolean = true,
     val countries: List<CheckoutCountryDto>,
     val reservationMinutes: Long,
 )

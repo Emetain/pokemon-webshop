@@ -74,6 +74,27 @@ default settings the preview behaves as before. Opening it is one deliberate ste
   promised it never would; 9b's new routes had let it through).
 - The 401 and 413 answers in the preview now carry `X-Robots-Tag: noindex` too. Stricter than before, nothing looser.
 
+### Online without the login: `SHOP_ACCESS=unlisted`, added on 2026-11-19
+
+The owner's friend had trouble with the shared login, and the owner wanted the site online without it before the
+shop opens. So there is a third mode between the preview and the open shop:
+
+- **Caddy:** no shared login, but still the `X-Robots-Tag: noindex, nofollow` header and the robots.txt that disallows
+  everything (`unlisted_headers`/`unlisted_gate`). The web image validates all three modes.
+- **Backend:** Stripe test keys only, like the preview (a live key keeps online payment off). `SalesGate` lets only
+  admins start a checkout or a drop checkout; everyone else gets "De webshop is nog niet open. Bestellen kan nog niet."
+  (`403 shop_not_open`), and the checkout page says so at the top with the pay button off (`canOrder` in
+  `GET /v1/checkout/options`). Without this a visitor could "pay" with Stripe's test card 4242 and get an order, now
+  that Stripe's webhooks get through. Looking around, making an account, the collection and the chatbot work for
+  everyone.
+- **Server:** `/opt/poketopia/bin/shop-access.sh unlisted` (asks you to type `without login`, refuses a live Stripe
+  key); `shop-access.sh preview` puts the login back. The site is away for about a minute while it restarts.
+
+Search engines are asked to stay out, but the site can be found: every certificate is published in the public
+Certificate Transparency logs, and bots try new domains within hours. Expect strangers and bots to sign up; the rate
+limits and the monthly AI budget stay in place. Everything the legal check says about a public site (privacy policy,
+cookies, card images, the name) applies from the moment the login is gone.
+
 ### Ads (Google AdSense), added on 2026-11-16
 
 The owner asked for ads from other companies through Google AdSense. Built, and off until there is an AdSense account

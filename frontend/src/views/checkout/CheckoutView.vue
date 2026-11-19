@@ -82,7 +82,10 @@ const expected = computed(() => {
   const dates = (quote.value?.items ?? []).filter((item) => item.preOrder && item.shipsFrom).map((item) => item.shipsFrom)
   return dates.sort().at(-1) ?? null
 })
-const canPay = computed(() => options.value?.paymentsEnabled && quote.value?.canCheckout && !submitting.value)
+// canOrder is false while the site is online but the shop isn't open yet (SHOP_ACCESS=unlisted), except for admins.
+const canPay = computed(
+  () => options.value?.paymentsEnabled && options.value?.canOrder !== false && quote.value?.canCheckout && !submitting.value,
+)
 
 let latestQuote = 0
 
@@ -190,6 +193,7 @@ const loginLink = computed(() => ({ path: '/inloggen', query: { redirect: route.
       {{ dropSlug ? t('drops.checkout.back') : t('checkout.back') }}
     </router-link>
     <h1>{{ dropSlug && drop ? t('drops.checkout.title', { name: drop.name }) : t('checkout.title') }}</h1>
+    <FormMessage v-if="options && options.canOrder === false" class="not-open">{{ t('checkout.notOpen') }}</FormMessage>
 
     <p v-if="loading" class="muted" aria-busy="true">{{ t('cart.loading') }}</p>
     <FormMessage v-else-if="loadError">{{ loadError }}</FormMessage>
@@ -414,6 +418,10 @@ const loginLink = computed(() => ({ path: '/inloggen', query: { redirect: route.
 <style scoped>
 .page {
   padding-block: var(--space-4) 0;
+}
+
+.not-open {
+  margin-top: var(--space-3);
 }
 
 .back {

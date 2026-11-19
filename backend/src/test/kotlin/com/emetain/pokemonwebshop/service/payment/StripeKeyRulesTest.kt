@@ -26,6 +26,12 @@ class StripeKeyRulesTest {
     }
 
     @Test
+    fun `online without the login, before opening, also only takes test keys`() {
+        assertNull(StripeKeyRules.problem("sk_test_abc", ShopAccess.UNLISTED))
+        assertEquals(StripeKeyRules.Problem.LIVE_KEY_IN_PREVIEW, StripeKeyRules.problem("sk_live_abc", ShopAccess.UNLISTED))
+    }
+
+    @Test
     fun `the open shop takes live keys and refuses anything else`() {
         assertNull(StripeKeyRules.problem("sk_live_abc", ShopAccess.OPEN))
         assertNull(StripeKeyRules.problem(" rk_live_abc ", ShopAccess.OPEN))

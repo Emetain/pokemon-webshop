@@ -595,6 +595,7 @@ export default {
     paying: 'Betaalpagina openen',
     payNote: 'Je betaalt veilig bij Stripe. Daarna kom je hier terug.',
     paymentsOff: 'Online betalen is nog niet ingesteld. Je kunt nog niet afrekenen.',
+    notOpen: 'De webshop is nog niet open. Je kunt rondkijken en een account maken, bestellen kan binnenkort.',
     empty: 'Je winkelwagen is leeg, dus er valt nog niets af te rekenen.',
     fixCart: 'Er is iets veranderd in je winkelwagen. Pas het eerst aan.',
   },
@@ -1356,7 +1357,7 @@ export default {
       // A Stripe key that doesn't fit SHOP_ACCESS keeps online payment off (StripeKeyRules in the backend).
       paymentsProblem: {
         live_key_in_preview:
-          'Online betalen staat uit: STRIPE_SECRET_KEY is een live sleutel, maar de shop is nog een gesloten preview. Stripe kan de betalingen dan niet terugmelden. Gebruik een testsleutel, of open de shop.',
+          'Online betalen staat uit: STRIPE_SECRET_KEY is een live sleutel, maar de shop is nog niet open. Gebruik een testsleutel tot de shop opengaat, of open de shop.',
         test_key_in_open_shop:
           'Online betalen staat uit: de shop is open, maar STRIPE_SECRET_KEY is geen live sleutel. Zet de live sleutel (sk_live_...) in .env op de server en start de backend opnieuw.',
       },
