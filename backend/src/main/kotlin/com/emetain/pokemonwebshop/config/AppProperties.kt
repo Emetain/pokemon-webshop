@@ -136,6 +136,11 @@ data class AppProperties(
         val chatInputPerMillion: java.math.BigDecimal = java.math.BigDecimal("0.10"),
         val chatOutputPerMillion: java.math.BigDecimal = java.math.BigDecimal("0.50"),
         val chatMonthlyLimitUsd: java.math.BigDecimal = java.math.BigDecimal("3"),
+        /** The card scanner (phase 11): reads name, set and number from a photo. Its own monthly limit. */
+        val scanModel: String = "gpt-6-luna",
+        val scanInputPerMillion: java.math.BigDecimal = java.math.BigDecimal("0.10"),
+        val scanOutputPerMillion: java.math.BigDecimal = java.math.BigDecimal("0.50"),
+        val scanMonthlyLimitUsd: java.math.BigDecimal = java.math.BigDecimal("5"),
     ) {
         val configured: Boolean get() = apiKey.isNotBlank()
     }

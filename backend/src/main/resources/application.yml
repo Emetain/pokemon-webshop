@@ -170,6 +170,13 @@ app:
       support-chat:
         max-attempts: 20
         window: 10m
+      # The card scanner (phase 11): each scan costs a little at OpenAI. Per IP address and per account.
+      scanner:
+        max-attempts: 30
+        window: 10m
+      scanner-account:
+        max-attempts: 30
+        window: 10m
   media:
     # Where uploaded images are stored.
     directory: ${MEDIA_DIRECTORY:data/media}
@@ -301,6 +308,11 @@ app:
     chat-input-per-million: 0.10
     chat-output-per-million: 0.50
     chat-monthly-limit-usd: ${OPENAI_CHAT_MONTHLY_LIMIT_USD:3}
+    # The card scanner (phase 11). gpt-6-luna reads photos; a scan costs about $0.0001.
+    scan-model: ${OPENAI_SCAN_MODEL:gpt-6-luna}
+    scan-input-per-million: 0.10
+    scan-output-per-million: 0.50
+    scan-monthly-limit-usd: ${OPENAI_SCAN_MONTHLY_LIMIT_USD:5}
     image-text-input-per-million: 5.00
     image-output-per-million: 30.00
     # Counted before an image is made, so the last one of the month can't go over the limit. A medium

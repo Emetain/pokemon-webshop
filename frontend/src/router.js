@@ -105,6 +105,11 @@ const router = createRouter({
           meta: { title: 'auth.reset.title', noindex: true },
         },
         {
+          path: 'scanner',
+          component: () => import('./views/ScannerView.vue'),
+          meta: { requiresLogin: true, title: 'scanner.title' },
+        },
+        {
           path: 'premium',
           component: () => import('./views/PremiumView.vue'),
           meta: { title: 'premium.title' },

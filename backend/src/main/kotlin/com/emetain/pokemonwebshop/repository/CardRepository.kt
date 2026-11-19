@@ -39,6 +39,14 @@ interface CardRepository : JpaRepository<Card, Long>, JpaSpecificationExecutor<C
 
     fun countByGameAndCardmarketLink(game: Game, link: CardmarketLink): Long
 
+    /** Card scanner (phase 11): cards with this collector number, padded like [Card.sortKey]. */
+    @Query("select c from Card c join fetch c.set where c.sortKey = :sortKey and c.game in :games")
+    fun findScanByNumber(sortKey: String, games: Collection<Game>, pageable: Pageable): List<Card>
+
+    /** Card scanner (phase 11): cards whose name starts with what was read. */
+    @Query("select c from Card c join fetch c.set where c.nameSearch like :prefix and c.game in :games")
+    fun findScanByName(prefix: String, games: Collection<Game>, pageable: Pageable): List<Card>
+
     @Query("select distinct c.cardmarketProductId from Card c where c.set.id = :setId and c.cardmarketProductId is not null")
     fun findCardmarketProductIdsInSet(setId: Long): List<Long>
 

@@ -30,6 +30,16 @@ interface AiClient {
     fun json(model: String, instructions: String, input: String, schemaName: String, schema: ObjectNode): AiTextResult
 
     fun image(model: String, prompt: String, size: String, quality: String): AiImageResult
+
+    /** Asks [model] to read [image] (a JPEG, PNG or WebP) and answer in JSON that matches [schema]. Phase 11. */
+    fun visionJson(
+        model: String,
+        instructions: String,
+        image: ByteArray,
+        contentType: String,
+        schemaName: String,
+        schema: ObjectNode,
+    ): AiTextResult
 }
 
 /**
@@ -55,14 +65,52 @@ class OpenAiClient(
             put("instructions", instructions)
             put("input", input)
             put("store", false)
-            putObject("text").putObject("format").apply {
-                put("type", "json_schema")
-                put("name", schemaName)
-                put("strict", true)
-                set("schema", schema)
-            }
+            format(schemaName, schema)
         }
-        val response = post("/responses", body)
+        return structured(post("/responses", body))
+    }
+
+    /**
+     * The photo goes inline as a data URL with `detail: high`, so small print such as a collector number stays
+     * readable; a phone photo scaled to 1280 pixels is about a thousand tokens. Nothing is stored at OpenAI.
+     */
+    override fun visionJson(
+        model: String,
+        instructions: String,
+        image: ByteArray,
+        contentType: String,
+        schemaName: String,
+        schema: ObjectNode,
+    ): AiTextResult {
+        val body = objectMapper.createObjectNode().apply {
+            put("model", model)
+            put("instructions", instructions)
+            put("store", false)
+            putArray("input").addObject().apply {
+                put("role", "user")
+                putArray("content").apply {
+                    addObject().put("type", "input_text").put("text", "Lees deze kaart.")
+                    addObject()
+                        .put("type", "input_image")
+                        .put("image_url", "data:$contentType;base64," + Base64.getEncoder().encodeToString(image))
+                        .put("detail", "high")
+                }
+            }
+            format(schemaName, schema)
+        }
+        return structured(post("/responses", body))
+    }
+
+    private fun ObjectNode.format(schemaName: String, schema: ObjectNode) {
+        putObject("text").putObject("format").apply {
+            put("type", "json_schema")
+            put("name", schemaName)
+            put("strict", true)
+            set("schema", schema)
+        }
+    }
+
+    private fun structured(response: JsonNode): AiTextResult {
         if (response.path("status").asString() == "incomplete") {
             throw AiException("OpenAI stopte halverwege (${response.path("incomplete_details").path("reason").asString("onbekend")}). Probeer het opnieuw.")
         }

@@ -301,6 +301,16 @@ export const adminPictureApi = {
   reject: (id) => request('POST', `/admin/pictures/suggestions/${id}/reject`),
 }
 
+/** The card scanner (phase 11). The photo goes to the backend only, which doesn't keep it. */
+export const scannerApi = {
+  status: () => request('GET', '/scanner'),
+  scan: (photo, game) => {
+    const body = new FormData()
+    body.append('photo', photo, 'kaart.jpg')
+    return send('POST', `/scanner${queryString({ game })}`, { body }, { isUpload: true })
+  },
+}
+
 /** Premium (phase 11): status, Stripe's payment page and Stripe's customer portal. */
 export const premiumApi = {
   status: () => request('GET', '/premium'),

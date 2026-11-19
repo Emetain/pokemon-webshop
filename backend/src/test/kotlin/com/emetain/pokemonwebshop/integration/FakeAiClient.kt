@@ -24,6 +24,26 @@ class FakeAiClient : AiClient {
 
     @Volatile var configuredInTest = true
 
+    /** What the scanner reads from a photo in a test (phase 11). */
+    @Volatile var scanReading = """{"game": "pokemon", "name": "Pikachu", "setCode": null, "setName": null, "number": "25"}"""
+    val scannedPhotos = CopyOnWriteArrayList<ByteArray>()
+
+    @Volatile var failScan = false
+
+    override fun visionJson(
+        model: String,
+        instructions: String,
+        image: ByteArray,
+        contentType: String,
+        schemaName: String,
+        schema: ObjectNode,
+    ): AiTextResult {
+        if (failScan) throw com.emetain.pokemonwebshop.service.ai.AiException("The model is down in this test")
+        scannedPhotos += image
+        models += model
+        return AiTextResult(objectMapper.readTree(scanReading), inputTokens = 1000, outputTokens = 60)
+    }
+
     override val configured: Boolean get() = configuredInTest
 
     override fun json(model: String, instructions: String, input: String, schemaName: String, schema: ObjectNode): AiTextResult {

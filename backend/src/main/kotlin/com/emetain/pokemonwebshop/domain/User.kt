@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import org.hibernate.annotations.ColumnDefault
 import java.time.Instant
 
 @Entity
@@ -64,7 +65,9 @@ class User(
     @Column
     var premiumUntil: Instant? = null,
 
+    // The defaults let Hibernate add these columns to a local database that already has users.
     @Column(nullable = false)
+    @ColumnDefault("false")
     var premiumForever: Boolean = false,
 
     @Enumerated(EnumType.STRING)
@@ -73,6 +76,7 @@ class User(
 
     /** Card scans that gave a result without Premium. 100 are free, for good (phase 11). */
     @Column(nullable = false)
+    @ColumnDefault("0")
     var freeScansUsed: Int = 0,
 
     /** When the customer agreed to the last Premium checkout's terms; copied to the subscription it creates. */

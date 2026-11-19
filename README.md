@@ -70,7 +70,7 @@ Keep API keys on the backend. Anything in a `VITE_` variable ends up in the brow
 | `SHOP_EMAIL` | empty: `MAIL_FROM` | Where new tickets and replies are mailed |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | empty: no online payment | Stripe Checkout, see [Orders and payments](#orders-and-payments) |
 | `OPENAI_API_KEY` | empty: AI switched off | Hero slides written by AI and the chatbot |
-| `OPENAI_MONTHLY_LIMIT_USD`, `OPENAI_CHAT_MONTHLY_LIMIT_USD` | `5`, `3` | What each may spend per month |
+| `OPENAI_MONTHLY_LIMIT_USD`, `OPENAI_CHAT_MONTHLY_LIMIT_USD`, `OPENAI_SCAN_MONTHLY_LIMIT_USD` | `5`, `3`, `5` | What each may spend per month (slides, chatbot, card scanner) |
 | `OPENAI_TEXT_MODEL`, `OPENAI_IMAGE_MODEL`, `OPENAI_CHAT_MODEL` | see `.env.example` | The OpenAI models |
 | `CATALOG_SYNC_CRON`, `RELEASE_SUGGESTION_CRON`, `COLLECTION_SNAPSHOT_CRON` | 03:00, 04:45, 07:00 | The nightly jobs; `-` switches one off |
 | `TCGDEX_BASE_URL` and the other `*_BASE_URL` | the public APIs | The card data sources, see [Card data](#card-data) |
