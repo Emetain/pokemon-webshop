@@ -2331,7 +2331,8 @@ export default {
       nav: 'Prijskoppelingen',
       title: 'Cardmarket-koppelingen',
       intro:
-        'TCGdex koppelt soms meerdere prints van een Pokémon-kaart aan één Cardmarket-product. De shop koppelt elke kaart daarom zelf en controleert dat met de TCGplayer-prijs. Kaarten waar dat niet lukt, tonen hun TCGplayer-prijs tot je hier het goede product kiest. De sync verandert een keuze van jou nooit.',
+        'TCGdex (Pokémon) en Scryfall (Magic) koppelen soms meerdere prints van een kaart aan één Cardmarket-product. De shop koppelt elke kaart daarom zelf en controleert dat met de TCGplayer-prijs. Kaarten waar dat niet lukt, tonen hun TCGplayer-prijs tot je hier het goede product kiest. De sync verandert een keuze van jou nooit.',
+      game: 'Spel',
       doubtful: 'Twijfelachtig ({count})',
       manual: 'Met de hand ({count})',
       empty: 'Niets te controleren.',
@@ -2339,7 +2340,7 @@ export default {
       number: 'nr. {number}',
       now: 'Nu getoond',
       noPrice: 'geen prijs',
-      fromSource: 'Product volgens TCGdex',
+      fromSource: 'Product volgens de bron',
       chosen: 'Gekozen product',
       candidates: 'Producten met deze naam in de Cardmarket-uitbreiding',
       noCandidates: 'Geen producten met deze naam gevonden. Vul het productnummer van Cardmarket in.',

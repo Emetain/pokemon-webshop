@@ -1,5 +1,7 @@
 package com.emetain.pokemonwebshop.service
 
+import com.emetain.pokemonwebshop.domain.CardVariants.ETCHED
+import com.emetain.pokemonwebshop.domain.CardVariants.FOIL
 import com.emetain.pokemonwebshop.domain.CardVariants.NORMAL
 import com.emetain.pokemonwebshop.domain.CardVariants.REVERSE
 import com.emetain.pokemonwebshop.domain.CardmarketLink
@@ -52,9 +54,10 @@ class CardmarketLinksTest {
         metacard: Long? = 466225,
         expansion: Long = 6704,
         foilTrend: Long? = null,
+        game: Game = Game.POKEMON,
     ) = CardmarketSingle(
         productId = productId,
-        game = Game.POKEMON,
+        game = game,
         name = name,
         expansionId = expansion,
         metacardId = metacard,
@@ -68,7 +71,35 @@ class CardmarketLinksTest {
         cards: List<ProviderCard>,
         singles: List<CardmarketSingle>,
         manual: Map<String, ManualLink> = emptyMap(),
-    ) = CardmarketLinks.decide(cards, manual, singles.associateBy { it.productId }, rates)
+        game: Game = Game.POKEMON,
+    ) = CardmarketLinks.decide(game, cards, manual, singles.associateBy { it.productId }, rates)
+
+    /** A Magic card as Scryfall gives it: its Cardmarket product, Scryfall's euros and TCGplayer's dollars. */
+    private fun magic(
+        number: String,
+        name: String,
+        productId: Long?,
+        variants: Set<String> = setOf(NORMAL),
+        scryfall: Map<String, Long> = emptyMap(),
+        tcgplayer: Map<String, Long> = emptyMap(),
+    ) = ProviderCard(
+        externalId = "mtg-$number",
+        number = number,
+        name = name,
+        rarity = null,
+        cardType = null,
+        imageSmallUrl = null,
+        imageLargeUrl = null,
+        variants = variants,
+        prices = scryfall.map { (variant, cents) -> ProviderPrice(variant, cents, null, updated) },
+        cardmarketProductId = productId,
+        fallbackPrices = tcgplayer.map { (variant, cents) -> ProviderPrice(variant, cents, null, updated, PriceSource.TCGPLAYER, Currency.USD) },
+    )
+
+    private fun magicSingle(productId: Long, name: String, trend: Long?, foilTrend: Long? = null, expansion: Long = 76) =
+        single(productId, trend, name = name, metacard = null, expansion = expansion, foilTrend = foilTrend, game = Game.MTG)
+
+    private fun LinkDecision.trendOf(variant: String) = prices.firstOrNull { it.variant == variant }?.trendCents
 
     private fun LinkDecision.trend() = prices.firstOrNull { it.variant == NORMAL }?.trendCents
 
@@ -240,5 +271,88 @@ class CardmarketLinksTest {
         assertFalse(PriceAgreement.agrees(293, 23900))
         assertTrue(PriceAgreement.agrees(600, 5000, PriceAgreement.SOURCE_FLOOR_CENTS, PriceAgreement.SOURCE_MAX_RATIO))
         assertFalse(PriceAgreement.agrees(2, 5690, PriceAgreement.SOURCE_FLOOR_CENTS, PriceAgreement.SOURCE_MAX_RATIO))
+    }
+
+    // Summer Magic, checked on 2026-11-19: Scryfall gave all three Islands product 16935 (€593.42).
+    @Test
+    fun `Magic gives each Summer Magic Island its own product`() {
+        val islands = listOf("295", "296", "297").map { magic(it, "Island", 16935, scryfall = mapOf(NORMAL to 59342L)) }
+        val singles = listOf(
+            magicSingle(16935, "Island", 59342),
+            magicSingle(16940, "Island", 65581),
+            magicSingle(16945, "Island", 65454),
+            magicSingle(16933, "Swamp", 38066),
+        )
+
+        val decisions = decide(islands, singles, game = Game.MTG)
+
+        assertEquals(listOf(16935L, 16940L, 16945L), listOf("295", "296", "297").map { decisions.getValue("mtg-$it").productId })
+        assertEquals(listOf(59342L, 65581L, 65454L), listOf("295", "296", "297").map { decisions.getValue("mtg-$it").trend() })
+        assertTrue(decisions.values.all { it.link == CardmarketLink.MATCHED })
+    }
+
+    @Test
+    fun `Magic foil prints listed as their own card share the product, each with its own column`() {
+        // Seventh Edition Duress: 131 is nonfoil only, 131★ foil only, and Cardmarket has both in product 2893.
+        val duress = magic("131", "Duress", 2893, setOf(NORMAL), tcgplayer = mapOf(NORMAL to 60L))
+        val foil = magic("131★", "Duress", 2893, setOf(FOIL), tcgplayer = mapOf(FOIL to 13874L))
+
+        val decisions = decide(listOf(duress, foil), listOf(magicSingle(2893, "Duress", 64, foilTrend = 11950)), game = Game.MTG)
+
+        assertEquals(CardmarketLink.SOURCE, decisions.getValue("mtg-131").link)
+        assertEquals(CardmarketLink.SOURCE, decisions.getValue("mtg-131★").link)
+        assertEquals(64L, decisions.getValue("mtg-131").trendOf(NORMAL))
+        assertEquals(11950L, decisions.getValue("mtg-131★").trendOf(FOIL))
+        assertTrue(decisions.values.all { decision -> decision.prices.all { it.source == PriceSource.CARDMARKET } })
+    }
+
+    @Test
+    fun `Magic cards that need the same column of one product are matched like Pokemon`() {
+        // Secret Lair 681 and 681Φ are both foil only; Cardmarket has two products.
+        val plain = magic("681", "Shadowborn Apostle", 760228, setOf(FOIL), tcgplayer = mapOf(FOIL to 2174L))
+        val phi = magic("681Φ", "Shadowborn Apostle", 760228, setOf(FOIL), tcgplayer = mapOf(FOIL to 14898L))
+        val singles = listOf(
+            magicSingle(708378, "Shadowborn Apostle", null, foilTrend = 1101, expansion = 4000),
+            magicSingle(760228, "Shadowborn Apostle", null, foilTrend = 8314, expansion = 4000),
+        )
+
+        val decisions = decide(listOf(plain, phi), singles, game = Game.MTG)
+
+        assertEquals(708378L, decisions.getValue("mtg-681").productId)
+        assertEquals(760228L, decisions.getValue("mtg-681Φ").productId)
+        assertEquals(1101L, decisions.getValue("mtg-681").trendOf(FOIL))
+    }
+
+    @Test
+    fun `Magic trusts a product only one card has, whatever TCGplayer says`() {
+        // Summer Magic Library of Leng: €0.02 at Cardmarket, $400 at TCGplayer. Either can be wrong.
+        val card = magic("261", "Library of Leng", 16810, tcgplayer = mapOf(NORMAL to 40000L))
+
+        val decision = decide(listOf(card), listOf(magicSingle(16810, "Library of Leng", 2)), game = Game.MTG).getValue("mtg-261")
+
+        assertEquals(CardmarketLink.SOURCE, decision.link)
+        assertEquals(2L, decision.trend())
+    }
+
+    @Test
+    fun `Magic keeps Scryfall's price when today's file has no trend for the product`() {
+        val card = magic("53", "Copy Artifact", 16749, scryfall = mapOf(NORMAL to 702205L))
+
+        val decision = decide(listOf(card), listOf(magicSingle(16749, "Copy Artifact", null)), game = Game.MTG).getValue("mtg-53")
+
+        assertEquals(CardmarketLink.SOURCE, decision.link)
+        assertEquals(702205L, decision.trend())
+        assertEquals(PriceSource.CARDMARKET, decision.prices.single().source)
+    }
+
+    @Test
+    fun `Magic etched foils keep their TCGplayer price`() {
+        val card = magic("1074", "Sol Ring", 733593, setOf(ETCHED), tcgplayer = mapOf(ETCHED to 7314L))
+
+        val decision = decide(listOf(card), listOf(magicSingle(733593, "Sol Ring", null, foilTrend = 5400)), game = Game.MTG).getValue("mtg-1074")
+
+        assertEquals(CardmarketLink.SOURCE, decision.link)
+        assertEquals(PriceSource.TCGPLAYER, decision.prices.single().source)
+        assertEquals(7314L, decision.trendOf(ETCHED))
     }
 }

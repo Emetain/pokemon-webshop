@@ -9,14 +9,15 @@ Part 1 (the Magic sync fix) was done earlier that day in `65e1de1`.
 - **Restart your backend.** Your backend on 8080 runs an older build. Stop it and start it again in `backend/` with
   `SPRING_PROFILES_ACTIVE=postgres SPRING_JPA_SHOW_SQL=false ./gradlew bootRun`. Hibernate adds the new columns and
   tables to your local database by itself (the new NOT NULL user columns have defaults for that).
-- **Correct Pokémon prices only appear after a Pokémon sync** (`/admin/sync`): that run downloads Cardmarket's singles
-  list and price guide and links every card. The sync takes about an hour.
+- **Correct Pokémon and Magic prices only appear after a sync of that game** (`/admin/sync`): that run downloads
+  Cardmarket's singles list and price guide and links every card. The Pokémon sync takes about an hour, Magic about a
+  minute.
 - **Stripe:** for Premium in test mode, `stripe listen --forward-to localhost:8080/api/v1/payments/stripe/webhook`
   forwards all events, including the new ones.
 
 ## What was built
 
-### 2. Correct Pokémon prices
+### 2. Correct Pokémon and Magic prices
 
 TCGdex links several prints of a card to one Cardmarket product. Checking 11,944 cards of the 76 sets with shared
 prices showed it's worse than reprints: a shared product is often a different card with the same name (two Squirtles of
@@ -74,11 +75,45 @@ SELECT count(DISTINCT a.id) FROM p a JOIN p b ON a.set_id = b.set_id AND a.name 
 **Delta Reign (`me06`)**, in the unit test and the simulation: Mega Rayquaza ex 084 → product 918912 (€2.93), 138 →
 918982 (€285.45), 141 → 918985 (€123.77), all `MATCHED`.
 
-**The other games** (local database of 2026-11-16): Lorcana, One Piece and Riftbound have no cards sharing a price
-with a same-name card in their set. Magic has 1,615 of 100,935 priced cards (114 at €2 or more, 11 with another rarity),
-and part of it is the same cause: Scryfall gives the three Summer Magic Islands (295, 296, 297) Cardmarket product 16935,
-while Cardmarket has three (16935, 16940, 16945). Others are prints Cardmarket really has as one product (promo and
-"★" variants), or prices that happen to be equal. Not fixed in this phase, see [Open issues](#open-issues).
+**Magic** (added on 2026-11-19 at the owner's request). Scryfall has the same problem in a smaller way: it gives the
+three Summer Magic Islands (295, 296, 297) Cardmarket product 16935, while Cardmarket has three (16935, 16940, 16945).
+The Magic sync now does the same as the Pokémon one: it stores Cardmarket's Magic singles (`products_singles_1.json` and
+`price_guide_1.json`, 125,505 products; the price guide calls its second column `foil` where Pokémon's says `holo`),
+reads Scryfall's `cardmarket_id` and TCGplayer's `usd`/`usd_foil`/`usd_etched`, and runs `CardmarketLinks`. Two rules
+differ from Pokémon, both from today's Scryfall and Cardmarket files:
+
+- **Cards that share a product but each use another of its columns are fine** (`SOURCE`). Cardmarket keeps a card's
+  foil print in the same product, while Scryfall lists old foils as cards of their own: Seventh Edition Duress 131
+  (nonfoil, €0.64) and 131★ (foil, €128.72) are both product 2893. 351 cards are like this. Treating them like Pokémon
+  would have made half of them doubtful.
+- **A product only one card has is trusted without the price check.** Scryfall keeps its links by hand, and of the 170
+  cards the 10-times check would doubt, the wrong price was as often TCGplayer's as Cardmarket's: Summer Magic Kird Ape
+  €384 against $0.37, Library of Leng €0.02 against $400. So those keep their Cardmarket price as before.
+
+The price check still applies to the prints the shop matches itself. Where today's file has no trend for a product
+(some Summer Magic and 30th Anniversary cards), the card keeps Scryfall's copy of its price instead of losing it. Etched
+foils have no column of their own at Cardmarket and get their TCGplayer price. The admin page got a Pokémon/Magic switch.
+
+**Before and after** on a copy of the local database, with a real Magic sync (56 seconds, within the 2 GB heap):
+
+| | Before | After |
+|---|---|---|
+| Magic cards with a price | 100,935 | 105,045 |
+| with a Cardmarket price | 100,935 | 100,736 |
+| with a converted TCGplayer price | 0 | 4,309 |
+| Sharing a price with a same-name card in their set | 1,615 | 1,208 |
+| of which at €2 or more | 114 | 60 |
+| Links: `SOURCE` / `MATCHED` / `DOUBTFUL` / no product | | 102,162 / 233 / 231 / 8,413 |
+
+The 60 left are different products that happen to have the same price (Final Fantasy's Cid 414 and 419 are products
+824301 and 824306, both €2.86), or equal TCGplayer prices. Summer Magic now shows Island 295/296/297 at €593.42,
+€655.81 and €654.54, and Swamp 298/299/300 at €380.66, €450.00 and €560.10, each its own product. The 4,309 TCGplayer
+prices are mostly cards Cardmarket has no product for (8,413 have no `cardmarket_id`, many of them Secret Lair "★"
+prints) and doubtful ones; before, they had no price at all.
+
+**The other games** have no shared products: Lorcana, One Piece and Riftbound are priced from TCGplayer, which has a
+product per print. In the local database no card of theirs shares a price with a same-name card in its set; the 13
+pairs of different cards with an equal price (such as One Piece P-069 and P-079, both $200.00) are coincidences.
 
 ### 3. Card prices per day
 
@@ -198,7 +233,7 @@ The real test with about 50 of your own photos is still to do (see below).
 ## Main files
 
 - Backend: `CardmarketSinglesProvider`/`Parser`, `CardmarketSingleService`, `CardmarketLinks` (with `PriceAgreement`),
-  `CardmarketLinkService`, `CardPriceHistoryService`, `CatalogImportService`, `TcgdexMapper`, `PremiumService` (with
+  `CardmarketLinkService`, `CardPriceHistoryService`, `CatalogImportService`, `TcgdexMapper`, `ScryfallMapper`, `PremiumService` (with
   `PremiumAccess`), `SubscriptionGateway`, `StripePaymentGateway`, `PaymentWebhookOrchestrator`, `ScanService`,
   `ScanMatching`, `PregradeService` (with `PregradeReading`), `CollectionHistoryService`, controllers
   `AdminCardmarketLinkController`, `PremiumController`, `ScannerController`, `PregradeController`.
@@ -225,10 +260,10 @@ in `app.premium` in `application.yml`, not in the environment.
 
 ## Checks
 
-- `./gradlew test`: all 1,103 tests pass, including the new unit tests (`CardmarketLinksTest` with the
-  Rayquaza case, `CardmarketSinglesParserTest`, `PremiumAccessTest`, `ScanMatchingTest`, `PregradeReadingTest`, the
+- `./gradlew test`: all 1,113 tests pass, including the new unit tests (`CardmarketLinksTest` with the
+  Rayquaza case and six Magic cases, `ScryfallMapperTest` for `cardmarket_id` and the dollar prices, `CardmarketSinglesParserTest`, `PremiumAccessTest`, `ScanMatchingTest`, `PregradeReadingTest`, the
   history limit in `CollectionHistoryMathTest`) and integration tests (`CardmarketLinkIntegrationTest` for a set with
-  shared products, the price history and the admin page; `PremiumIntegrationTest` for monthly, yearly, cancelling,
+  shared products, the price history and the admin page, and a Magic set with Summer Magic Islands and Duress ★; `PremiumIntegrationTest` for monthly, yearly, cancelling,
   a failed renewal, a refund and admins; `ScannerIntegrationTest` for counting, the 101st scan and the pre-grade check).
 - `FlywayMigrationTest` and `ProdProfileIntegrationTest` pass, so V15 and V16 match the entities.
 - `npm run build` passes.
@@ -241,7 +276,7 @@ in `app.premium` in `application.yml`, not in the environment.
 - The scanner test above ran against a throwaway backend (port 8095) on a copy of the local database, with the real
   OpenAI key.
 - The price-link rules were simulated on the real TCGdex and Cardmarket data of the 76 affected sets (numbers above);
-  the full Pokémon sync with the new code hasn't run yet.
+  the full Pokémon sync with the new code hasn't run yet. The Magic sync ran for real on a database copy (part 2).
 
 ## Decisions
 
@@ -259,13 +294,14 @@ in `app.premium` in `application.yml`, not in the environment.
 - A partial refund leaves Premium alone; only a full refund of a Premium payment ends it.
 - The pre-grade check measures centering in the browser from lines the customer can correct, because a model's boxes are
   estimates; the model only gives the starting lines and the wear.
+- Magic shares the linking with Pokémon but with its own two rules (columns apart, no check on a unique product), see
+  part 2. The SOURCE price falls back to the source's own copy when today's file has no trend, for both games.
 
 ## Open issues
 
-- **Magic has the same shared-product problem in a smaller way** (see part 2). Fixing it means storing Cardmarket's Magic
-  singles (`products_singles_1.json`, 21 MB) during the Magic sync and running `CardmarketLinks` for Magic with
-  Scryfall's `cardmarket_id` and USD price. Left for a next step because the Magic sync is the most fragile one (2 GB
-  heap) and the impact is about 114 cards at €2 or more.
+- **231 doubtful Magic cards** on `/admin/prijskoppelingen?game=magic`, most of them cheap; the ones worth looking at
+  are Portal's "s" prints (TCGplayer $50 to $150, one Cardmarket product of €1.41 for all prints), the Summer Magic
+  Forests (TCGplayer's $0.30 for 305 makes the order check fail) and meld backs such as Hanweir, the Writhing Township.
 - **Grading company names on the pre-grade page:** the page names no company; the explanation says "grote
   gradingbedrijven". Part of the legal check.
 - Lowering the scanner's latency: gpt-6-luna spends about 260 output tokens per scan; a lower reasoning setting might
@@ -274,8 +310,9 @@ in `app.premium` in `application.yml`, not in the environment.
 
 ## What's left for the owner
 
-1. **Restart** your local backend (see the top), and run a **Pokémon sync** in `/admin/sync`. Then look at
-   `/admin/prijskoppelingen` and Delta Reign's three Mega Rayquaza ex cards.
+1. **Restart** your local backend (see the top), and run a **Pokémon sync** and a **Magic sync** in `/admin/sync`. Then
+   look at `/admin/prijskoppelingen` (both games), Delta Reign's three Mega Rayquaza ex cards and Summer Magic's
+   Islands.
 2. **Premium in Stripe's test mode:** with `stripe listen` running, buy Premium monthly with test card 4242 4242 4242
    4242, check My account and the Max period, cancel in the portal (Premium stays until the end of the period), then buy
    yearly with a second account. Stripe's test clocks can move time forward to see a renewal and the end of a cancelled

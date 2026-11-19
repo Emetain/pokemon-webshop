@@ -48,4 +48,25 @@ class CardmarketSinglesParserTest {
         assertNull(singles.first { it.productId == 918912L }.foilTrendCents)
         assertNull(singles.first { it.productId == 5L }.trendCents)
     }
+
+    @Test
+    fun `reads Magic's foil columns, which Cardmarket calls foil and not holo`() {
+        val guide = """
+            {"version":1,"createdAt":"2026-11-19T02:48:23+0100","priceGuides":[
+              {"idProduct":2893,"idCategory":1,"avg":0.6,"trend":0.64,"avg-foil":120,"trend-foil":119.5}
+            ]}
+        """.trimIndent()
+        val products = """{"products":[{"idProduct":2893,"name":"Duress","idExpansion":11,"idMetacard":1}]}"""
+
+        val single = CardmarketSinglesParser.combine(
+            Game.MTG,
+            CardmarketSinglesParser.products(mapper.createParser(products)),
+            CardmarketSinglesParser.priceGuide(mapper.createParser(guide)),
+            Instant.EPOCH,
+        ).single()
+
+        assertEquals(64L, single.trendCents)
+        assertEquals(11950L, single.foilTrendCents)
+        assertEquals(12000L, single.foilAverageCents)
+    }
 }

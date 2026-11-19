@@ -21,6 +21,8 @@ data class CardmarketCandidateDto(
 /** A card whose Cardmarket product is doubtful or was set by hand, with the products it could be. */
 data class CardmarketLinkDto(
     val cardId: Long,
+    /** The game's slug, for the link to the card page. */
+    val game: String,
     val setCode: String,
     val setName: String,
     val number: String,
@@ -37,6 +39,7 @@ data class CardmarketLinkDto(
         fun from(card: Card, prices: List<CardPrice>, product: CardmarketSingle?, candidates: List<CardmarketSingle>) =
             CardmarketLinkDto(
                 cardId = card.id,
+                game = card.game.slug,
                 setCode = card.set.code,
                 setName = card.set.name,
                 number = card.number,

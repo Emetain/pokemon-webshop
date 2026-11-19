@@ -29,8 +29,8 @@ data class LinkReview(
 )
 
 /**
- * The shop's own links from Pokémon cards to Cardmarket products (phase 11): fed to [CardmarketLinks] during a sync,
- * and the admin page where doubtful links are fixed by hand.
+ * The shop's own links from Pokémon and Magic cards to Cardmarket products (phase 11): fed to [CardmarketLinks] during
+ * a sync, and the admin page where doubtful links are fixed by hand.
  */
 @Service
 class CardmarketLinkService(
@@ -42,12 +42,12 @@ class CardmarketLinkService(
 
     /** Runs inside the import's transaction. Returns nothing for games whose prices aren't linked by the shop. */
     fun decide(game: Game, cards: List<ProviderCard>, rates: ExchangeRates): Map<String, LinkDecision> {
-        if (game != Game.POKEMON || cards.isEmpty()) return emptyMap()
+        if (game !in CardmarketLinks.GAMES || cards.isEmpty()) return emptyMap()
         val manual = cards.map { it.externalId }.chunked(LOOKUP_CHUNK_SIZE)
             .flatMap { cardRepository.findManualLinks(game, it) }
             .associate { it.externalId to ManualLink(it.productId) }
         val wanted = cards.mapNotNull { it.cardmarketProductId } + manual.values.mapNotNull { it.productId }
-        return CardmarketLinks.decide(cards, manual, singlesAround(game, wanted.toSet()), rates)
+        return CardmarketLinks.decide(game, cards, manual, singlesAround(game, wanted.toSet()), rates)
     }
 
     /** The products asked for, and every other single of their expansions: the candidates for shared products. */
@@ -60,16 +60,16 @@ class CardmarketLinkService(
     }
 
     @Transactional(readOnly = true)
-    fun reviews(link: CardmarketLink, page: Int): Page<LinkReview> {
+    fun reviews(game: Game, link: CardmarketLink, page: Int): Page<LinkReview> {
         val pageable = PageRequest.of(
             page.coerceAtLeast(0),
             PAGE_SIZE,
             Sort.by(Sort.Order.desc("set.releaseDate"), Sort.Order.asc("set.id"), Sort.Order.asc("sortKey")),
         )
-        val cards = cardRepository.findAllByGameAndCardmarketLink(Game.POKEMON, link, pageable)
+        val cards = cardRepository.findAllByGameAndCardmarketLink(game, link, pageable)
         val prices = cardPriceRepository.findAllByCardIds(cards.content.map { it.id }).groupBy { it.card.id }
         val singlesBySet = cards.content.map { it.set.id }.distinct().associateWith { setId ->
-            singlesAround(Game.POKEMON, cardRepository.findCardmarketProductIdsInSet(setId).toSet())
+            singlesAround(game, cardRepository.findCardmarketProductIdsInSet(setId).toSet())
         }
         return cards.map { card ->
             val singles = singlesBySet[card.set.id].orEmpty()
@@ -78,7 +78,7 @@ class CardmarketLinkService(
         }
     }
 
-    fun count(link: CardmarketLink): Long = cardRepository.countByGameAndCardmarketLink(Game.POKEMON, link)
+    fun count(game: Game, link: CardmarketLink): Long = cardRepository.countByGameAndCardmarketLink(game, link)
 
     /**
      * Links a card by hand, and prices it from that product right away. [productId] null means no product fits: the
@@ -86,9 +86,9 @@ class CardmarketLinkService(
      */
     @Transactional
     fun setManual(cardId: Long, productId: Long?): LinkReview {
-        val card = pokemonCard(cardId)
+        val card = linkedCard(cardId)
         val single = productId?.let {
-            singleRepository.findById(it).orElse(null)?.takeIf { single -> single.game == Game.POKEMON }
+            singleRepository.findById(it).orElse(null)?.takeIf { single -> single.game == card.game }
                 ?: throw ApiException.validation("Dit Cardmarket-product kennen we niet.")
         }
         card.cardmarketLink = CardmarketLink.MANUAL
@@ -125,13 +125,13 @@ class CardmarketLinkService(
     /** Gives the card back to the sync, which decides its link again on its next run. */
     @Transactional
     fun reset(cardId: Long) {
-        val card = pokemonCard(cardId)
+        val card = linkedCard(cardId)
         card.cardmarketLink = null
         card.cardmarketProductId = null
     }
 
     private fun review(card: Card, prices: List<CardPrice>, product: CardmarketSingle?): LinkReview {
-        val singles = singlesAround(Game.POKEMON, cardRepository.findCardmarketProductIdsInSet(card.set.id).toSet())
+        val singles = singlesAround(card.game, cardRepository.findCardmarketProductIdsInSet(card.set.id).toSet())
         return LinkReview(card, prices, product, candidates(card, singles))
     }
 
@@ -141,8 +141,8 @@ class CardmarketLinkService(
         return singles.values.filter { CardmarketLinks.baseName(it) == name }.sortedBy { it.productId }
     }
 
-    private fun pokemonCard(cardId: Long): Card =
-        cardRepository.findWithSetById(cardId)?.takeIf { it.game == Game.POKEMON } ?: throw ApiException.notFound()
+    private fun linkedCard(cardId: Long): Card =
+        cardRepository.findWithSetById(cardId)?.takeIf { it.game in CardmarketLinks.GAMES } ?: throw ApiException.notFound()
 
     private fun sortPrice(prices: List<CardPrice>): Long? {
         val price = CardVariants.displayPrice(prices) ?: return null

@@ -4,8 +4,10 @@ import com.emetain.pokemonwebshop.domain.CardVariants
 import com.emetain.pokemonwebshop.domain.CardmarketLink
 import com.emetain.pokemonwebshop.domain.CardmarketSingle
 import com.emetain.pokemonwebshop.domain.Currency
+import com.emetain.pokemonwebshop.domain.Game
 import com.emetain.pokemonwebshop.service.provider.ProviderCard
 import com.emetain.pokemonwebshop.service.provider.ProviderPrice
+import com.emetain.pokemonwebshop.service.provider.ScryfallMapper
 import com.emetain.pokemonwebshop.service.provider.TcgdexMapper
 import kotlin.math.abs
 import kotlin.math.ln
@@ -17,7 +19,7 @@ data class LinkDecision(val link: CardmarketLink?, val productId: Long?, val pri
 data class ManualLink(val productId: Long?)
 
 /**
- * Links Pokémon cards to their own Cardmarket product (phase 11). TCGdex links several prints of a card to one
+ * Links Pokémon and Magic cards to their own Cardmarket product (phase 11). TCGdex links several prints of a card to one
  * product: in Delta Reign, Mega Rayquaza ex 084, 138 and 141 all carry product 918912 and all showed €3.15. Checking
  * 11,944 cards showed that a shared product often isn't even the same card: two different Squirtles of Expedition, or
  * Lapras and Lapras VMAX of Sword & Shield. Cardmarket's own files have a product per print, named after the card
@@ -32,34 +34,59 @@ data class ManualLink(val productId: Long?)
  *    the free candidate whose price is closest to its TCGplayer price, as long as the two agree.
  * 4. A card that ends up without a product is [CardmarketLink.DOUBTFUL] and shows its TCGplayer price, never the
  *    shared, wrong one. The admin can pick its product by hand ([CardmarketLink.MANUAL]), and a sync keeps that.
+ *
+ * Magic has the same problem in a smaller way: Scryfall gives the three Summer Magic Islands (295 to 297) product
+ * 16935, while Cardmarket has 16935, 16940 and 16945. Two things differ from Pokémon (see [Rules]): Cardmarket keeps a
+ * Magic card's foil print in the same product, while Scryfall lists old foils as cards of their own ("131★"), so cards
+ * that share a product but each use another of its columns are fine. And a product only one card has stays that
+ * card's without the price check: Scryfall's links are kept by hand, and of the 170 cards that check would doubt, the
+ * wrong price was as often TCGplayer's as Cardmarket's.
  */
 object CardmarketLinks {
 
+    /** The games whose Cardmarket products the shop checks itself. The others are priced from TCGplayer. */
+    val GAMES = setOf(Game.POKEMON, Game.MTG)
+
     private val LEVEL = Regex("\\s+lv\\.?\\s*\\d+$", RegexOption.IGNORE_CASE)
+
+    /** How a game's prints share Cardmarket products. */
+    private data class Rules(
+        /** Doubt a product only one card of the set has when its price and the TCGplayer price are worlds apart. */
+        val checkSource: Boolean,
+        /** Cards that share a product but each use another of its price columns aren't in each other's way. */
+        val splitByColumn: Boolean,
+    )
+
+    private fun rules(game: Game) = when (game) {
+        Game.MTG -> Rules(checkSource = false, splitByColumn = true)
+        else -> Rules(checkSource = true, splitByColumn = false)
+    }
 
     /**
      * [singles] holds at least the products the cards point at and the other products of their expansions. Returns a
      * decision for every card.
      */
     fun decide(
+        game: Game,
         cards: List<ProviderCard>,
         manual: Map<String, ManualLink>,
         singles: Map<Long, CardmarketSingle>,
         rates: ExchangeRates,
     ): Map<String, LinkDecision> {
+        val rules = rules(game)
         val automatic = cards.filter { it.externalId !in manual && it.cardmarketProductId != null }
         val groups = automatic.groupBy { it.cardmarketProductId!! }
-        val taken = groups.filterValues { it.size == 1 }.keys + manual.values.mapNotNull { it.productId }
+        val own = groups.filterValues { it.size == 1 || (rules.splitByColumn && columnsApart(it)) }
+        val taken = own.keys + manual.values.mapNotNull { it.productId }
 
         val decisions = mutableMapOf<String, LinkDecision>()
         manual.forEach { (externalId, link) ->
             cards.find { it.externalId == externalId }?.let { decisions[externalId] = decideManual(it, link, singles) }
         }
-        groups.filter { it.value.size == 1 }.forEach { (productId, group) ->
-            val card = group.single()
-            decisions[card.externalId] = decideSource(card, productId, singles, rates)
+        own.forEach { (productId, group) ->
+            group.forEach { card -> decisions[card.externalId] = decideSource(card, productId, singles, rates, rules) }
         }
-        groups.values.filter { it.size > 1 }.flatten()
+        groups.filterKeys { it !in own }.values.flatten()
             .groupBy { CatalogText.nameSearch(it.name) }
             .forEach { (name, sharing) -> decisions.putAll(decideShared(name, sharing, singles, taken, rates)) }
 
@@ -69,15 +96,24 @@ object CardmarketLinks {
         }
     }
 
+    /** Magic: "Duress" 131 is nonfoil only and "Duress" 131★ foil only, so each has its own column of product 2893. */
+    private fun columnsApart(group: List<ProviderCard>): Boolean {
+        val columns = group.flatMap { card -> card.variants.filter { it in MAGIC_COLUMNS } }
+        return columns.size == columns.toSet().size
+    }
+
     private fun decideSource(
         card: ProviderCard,
         productId: Long,
         singles: Map<Long, CardmarketSingle>,
         rates: ExchangeRates,
+        rules: Rules,
     ): LinkDecision {
-        // Without today's file, TCGdex's own copy of the same product's prices will do.
-        val prices = singles[productId]?.let { pricesOf(card, it) } ?: card.prices
-        return if (PriceAgreement.sourceAgrees(prices, card.fallbackPrices, rates)) {
+        // Without a trend in today's file, the source's own copy of the same product's prices will do: Scryfall still
+        // has one for some old Magic cards whose trend Cardmarket's file leaves out.
+        val prices = singles[productId]?.let { pricesOf(card, it) }?.takeIf { prices -> prices.any { it.trendCents != null } }
+            ?: card.prices
+        return if (!rules.checkSource || PriceAgreement.sourceAgrees(prices, card.fallbackPrices, rates)) {
             LinkDecision(CardmarketLink.SOURCE, productId, prices.ifEmpty { card.fallbackPrices })
         } else {
             LinkDecision(CardmarketLink.DOUBTFUL, productId, card.fallbackPrices)
@@ -149,13 +185,17 @@ object CardmarketLinks {
     fun pricesOf(card: ProviderCard, single: CardmarketSingle): List<ProviderPrice> =
         pricesOf(card.variants, single) + card.prices.filter { it.variant == CardVariants.FIRST_EDITION }
 
-    fun pricesOf(variants: Set<String>, single: CardmarketSingle): List<ProviderPrice> =
-        TcgdexMapper.cardmarketPrices(
-            variants,
-            TcgdexMapper.Amounts(single.trendCents, single.averageCents),
-            TcgdexMapper.Amounts(single.foilTrendCents, single.foilAverageCents),
-            single.updatedAt,
-        )
+    fun pricesOf(variants: Set<String>, single: CardmarketSingle): List<ProviderPrice> {
+        val base = TcgdexMapper.Amounts(single.trendCents, single.averageCents)
+        val foil = TcgdexMapper.Amounts(single.foilTrendCents, single.foilAverageCents)
+        return when (single.game) {
+            Game.MTG -> ScryfallMapper.cardmarketPrices(variants, base, foil, single.updatedAt)
+            else -> TcgdexMapper.cardmarketPrices(variants, base, foil, single.updatedAt)
+        }
+    }
+
+    /** The variants of a Magic card that a Cardmarket product has a column for. */
+    private val MAGIC_COLUMNS = setOf(CardVariants.NORMAL, CardVariants.FOIL)
 }
 
 /**

@@ -43,9 +43,9 @@ data class ProviderCard(
     val colors: Set<String> = emptySet(),
     val dexNumbers: Set<Int> = emptySet(),
     val prices: List<ProviderPrice> = emptyList(),
-    /** Pokémon: the Cardmarket product TCGdex links the card to. Several prints can share one, see phase 11. */
+    /** Pokémon and Magic: the Cardmarket product the source links the card to. Several prints can share one, see phase 11. */
     val cardmarketProductId: Long? = null,
-    /** Pokémon: TCGplayer's prices, for a card whose Cardmarket product can't be trusted. */
+    /** Pokémon and Magic: TCGplayer's prices, for a card whose Cardmarket product can't be trusted. */
     val fallbackPrices: List<ProviderPrice> = emptyList(),
 )
 

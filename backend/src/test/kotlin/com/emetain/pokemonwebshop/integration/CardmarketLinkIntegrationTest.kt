@@ -26,7 +26,7 @@ import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/** Phase 11: Pokémon cards that share a Cardmarket product get a price per print, and prices are kept per day. */
+/** Phase 11: Pokémon and Magic cards that share a Cardmarket product get a price per print, and prices are kept per day. */
 class CardmarketLinkIntegrationTest : IntegrationTest() {
 
     @Autowired
@@ -76,9 +76,39 @@ class CardmarketLinkIntegrationTest : IntegrationTest() {
         ),
     )
 
-    private fun card(externalId: String) = cardRepository.findAllByGameAndExternalIdIn(Game.POKEMON, listOf(externalId)).single()
+    private fun card(externalId: String, game: Game = Game.POKEMON) =
+        cardRepository.findAllByGameAndExternalIdIn(game, listOf(externalId)).single()
 
     private fun price(externalId: String) = cardPriceRepository.findAllByCardIds(listOf(card(externalId).id)).single()
+
+    private fun magicSingle(offset: Long, name: String, trend: Long, foilTrend: Long? = null) = CardmarketSingle(
+        productId = base + offset,
+        game = Game.MTG,
+        name = name,
+        expansionId = base,
+        metacardId = null,
+        trendCents = trend,
+        averageCents = null,
+        foilTrendCents = foilTrend,
+        updatedAt = updated,
+    )
+
+    private fun magic(code: String, number: String, name: String, product: Long, variants: Set<String>) = ProviderCard(
+        externalId = "$code-$number",
+        number = number,
+        name = name,
+        rarity = null,
+        cardType = "Basic Land",
+        imageSmallUrl = null,
+        imageLargeUrl = null,
+        variants = variants,
+        // Scryfall's copy: the shared product's price for all of them.
+        prices = listOf(ProviderPrice(CardVariants.NORMAL, 59342, null, updated)),
+        cardmarketProductId = base + product,
+    )
+
+    private fun magicPrices(externalId: String) =
+        cardPriceRepository.findAllByCardIds(listOf(card(externalId, Game.MTG).id)).associate { it.variant to it.trendCents }
 
     private fun history(externalId: String): List<Map<String, Any?>> =
         jdbc.queryForList("select * from card_price_history where card_id = ? order by price_date", card(externalId).id)
@@ -144,5 +174,42 @@ class CardmarketLinkIntegrationTest : IntegrationTest() {
         assertNull(card("$code-131").cardmarketLink)
         mockMvc.perform(get("/v1/admin/catalog/cardmarket-links?status=manual").cookie(loggedInUser()))
             .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `Magic cards that share a product get their own, and a foil print listed apart keeps the foil column`() {
+        val code = uniqueCode()
+        singleService.replace(
+            Game.MTG,
+            listOf(
+                magicSingle(1, "Island", 59342),
+                magicSingle(2, "Island", 65581),
+                magicSingle(3, "Island", 65454),
+                magicSingle(4, "Duress", 64, foilTrend = 11950),
+            ),
+        )
+        val islands = listOf("295", "296", "297").map { magic(code, it, "Island", 1, setOf(CardVariants.NORMAL)) }
+        val duress = listOf(
+            magic(code, "131", "Duress", 4, setOf(CardVariants.NORMAL)),
+            magic(code, "131★", "Duress", 4, setOf(CardVariants.FOIL)),
+        )
+
+        importService.importSet(Game.MTG, providerSet(code, islands + duress))
+
+        assertEquals(listOf(59342L, 65581L, 65454L), listOf("295", "296", "297").map { magicPrices("$code-$it")[CardVariants.NORMAL] })
+        assertEquals(base + 2, card("$code-296", Game.MTG).cardmarketProductId)
+        assertEquals(mapOf(CardVariants.NORMAL to 64L), magicPrices("$code-131"))
+        assertEquals(mapOf(CardVariants.FOIL to 11950L), magicPrices("$code-131★"))
+        assertEquals(CardmarketLink.SOURCE, card("$code-131★", Game.MTG).cardmarketLink)
+
+        val admin = loggedInUser(Role.ADMIN)
+        mockMvc.perform(get("/v1/admin/catalog/cardmarket-links?game=magic&status=doubtful").cookie(admin))
+            .andExpect(status().isOk)
+        mockMvc.perform(get("/v1/admin/catalog/cardmarket-links?game=lorcana").cookie(admin))
+            .andExpect(status().isBadRequest)
+        // A Magic card can't be linked to a product of another game.
+        singleService.replace(Game.POKEMON, listOf(single(5, 100)))
+        mockMvc.perform(put("/v1/admin/catalog/cardmarket-links/${card("$code-295", Game.MTG).id}").cookie(admin).json(mapOf("productId" to base + 5)))
+            .andExpect(status().isBadRequest)
     }
 }

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { GAMES } from '../../data/games'
 import CardImage from '../../components/catalog/CardImage.vue'
 import PageLinks from '../../components/catalog/PageLinks.vue'
 import FormMessage from '../../components/FormMessage.vue'
@@ -8,15 +9,17 @@ import { formatDate, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
 /**
- * Pokémon cards whose Cardmarket product the sync couldn't trust (phase 11). They show their TCGplayer price until the
- * admin picks the right product here, or none. The sync never changes a choice made here.
+ * Pokémon and Magic cards whose Cardmarket product the sync couldn't trust (phase 11). They show their TCGplayer price
+ * until the admin picks the right product here, or none. The sync never changes a choice made here.
  */
 const props = defineProps({
+  game: { type: String, default: undefined },
   status: { type: String, default: undefined },
   page: { type: String, default: undefined },
 })
 
 const STATUSES = ['doubtful', 'manual']
+const LINKED_GAMES = GAMES.filter((item) => ['pokemon', 'magic'].includes(item.slug))
 
 const result = ref(null)
 const error = ref('')
@@ -25,17 +28,22 @@ const busyId = ref(null)
 const typed = ref({})
 
 const current = () => (STATUSES.includes(props.status) ? props.status : 'doubtful')
+const currentGame = () => (LINKED_GAMES.some((item) => item.slug === props.game) ? props.game : 'pokemon')
 
 async function load() {
   error.value = ''
   try {
-    result.value = await adminPriceLinkApi.list({ status: current(), page: props.page ? Number(props.page) - 1 : 0 })
+    result.value = await adminPriceLinkApi.list({
+      game: currentGame(),
+      status: current(),
+      page: props.page ? Number(props.page) - 1 : 0,
+    })
   } catch (exception) {
     error.value = exception.message
   }
 }
 
-watch(() => [props.status, props.page], load, { immediate: true })
+watch(() => [props.game, props.status, props.page], load, { immediate: true })
 
 async function act(item, action) {
   busyId.value = item.cardId
@@ -69,13 +77,25 @@ const price = (cents, currency = 'EUR') => (cents == null ? t('admin.priceLinks.
   <h1>{{ t('admin.priceLinks.title') }}</h1>
   <p class="admin-intro">{{ t('admin.priceLinks.intro') }}</p>
 
+  <nav class="tabs" :aria-label="t('admin.priceLinks.game')">
+    <router-link
+      v-for="item in LINKED_GAMES"
+      :key="item.slug"
+      class="tab"
+      :class="{ active: currentGame() === item.slug }"
+      :to="{ query: { game: item.slug } }"
+    >
+      {{ t(item.labelKey) }}
+    </router-link>
+  </nav>
+
   <nav class="tabs" :aria-label="t('admin.priceLinks.title')">
     <router-link
       v-for="status in STATUSES"
       :key="status"
       class="tab"
       :class="{ active: current() === status }"
-      :to="{ query: { status } }"
+      :to="{ query: { game: currentGame(), status } }"
     >
       {{ t(`admin.priceLinks.${status}`, { count: result ? result[status] : '…' }) }}
     </router-link>
@@ -89,7 +109,7 @@ const price = (cents, currency = 'EUR') => (cents == null ? t('admin.priceLinks.
 
   <ul v-if="result?.items.length" class="list">
     <li v-for="item in result.items" :key="item.cardId" class="item admin-panel">
-      <router-link class="picture" :to="`/kaarten/pokemon/${encodeURIComponent(item.setCode)}/${item.cardId}`" target="_blank">
+      <router-link class="picture" :to="`/kaarten/${item.game}/${encodeURIComponent(item.setCode)}/${item.cardId}`" target="_blank">
         <CardImage :src="item.imageUrl" :alt="item.name" />
       </router-link>
 
@@ -180,6 +200,10 @@ const price = (cents, currency = 'EUR') => (cents == null ? t('admin.priceLinks.
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-4);
+}
+
+.tabs + .tabs {
+  margin-top: var(--space-2);
 }
 
 .tab {

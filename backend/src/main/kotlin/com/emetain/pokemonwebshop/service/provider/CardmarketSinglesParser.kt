@@ -50,8 +50,9 @@ object CardmarketSinglesParser {
                     id = id,
                     trend = PriceCents.parse(node.path("trend")),
                     average = PriceCents.parse(node.path("avg")),
-                    foilTrend = PriceCents.parse(node.path("trend-holo")),
-                    foilAverage = PriceCents.parse(node.path("avg-holo")),
+                    // Pokémon calls its second column "holo", Magic "foil".
+                    foilTrend = PriceCents.parse(node.path("trend-holo")) ?: PriceCents.parse(node.path("trend-foil")),
+                    foilAverage = PriceCents.parse(node.path("avg-holo")) ?: PriceCents.parse(node.path("avg-foil")),
                 )
             }
         }

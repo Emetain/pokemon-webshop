@@ -390,7 +390,7 @@ const router = createRouter({
         {
           path: 'prijskoppelingen',
           component: () => import('./views/admin/AdminPriceLinksView.vue'),
-          props: withQuery('status', 'page'),
+          props: withQuery('game', 'status', 'page'),
         },
       ],
     },

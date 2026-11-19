@@ -3,6 +3,8 @@ package com.emetain.pokemonwebshop.service.provider
 import com.emetain.pokemonwebshop.domain.CardVariants.ETCHED
 import com.emetain.pokemonwebshop.domain.CardVariants.FOIL
 import com.emetain.pokemonwebshop.domain.CardVariants.NORMAL
+import com.emetain.pokemonwebshop.domain.Currency
+import com.emetain.pokemonwebshop.domain.PriceSource
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
@@ -42,6 +44,28 @@ class ScryfallMapperTest {
             listOf(ProviderPrice(NORMAL, 64, null, updatedAt), ProviderPrice(FOIL, 318, null, updatedAt)),
             card.prices,
         )
+    }
+
+    @Test
+    fun `reads the Cardmarket product and TCGplayer's dollars per finish`() {
+        val card = card(
+            """"finishes": ["nonfoil", "etched"], "cardmarket_id": 16935,
+               "prices": { "eur": "593.42", "usd": "1.81", "usd_foil": "9.99", "usd_etched": "3.10" }""",
+        )
+
+        assertEquals(16935L, card.cardmarketProductId)
+        assertEquals(
+            listOf(
+                ProviderPrice(NORMAL, 181, null, updatedAt, PriceSource.TCGPLAYER, Currency.USD),
+                ProviderPrice(ETCHED, 310, null, updatedAt, PriceSource.TCGPLAYER, Currency.USD),
+            ),
+            card.fallbackPrices,
+        )
+    }
+
+    @Test
+    fun `a card without a Cardmarket product has none`() {
+        assertNull(card(""""finishes": ["nonfoil"]""").cardmarketProductId)
     }
 
     @Test

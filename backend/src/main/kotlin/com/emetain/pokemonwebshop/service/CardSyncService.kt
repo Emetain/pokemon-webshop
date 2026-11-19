@@ -49,11 +49,9 @@ class CardSyncService(
         try {
             log.info("Card sync for {} started", game)
             refreshExchangeRates()
-            if (game == Game.POKEMON) {
-                refreshPokedex()
-                // Before the cards: they are linked to these products and priced from them (phase 11).
-                cardmarketSingleService.refresh(game)
-            }
+            if (game == Game.POKEMON) refreshPokedex()
+            // Before the cards: they are linked to these products and priced from them (phase 11).
+            if (game in CardmarketLinks.GAMES) cardmarketSingleService.refresh(game)
             providers.forGame(game).fetchCatalog { set ->
                 syncRunService.addProgress(runId, catalogImportService.importSet(game, set))
             }

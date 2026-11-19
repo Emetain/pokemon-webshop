@@ -1,10 +1,16 @@
 package com.emetain.pokemonwebshop.service.provider
 
 import com.emetain.pokemonwebshop.domain.CardVariants
+import com.emetain.pokemonwebshop.domain.Currency
+import com.emetain.pokemonwebshop.domain.PriceSource
 import tools.jackson.databind.JsonNode
 import java.time.Instant
 
-/** Maps Scryfall JSON to our model. `prices.eur` and `prices.eur_foil` come from Cardmarket. */
+/**
+ * Maps Scryfall JSON to our model. `prices.eur` and `prices.eur_foil` come from Cardmarket, for the product in
+ * `cardmarket_id`; `prices.usd`, `usd_foil` and `usd_etched` from TCGplayer. Since phase 11 the shop checks that product
+ * itself, because Scryfall gives some prints the same one ([com.emetain.pokemonwebshop.service.CardmarketLinks]).
+ */
 object ScryfallMapper {
 
     private val VARIANTS_BY_FINISH = mapOf(
@@ -52,8 +58,19 @@ object ScryfallMapper {
             variants = variants,
             colors = colors(json),
             prices = prices(json.path("prices"), variants, pricesUpdatedAt),
+            cardmarketProductId = json.path("cardmarket_id").asLong(0).takeIf { it > 0 },
+            fallbackPrices = tcgplayerPrices(json.path("prices"), variants, pricesUpdatedAt),
         )
     }
+
+    /**
+     * A Cardmarket product's two columns for a Magic card: the foil column is the foil print. Etched foils have no
+     * column of their own there, so they keep their TCGplayer price.
+     */
+    fun cardmarketPrices(variants: Set<String>, base: TcgdexMapper.Amounts, foil: TcgdexMapper.Amounts, updatedAt: Instant): List<ProviderPrice> =
+        listOf(CardVariants.NORMAL to base, CardVariants.FOIL to foil)
+            .filter { (variant, amounts) -> variant in variants && !amounts.isEmpty }
+            .map { (variant, amounts) -> amounts.price(variant, updatedAt) }
 
     /** The types of the front face: "Legendary Creature — Elf // Land" counts as a creature. */
     private fun category(typeLine: String?): String? {
@@ -66,6 +83,14 @@ object ScryfallMapper {
         val codes = json.path("colors").takeIf { it.isArray } ?: json.path("card_faces").path(0).path("colors")
         return codes.mapNotNull { COLOR_NAMES[it.asString()] }.toSet().ifEmpty { setOf(COLORLESS) }
     }
+
+    private fun tcgplayerPrices(prices: JsonNode, variants: Set<String>, updatedAt: Instant): List<ProviderPrice> =
+        listOf(CardVariants.NORMAL to "usd", CardVariants.FOIL to "usd_foil", CardVariants.ETCHED to "usd_etched")
+            .filter { (variant, _) -> variant in variants }
+            .mapNotNull { (variant, field) ->
+                PriceCents.parse(prices.path(field))
+                    ?.let { ProviderPrice(variant, it, null, updatedAt, PriceSource.TCGPLAYER, Currency.USD) }
+            }
 
     private fun prices(prices: JsonNode, variants: Set<String>, updatedAt: Instant): List<ProviderPrice> =
         listOf(CardVariants.NORMAL to "eur", CardVariants.FOIL to "eur_foil")
