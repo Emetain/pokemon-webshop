@@ -48,7 +48,9 @@ class CardmarketLinkIntegrationTest : IntegrationTest() {
     private val updated = Instant.parse("2026-11-19T01:48:38Z")
 
     // Product ids are unique across Cardmarket, and so across tests.
-    private val base = Random.nextLong(1_000_000, 900_000_000) * 10
+    // Always above Int.MAX_VALUE: JSON reads a smaller product id back as an Int, and an Int never equals the Long that
+    // `jsonPath(...).value(base + 1)` expects. With the old range from 10 million that failed about one run in four.
+    private val base = Random.nextLong(300_000_000, 900_000_000) * 10
 
     private fun single(offset: Long, trend: Long, name: String = "Mega Rayquaza ex [Roar of the Ruler]") = CardmarketSingle(
         productId = base + offset,
