@@ -64,6 +64,23 @@ allOpen {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+
+    // The failed tests once more at the very end, so in a long CI log their names sit right above Gradle's summary.
+    val failures = mutableListOf<String>()
+    afterTest(
+        KotlinClosure2<TestDescriptor, TestResult, Unit>({ test, result ->
+            if (result.resultType == TestResult.ResultType.FAILURE) {
+                failures += "${test.className?.substringAfterLast('.')} > ${test.displayName}"
+            }
+        }),
+    )
+    afterSuite(
+        KotlinClosure2<TestDescriptor, TestResult, Unit>({ suite, _ ->
+            if (suite.parent == null && failures.isNotEmpty()) {
+                println("\nFailed tests:\n" + failures.joinToString("\n") { "  - $it" })
+            }
+        }),
+    )
 }
 
 // Only the runnable jar: backend/Dockerfile copies build/libs/*.jar to one file.

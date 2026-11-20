@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.Instant
+import java.time.LocalDate
 import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -146,7 +147,10 @@ class CardmarketLinkIntegrationTest : IntegrationTest() {
         val squirtles = listOf("131", "132").map { number ->
             rayquaza(code, number, tcgplayer = null).copy(name = "Squirtle", cardmarketProductId = base + 1)
         }
-        importService.importSet(Game.POKEMON, providerSet(code, squirtles))
+        // The admin list is paged, newest set first, and other tests leave doubtful cards behind in the shared
+        // database: the newest release date puts this card on the first page, whatever ran before.
+        val set = providerSet(code, squirtles, releaseDate = LocalDate.of(2999, 12, 31))
+        importService.importSet(Game.POKEMON, set)
         val doubtful = card("$code-131")
         assertEquals(CardmarketLink.DOUBTFUL, doubtful.cardmarketLink)
         assertEquals(emptyList(), cardPriceRepository.findAllByCardIds(listOf(doubtful.id)))
@@ -162,7 +166,7 @@ class CardmarketLinkIntegrationTest : IntegrationTest() {
             .andExpect(jsonPath("$.prices[0].trendCents").value(5000))
             .andExpect(jsonPath("$.prices[0].source").value("CARDMARKET"))
 
-        importService.importSet(Game.POKEMON, providerSet(code, squirtles))
+        importService.importSet(Game.POKEMON, set)
         assertEquals(CardmarketLink.MANUAL, card("$code-131").cardmarketLink)
         assertEquals(base + 4, card("$code-131").cardmarketProductId)
         assertEquals(5000L, price("$code-131").trendCents)
