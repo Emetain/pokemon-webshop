@@ -56,7 +56,7 @@ class ScannerOrchestrator(
         }
         val reading = outcome.reading
         return ScanResultDto(
-            reading = ScanReadingDto(reading.game?.slug, reading.name, reading.setCode, reading.setName, reading.number),
+            reading = ScanReadingDto(reading.game?.slug, reading.name, reading.setCode, reading.setName, reading.number, reading.finish),
             match = outcome.match?.let { summaries[it.card.id] },
             candidates = cards.mapNotNull { summaries[it.id] },
             scansLeft = outcome.scansLeft,

@@ -48,6 +48,7 @@ class CatalogImportService(
     private val shopSetRules: ShopSetRules,
     private val cardmarketLinkService: CardmarketLinkService,
     private val historyService: CardPriceHistoryService,
+    private val variantMover: CardVariantMover,
     private val clock: Clock,
 ) {
 
@@ -185,7 +186,11 @@ class CatalogImportService(
         card.category = wanted.category
         card.imageSmallUrl = wanted.imageSmallUrl
         card.imageLargeUrl = wanted.imageLargeUrl
+        val removedVariants = card.variants - wanted.variants
         card.variants.replaceWith(wanted.variants)
+        if (removedVariants.isNotEmpty() && wanted.variants.isNotEmpty()) {
+            variantMover.moveRemoved(card, removedVariants, CardVariants.default(wanted.variants))
+        }
         card.colors.replaceWith(wanted.colors)
         card.dexNumbers.replaceWith(wanted.dexNumbers)
         return true

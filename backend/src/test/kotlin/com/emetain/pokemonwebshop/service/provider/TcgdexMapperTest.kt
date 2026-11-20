@@ -259,9 +259,10 @@ class TcgdexMapperTest {
         val card = TcgdexMapper.card(fixture("tcgdex-me06-138.json"))
 
         assertEquals(918912L, card.cardmarketProductId)
-        // TCGdex calls this print "normal", TCGplayer "holofoil": the base price still goes to the card's variant.
+        // TCGdex's placeholder says "normal"; TCGplayer's "holofoil" is the real finish (2026-11-20).
+        assertEquals(setOf(HOLO), card.variants)
         val fallback = card.fallbackPrices.single()
-        assertEquals(NORMAL, fallback.variant)
+        assertEquals(HOLO, fallback.variant)
         assertEquals(27729, fallback.trendCents)
         assertEquals(com.emetain.pokemonwebshop.domain.PriceSource.TCGPLAYER, fallback.source)
         assertEquals(com.emetain.pokemonwebshop.domain.Currency.USD, fallback.currency)
@@ -287,5 +288,65 @@ class TcgdexMapperTest {
         val byVariant = card.fallbackPrices.associate { it.variant to it.trendCents }
         assertEquals(mapOf(NORMAL to 150L, REVERSE to 225L, FIRST_EDITION to 999L), byVariant)
         assertNull(card.cardmarketProductId)
+    }
+
+    // 2026-11-20: TCGdex's placeholder variants for a new set ("normal" only, variantId "generated").
+
+    private val placeholder = """ "normal": true, "holo": false, "reverse": false """
+    private val generated = """[{ "type": "normal", "size": "standard", "variantId": "generated" }]"""
+
+    private fun placeholderCard(rarity: String, tcgplayer: String?) = TcgdexMapper.card(
+        json(
+            """
+            {
+              "id": "me06-1", "localId": "1", "name": "Testmon", "rarity": "$rarity",
+              "variants": { $placeholder },
+              "variants_detailed": $generated,
+              "pricing": {
+                "cardmarket": { "updated": "2026-11-19T00:39:57.000Z", "idProduct": 1, $bothColumns }
+                ${tcgplayer?.let { """, "tcgplayer": { "updated": "2026-11-19T05:47:44.244Z", $it }""" } ?: ""}
+              }
+            }
+            """,
+        ),
+    )
+
+    @Test
+    fun `a placeholder takes the finishes TCGplayer has prices for`() {
+        val card = placeholderCard("Common", """ "normal": { "marketPrice": 0.10 }, "reverse-holofoil": { "marketPrice": 0.30 } """)
+
+        assertEquals(setOf(NORMAL, REVERSE), card.variants)
+        // Cardmarket's second column is then the reverse holo, not nothing.
+        assertEquals(1000L, card.trend(NORMAL))
+        assertEquals(2000L, card.trend(REVERSE))
+    }
+
+    @Test
+    fun `a placeholder without TCGplayer prices follows the rarity`() {
+        assertEquals(setOf(NORMAL, REVERSE), placeholderCard("Uncommon", null).variants)
+        assertEquals(setOf(HOLO, REVERSE), placeholderCard("Rare", null).variants)
+        assertEquals(setOf(HOLO), placeholderCard("Double rare", null).variants)
+        assertEquals(setOf(HOLO), placeholderCard("Special illustration rare", null).variants)
+        assertEquals(setOf(HOLO), placeholderCard("Mega Hyper Rare", null).variants)
+        // A rarity it doesn't know keeps what TCGdex says.
+        assertEquals(setOf(NORMAL), placeholderCard("Promo", null).variants)
+    }
+
+    @Test
+    fun `real variants stay as TCGdex gives them, also when TCGplayer differs`() {
+        val card = TcgdexMapper.card(
+            json(
+                """
+                {
+                  "id": "sv03.5-1", "localId": "1", "name": "Testmon", "rarity": "Common",
+                  "variants": { "normal": true, "reverse": true },
+                  "variants_detailed": [{ "type": "normal", "variantId": "endfynwn4n10gzq" }, { "type": "reverse", "variantId": "cm4kqul3x1bwlz1f" }],
+                  "pricing": { "tcgplayer": { "updated": "2026-11-19T05:47:44.244Z", "normal": { "marketPrice": 0.10 } } }
+                }
+                """,
+            ),
+        )
+
+        assertEquals(setOf(NORMAL, REVERSE), card.variants)
     }
 }

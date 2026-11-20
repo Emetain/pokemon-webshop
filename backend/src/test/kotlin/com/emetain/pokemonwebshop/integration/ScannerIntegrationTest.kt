@@ -43,7 +43,7 @@ class ScannerIntegrationTest : IntegrationTest() {
     private fun card(): String {
         val name = uniqueWord().replaceFirstChar { it.uppercase() }
         importService.importSet(Game.POKEMON, providerSet(cards = listOf(providerCard(number = "025", name = name))))
-        ai.scanReading = """{"game": "pokemon", "name": "$name", "setCode": "XYZ", "setName": null, "number": "25"}"""
+        ai.scanReading = """{"game": "pokemon", "name": "$name", "setCode": "XYZ", "setName": null, "number": "25", "finish": "reverse"}"""
         return name
     }
 
@@ -60,6 +60,7 @@ class ScannerIntegrationTest : IntegrationTest() {
             .andExpect(jsonPath("$.match.name").value(name))
             .andExpect(jsonPath("$.match.number").value("025"))
             .andExpect(jsonPath("$.reading.name").value(name))
+            .andExpect(jsonPath("$.reading.finish").value("reverse"))
             .andExpect(jsonPath("$.scansLeft").value(99))
     }
 

@@ -18,6 +18,13 @@ interface CollectionEntryRepository : JpaRepository<CollectionEntry, Long> {
     @Query("select e from CollectionEntry e where e.user.id = :userId and e.card.id in :cardIds")
     fun findAllByUserAndCards(userId: Long, cardIds: Collection<Long>): List<CollectionEntry>
 
+    /** For [com.emetain.pokemonwebshop.service.CardVariantMover]: the entries of finishes a card no longer has. */
+    @Query("select e from CollectionEntry e join fetch e.user where e.card.id = :cardId and e.variant in :variants")
+    fun findAllByCardIdAndVariantIn(cardId: Long, variants: Collection<String>): List<CollectionEntry>
+
+    @Query("select e from CollectionEntry e where e.user.id = :userId and e.card.id = :cardId and e.variant = :variant")
+    fun findByUserIdAndCardIdAndVariant(userId: Long, cardId: Long, variant: String): CollectionEntry?
+
     @Query("select distinct e.card.id from CollectionEntry e where e.user.id = :userId and e.card.id in :cardIds")
     fun findOwnedCardIds(userId: Long, cardIds: Collection<Long>): List<Long>
 

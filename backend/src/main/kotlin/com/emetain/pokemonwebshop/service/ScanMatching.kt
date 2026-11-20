@@ -11,6 +11,11 @@ data class ScanReading(
     val setName: String?,
     /** As printed before a slash: "084" from "084/182", "OP01-001", "377". */
     val number: String?,
+    /**
+     * The finish the model saw: [com.emetain.pokemonwebshop.domain.CardVariants.NORMAL], `HOLO` or `REVERSE`, or null
+     * when it couldn't tell. Only a hint: a photo in flat light or through a sleeve hides the shine.
+     */
+    val finish: String? = null,
 ) {
     val readable: Boolean get() = !name.isNullOrBlank() || !number.isNullOrBlank()
 }

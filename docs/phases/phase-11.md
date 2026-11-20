@@ -236,6 +236,31 @@ The real test with about 50 of your own photos is still to do (see below).
   bottom of the frame (35/65), which the customer has to drag down. Sent the front twice, the check noticed it ("Dit is
   opnieuw de voorkant"). Real photos are less straight; the test against your graded cards is still to do.
 
+### After the owner's first tests (2026-11-20)
+
+- **Camera on a computer:** a computer's browser ignores `capture` on a file input and opens the file picker, so
+  "Foto maken" opens a live camera view there (`CameraCapture.vue`, `getUserMedia`); phones keep their own camera app.
+  The view is never mirrored, and the photo is cropped to the card frame plus 12% (a webcam picture is wide; the scanner
+  gets more pixels on the card). The Caddyfile now allows `camera=(self)`. The pre-grade check got "Foto maken" and
+  "Foto kiezen" for each side.
+- **Scan result:** the photo and the card found side by side at the same size, with the card's large picture (it was
+  about 2.5rem wide in a six-column grid). A card with more versions shows a row per version, and the line "Volgens de
+  scan is dit: …": the model now also reads the finish (`normal`, `holo`, `reverse`, `unknown`), only as a hint.
+- **Card versions of new sets:** TCGdex first gives every card of a new set a placeholder, "normal" only with
+  `variantId: "generated"` (all of Delta Reign, `me06`). The sync then takes the finishes from TCGdex's TCGplayer prices
+  (`normal`, `holofoil`, `reverse-holofoil`), and without those the owner's rule by rarity: common and uncommon normal +
+  reverse holo, rare holo + reverse holo, everything above one holo print. Older sets keep TCGdex's own variants.
+  When a card loses a finish, collection entries and shop singles of it move to the card's main finish
+  (`CardVariantMover`), copies of one customer added up. A **Pokémon sync** applies this.
+- **Pre-grade score:** one score with a decimal, "9.7 / 10", in a box right under "Resultaat", green for high and red
+  for low, with the four parts (centering, corners, edges, surface). Computed in the page (`utils/pregradeScore.js`), so
+  it follows the lines while they're dragged: the average of the parts, at most 0.5 above the weakest one and never
+  above what the centering allows on the common scales. Always labelled "Indicatie"; part of the legal check.
+- **Premium popup:** every Premium feature opens `PremiumDialog.vue` instead of a page, see "Changes made during the
+  build" in `docs/build-prompt.md`.
+- **Home page:** the customer's value graph and tiles for the value graph, the scanner and the pre-grade check, right
+  below "Nieuw binnen".
+
 ## Main files
 
 - Backend: `CardmarketSinglesProvider`/`Parser`, `CardmarketSingleService`, `CardmarketLinks` (with `PriceAgreement`),

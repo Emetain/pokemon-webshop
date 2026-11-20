@@ -7,6 +7,8 @@ data class ScanReadingDto(
     val setCode: String?,
     val setName: String?,
     val number: String?,
+    /** The finish the scanner saw (`normal`, `holo`, `reverse`), or null: a hint for which version to add. */
+    val finish: String? = null,
 )
 
 data class ScanResultDto(

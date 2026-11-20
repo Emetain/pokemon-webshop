@@ -28,6 +28,18 @@ object TcgdexMapper {
         CardVariants.W_PROMO,
     )
 
+    /** The `variantId` of TCGdex's placeholder variants for a new set, see [variants]. */
+    private const val GENERATED_VARIANT = "generated"
+
+    /** TCGplayer's price keys at TCGdex, and the finish each one is. */
+    private val TCGPLAYER_FINISHES = mapOf(
+        "normal" to CardVariants.NORMAL,
+        "unlimited" to CardVariants.NORMAL,
+        "holofoil" to CardVariants.HOLO,
+        "unlimited-holofoil" to CardVariants.HOLO,
+        "reverse-holofoil" to CardVariants.REVERSE,
+    )
+
     fun set(json: JsonNode, sortOrder: Int, cards: List<ProviderCard>, failedCards: Int): ProviderSet {
         val id = json.requireText("id")
         return ProviderSet(
@@ -47,7 +59,7 @@ object TcgdexMapper {
 
     fun card(json: JsonNode): ProviderCard {
         val image = json.text("image")
-        val variants = VARIANT_FIELDS.filter { json.path("variants").path(it).asBoolean(false) }.toSet()
+        val variants = variants(json)
         return ProviderCard(
             externalId = json.requireText("id"),
             number = json.requireText("localId"),
@@ -64,6 +76,45 @@ object TcgdexMapper {
             cardmarketProductId = json.path("pricing").path("cardmarket").path("idProduct").asLong(0).takeIf { it > 0 },
             fallbackPrices = tcgplayerPrices(json, variants),
         )
+    }
+
+    /**
+     * The finishes a card is printed in. For a new set TCGdex first gives every card a placeholder: "normal" only,
+     * with `variantId: "generated"` in `variants_detailed`. Also for ex cards that only exist as holo, and for commons
+     * that also have a reverse holo (found on 2026-11-20 in Delta Reign, `me06`). TCGplayer's prices then already
+     * name the real finishes, so those count; without them the rule of modern sets by rarity, see [variantsByRarity].
+     */
+    fun variants(json: JsonNode): Set<String> {
+        val listed = VARIANT_FIELDS.filter { json.path("variants").path(it).asBoolean(false) }.toSet()
+        if (!placeholderVariants(json)) return listed
+        return tcgplayerVariants(json).ifEmpty { variantsByRarity(json.text("rarity")) ?: listed }
+    }
+
+    private fun placeholderVariants(json: JsonNode): Boolean {
+        val detailed = json.path("variants_detailed")
+        return detailed.isArray && !detailed.isEmpty && detailed.all { it.text("variantId") == GENERATED_VARIANT }
+    }
+
+    /** The finishes TCGplayer has a price for. "unlimited" is TCGplayer's name for the normal print of old sets. */
+    private fun tcgplayerVariants(json: JsonNode): Set<String> {
+        val market = json.path("pricing").path("tcgplayer")
+        return TCGPLAYER_FINISHES.filterKeys { market.path(it).isObject }.values.toSet()
+    }
+
+    /**
+     * The finishes of a card in a modern set (Scarlet & Violet and later) by its rarity, as the owner described them
+     * on 2026-11-20: commons and uncommons have a normal and a reverse holo print, rares a holo and a reverse holo,
+     * and everything above (ex, illustration rares, special illustration rares, gold) one holo print. Null for a
+     * rarity it doesn't know, such as promos.
+     */
+    fun variantsByRarity(rarity: String?): Set<String>? {
+        val name = rarity?.trim()?.lowercase() ?: return null
+        return when {
+            name == "common" || name == "uncommon" -> setOf(CardVariants.NORMAL, CardVariants.REVERSE)
+            name == "rare" -> setOf(CardVariants.HOLO, CardVariants.REVERSE)
+            name.contains("rare") -> setOf(CardVariants.HOLO)
+            else -> null
+        }
     }
 
     /** Pokémon list their type. Basic energy cards only have it in their name: "Fire Energy". */

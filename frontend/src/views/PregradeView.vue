@@ -11,6 +11,7 @@ import { useSession } from '../stores/session'
 import { DEFAULT_OUTER, PERFECT_BACK, PERFECT_FRONT, centering, guessInner, maxGradeByCentering } from '../utils/centering'
 import { t } from '../utils/i18n'
 import { canUseLiveCamera, shrinkPhoto } from '../utils/photo'
+import { formatScore, pregradeScore, scoreHue } from '../utils/pregradeScore'
 import { usePageMeta } from '../utils/pageMeta'
 
 /**
@@ -113,6 +114,12 @@ const perfect = computed(
   () => (measured.value.front?.worst ?? 100) <= PERFECT_FRONT && (measured.value.back?.worst ?? 100) <= PERFECT_BACK,
 )
 
+const score = computed(() =>
+  result.value
+    ? pregradeScore({ frontWorst: measured.value.front?.worst, backWorst: measured.value.back?.worst, sides: result.value.sides })
+    : null,
+)
+
 const wear = (side) => {
   const found = sideResult(side)
   if (!found) return []
@@ -197,6 +204,23 @@ usePageMeta(() => ({ title: t('pregrade.title'), description: t('pregrade.intro'
 
       <section v-if="result" class="results" aria-live="polite">
         <h2>{{ t('pregrade.resultTitle') }}</h2>
+
+        <!-- The score first, so it's the first thing the customer sees. It follows the lines while they're dragged. -->
+        <div v-if="score" class="score-box">
+          <p class="score-label">{{ t('pregrade.scoreLabel') }}</p>
+          <p class="score" :aria-label="t('pregrade.scoreAria', { score: formatScore(score.score) })">
+            <span class="score-value" :style="{ '--score-hue': scoreHue(score.score) }" aria-hidden="true">{{ formatScore(score.score) }}</span>
+            <span class="score-max" aria-hidden="true">/ 10</span>
+          </p>
+          <dl class="score-parts">
+            <div v-for="(value, part) in score.parts" :key="part">
+              <dt>{{ t(`pregrade.parts.${part}`) }}</dt>
+              <dd>{{ formatScore(value) }}</dd>
+            </div>
+          </dl>
+          <p class="small">{{ t('pregrade.scoreNote') }}</p>
+        </div>
+
         <p class="hint">{{ t('pregrade.dragHint') }}</p>
 
         <div class="sides">
@@ -433,6 +457,70 @@ usePageMeta(() => ({ title: t('pregrade.title'), description: t('pregrade.intro'
 
 .wear li.light {
   border-left-color: var(--color-warning);
+}
+
+.score-box {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  max-width: 48rem;
+  padding: var(--space-4) var(--space-5);
+  border: 1.5px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.score-label {
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.score {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-stretch: 88%;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* From red (low) to green (high). Dark enough on white for text this large. */
+.score-value {
+  color: hsl(var(--score-hue) 72% 32%);
+  font-size: clamp(3rem, 10vw, 4.5rem);
+}
+
+.score-max {
+  color: var(--color-brand);
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+}
+
+.score-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+}
+
+.score-parts div {
+  display: flex;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.score-parts dt {
+  color: var(--color-ink-soft);
+}
+
+.score-parts dd {
+  margin: 0;
+  font-weight: 700;
 }
 
 .verdict {

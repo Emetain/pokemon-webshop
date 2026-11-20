@@ -42,6 +42,10 @@ interface ProductRepository : JpaRepository<Product, Long>, JpaSpecificationExec
 
     fun existsBySlug(slug: String): Boolean
 
+    /** For [com.emetain.pokemonwebshop.service.CardVariantMover]: singles of finishes a card no longer has. */
+    @Query("select p from Product p where p.card.id = :cardId and p.cardVariant in :variants")
+    fun findAllByCardIdAndCardVariantIn(cardId: Long, variants: Collection<String>): List<Product>
+
     /** For the sitemap: every product with a page in the shop. */
     @Query("select new com.emetain.pokemonwebshop.repository.SlugRow(p.slug, p.updatedAt) from Product p where p.status = :status")
     fun sitemapRows(status: ProductStatus = ProductStatus.ACTIVE): List<SlugRow>

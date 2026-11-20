@@ -10,6 +10,7 @@ import { GAMES } from '../data/games'
 import { catalogApi, scannerApi } from '../services/api'
 import { openPremium } from '../stores/premiumDialog'
 import { canUseLiveCamera, shrinkPhoto } from '../utils/photo'
+import { variantLabel } from '../utils/catalog'
 import { t } from '../utils/i18n'
 import { usePageMeta } from '../utils/pageMeta'
 
@@ -35,6 +36,14 @@ const largeImage = ref('')
 const matchCard = computed(() => {
   const match = result.value?.match
   return match && largeImage.value ? { ...match, imageUrl: largeImage.value } : match
+})
+
+/** The card comes in more than one version, such as normal and reverse holo. */
+const hasVersions = computed(() => (result.value?.match?.variants?.length ?? 0) > 1)
+/** The version the scanner saw, when the card has it and there's a choice. Only a hint: shine is hard to see. */
+const seenFinish = computed(() => {
+  const finish = result.value?.reading?.finish
+  return hasVersions.value && result.value.match.variants.includes(finish) ? finish : null
 })
 
 const scansLeft = computed(() => result.value?.scansLeft ?? status.value?.scansLeft ?? null)
@@ -201,7 +210,10 @@ usePageMeta(() => ({ title: t('scanner.title'), description: t('scanner.intro') 
 
           <template v-else-if="result?.match">
             <h2>{{ t('scanner.found') }}</h2>
-            <CardTile :card="matchCard" show-set @change="onCollectionChange(result.match, $event)" />
+            <!-- A row per version (normal, reverse holo, holo), so the customer adds the one they have. -->
+            <CardTile :card="matchCard" show-set :master="hasVersions" @change="onCollectionChange(result.match, $event)" />
+            <p v-if="seenFinish" class="finish">{{ t('scanner.finishSeen', { finish: variantLabel(seenFinish) }) }}</p>
+            <p v-else-if="hasVersions" class="finish">{{ t('scanner.finishChoose') }}</p>
           </template>
           <template v-else-if="others.length">
             <h2>{{ t('scanner.choose') }}</h2>
@@ -388,7 +400,8 @@ usePageMeta(() => ({ title: t('scanner.title'), description: t('scanner.intro') 
   color: var(--color-ink-soft);
 }
 
-.read {
+.read,
+.finish {
   color: var(--color-ink-soft);
   font-size: var(--text-sm);
 }
