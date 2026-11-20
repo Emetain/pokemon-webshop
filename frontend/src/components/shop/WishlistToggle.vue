@@ -106,7 +106,7 @@ async function save(next) {
 @media (hover: hover) {
   .wishlist-toggle:hover {
     border-color: var(--color-brand);
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }
 
@@ -122,7 +122,7 @@ async function save(next) {
 
 .wishlist-toggle.wished {
   border-color: var(--color-brand);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 /* The heart swells a little as it fills, and settles with a small bounce: the tap gave it a push. */

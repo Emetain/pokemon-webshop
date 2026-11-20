@@ -1,6 +1,7 @@
 <script setup>
-// Imported here so the region follows the account on every page, not only where it is shown.
+// Imported here so the region and the colours (phase 12) follow the account on every page, not only where they're set.
 import './stores/region'
+import './stores/appearance'
 </script>
 
 <template>

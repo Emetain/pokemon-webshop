@@ -112,7 +112,7 @@ async function addToCart() {
 
 @media (hover: hover) {
   .tile-link:hover .name {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
     text-decoration: underline;
   }
 }

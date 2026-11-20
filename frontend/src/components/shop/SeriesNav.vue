@@ -157,12 +157,12 @@ const sets = computed(() => props.seriesDetail?.sets.filter((set) => set.product
 
 @media (hover: hover) {
   .link:hover {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }
 
 .link.current {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   font-weight: 700;
 }
 

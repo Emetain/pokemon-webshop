@@ -1,6 +1,8 @@
 package com.emetain.pokemonwebshop.dto
 
 import com.emetain.pokemonwebshop.domain.BinderSource
+import com.emetain.pokemonwebshop.domain.ColorMode
+import com.emetain.pokemonwebshop.domain.ColorTheme
 import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.domain.User
@@ -64,6 +66,10 @@ data class UserDto(
     val createdAt: Instant,
     /** Premium right now (phase 11), admins included. The server checks it again for every Premium feature. */
     val premium: Boolean = false,
+    /** Light, dark or the device's setting (phase 12). */
+    val colorMode: ColorMode = ColorMode.LIGHT,
+    /** The colour theme in use: a Premium theme falls back to Poketopia's own while Premium has ended. */
+    val colorTheme: ColorTheme = ColorTheme.POKETOPIA,
 ) {
     companion object {
         fun from(user: User, now: Instant = Instant.now()) = UserDto(
@@ -77,6 +83,8 @@ data class UserDto(
             collectionShareSlug = user.collectionShareSlug,
             createdAt = user.createdAt,
             premium = PremiumAccess.has(user, now),
+            colorMode = user.colorMode ?: ColorMode.LIGHT,
+            colorTheme = user.colorTheme?.takeIf { !it.premium || PremiumAccess.has(user, now) } ?: ColorTheme.POKETOPIA,
         )
     }
 }

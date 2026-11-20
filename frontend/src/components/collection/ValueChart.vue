@@ -36,7 +36,11 @@ const props = defineProps({
   premium: { type: Boolean, default: false },
   /** Without Premium: there's older history that "Max" would show. */
   hasOlder: { type: Boolean, default: false },
+  /** Where the texts are in nl.js: the value graph's own, or the price graph of a card (phase 12). */
+  textKey: { type: String, default: 'collection.history' },
 })
+
+const tx = (key, values) => t(`${props.textKey}.${key}`, values)
 
 const rangeKey = ref('1M')
 const activeIndex = ref(null)
@@ -78,8 +82,8 @@ const change = computed(() => {
     cents,
     percent: first.cents > 0 ? (cents / first.cents) * 100 : null,
     period: coversPeriod.value
-      ? t(`collection.history.periods.${rangeKey.value}`)
-      : t('collection.history.periods.since', { date: formatShortDate(first.date) }),
+      ? tx(`periods.${rangeKey.value}`)
+      : tx('periods.since', { date: formatShortDate(first.date) }),
   }
 })
 
@@ -91,7 +95,7 @@ const changeText = computed(() => {
   const { cents: rawCents, percent: rawPercent } = shownChange.value ?? change.value
   const cents = Math.round(rawCents)
   const percent = rawPercent === null ? null : rawPercent
-  if (cents === 0) return t('collection.history.noChange')
+  if (cents === 0) return tx('noChange')
   const sign = cents > 0 ? '+' : '−'
   const money = `${sign}${formatMoney(Math.abs(cents), props.currency)}`
   return percent === null ? money : `${money} (${sign}${formatPercent(Math.abs(percent))})`
@@ -237,7 +241,7 @@ const summary = computed(() => {
   const first = visible.value[0]
   const last = visible.value.at(-1)
   if (!first || !last) return ''
-  return t('collection.history.summary', {
+  return tx('summary', {
     start: formatShortDate(first.date),
     end: formatShortDate(last.date),
     from: formatMoney(first.cents, props.currency),
@@ -251,7 +255,7 @@ const locked = (item) => item.premium && !props.premium
 
 function chooseRange(item) {
   if (locked(item)) {
-    openPremium('history', props.hasOlder ? t('collection.history.maxLockedOlder') : '')
+    openPremium('history', props.hasOlder ? tx('maxLockedOlder') : '')
     return
   }
   rangeKey.value = item.key
@@ -285,8 +289,8 @@ function onKeydown(event) {
 </script>
 
 <template>
-  <section class="history" :aria-label="t('collection.history.label')">
-    <p v-if="!hasLine" class="empty">{{ t('collection.history.empty') }}</p>
+  <section class="history" :aria-label="tx('label')">
+    <p v-if="!hasLine" class="empty">{{ tx('empty') }}</p>
 
     <template v-else>
       <p class="change" :class="changeClass">
@@ -343,7 +347,7 @@ function onKeydown(event) {
         <span>{{ formatShortDate(visible.at(-1).date) }}</span>
       </p>
 
-      <div class="ranges" role="group" :aria-label="t('collection.history.ranges')">
+      <div class="ranges" role="group" :aria-label="tx('ranges')">
         <button
           v-for="item in RANGES"
           :key="item.key"
@@ -352,7 +356,7 @@ function onKeydown(event) {
           :class="{ locked: locked(item) }"
           :aria-pressed="locked(item) ? undefined : item.key === rangeKey"
           :aria-haspopup="locked(item) ? 'dialog' : undefined"
-          :aria-label="locked(item) ? t('collection.history.maxLockedLabel') : undefined"
+          :aria-label="locked(item) ? tx('maxLockedLabel') : undefined"
           @click="chooseRange(item)"
         >
           <Lock v-if="locked(item)" :size="13" aria-hidden="true" />
@@ -360,16 +364,16 @@ function onKeydown(event) {
         </button>
       </div>
 
-      <p class="note">{{ t('collection.history.note') }}</p>
+      <p class="note">{{ tx('note') }}</p>
 
       <details class="table-view">
-        <summary>{{ t('collection.history.table') }}</summary>
+        <summary>{{ tx('table') }}</summary>
         <div class="table-scroll">
           <table>
             <thead>
               <tr>
-                <th scope="col">{{ t('collection.history.date') }}</th>
-                <th class="amount" scope="col">{{ t('collection.history.value') }}</th>
+                <th scope="col">{{ tx('date') }}</th>
+                <th class="amount" scope="col">{{ tx('value') }}</th>
               </tr>
             </thead>
             <tbody>

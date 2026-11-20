@@ -126,7 +126,7 @@ function close() {
 }
 
 .icon {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .btn {

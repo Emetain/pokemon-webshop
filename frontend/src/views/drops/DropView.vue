@@ -478,7 +478,7 @@ usePageMeta(() =>
 }
 
 .step-icon {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .steps h3 {

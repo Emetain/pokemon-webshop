@@ -364,7 +364,7 @@ loadAi()
   padding: 0 var(--space-2);
   border-radius: var(--radius-round);
   background: var(--color-tint);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   font-size: var(--text-xs);
   font-weight: 700;
   vertical-align: middle;
@@ -476,7 +476,7 @@ textarea.short {
 
 .icon-button:hover:not(:disabled) {
   border-color: var(--color-brand);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .icon-button:disabled {

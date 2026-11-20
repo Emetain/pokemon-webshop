@@ -95,3 +95,19 @@ export function daysUntil(date, now = new Date()) {
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Amsterdam' }).format(now)
   return Math.round((Date.parse(date) - Date.parse(today)) / 86_400_000)
 }
+
+/**
+ * An amount typed by a customer as cents: "12,50", "12.50", "€ 1.234,50" and "12" all work. With both a point and a
+ * comma, the last one is the decimal separator. Null for anything that isn't an amount.
+ */
+export function parseMoneyInput(text) {
+  const compact = String(text ?? '').replace(/[€$\s]/g, '').replace(/^US/i, '')
+  if (!compact) return null
+  const lastComma = compact.lastIndexOf(',')
+  const lastPoint = compact.lastIndexOf('.')
+  const decimal = lastComma > lastPoint ? ',' : '.'
+  const thousands = decimal === ',' ? '.' : ','
+  const normal = compact.split(thousands).join('').replace(decimal, '.')
+  if (!/^\d+(\.\d{1,2})?$/.test(normal)) return null
+  return Math.round(Number(normal) * 100)
+}

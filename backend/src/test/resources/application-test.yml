@@ -32,6 +32,7 @@ app:
     # Tests import cards and look at the result right away.
     cache-ttl: 0s
     snapshot-cron: "-"
+    price-alert-cron: "-"
   shop:
     # Test sets come out in 2024 by default. A test that needs a set out of print gives it an older date.
     in-print-from:

@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { LifeBuoy, LogOut, Package, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import AddressForm from '../components/account/AddressForm.vue'
+import AppearanceSettings from '../components/account/AppearanceSettings.vue'
 import BinderSettings from '../components/account/BinderSettings.vue'
 import CollectionShare from '../components/account/CollectionShare.vue'
 import CountrySelect from '../components/account/CountrySelect.vue'
@@ -199,6 +200,11 @@ onMounted(loadAddresses)
         <FormMessage v-if="currencyStatus.saved" type="success">{{ t('account.currency.saved') }}</FormMessage>
         <CurrencySelect v-model="selectedCurrency" :label="t('account.currency.label')" />
       </div>
+    </section>
+
+    <section id="weergave" class="account-section">
+      <h2>{{ t('account.appearance.title') }}</h2>
+      <AppearanceSettings class="section-body" />
     </section>
 
     <section id="binder" class="account-section">

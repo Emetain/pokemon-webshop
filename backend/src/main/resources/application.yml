@@ -364,3 +364,6 @@ app:
     # When the value of every collection is saved for the graph, in Dutch time. "-" switches it off.
     # Keep this after the card sync, which takes about an hour and a half.
     snapshot-cron: ${COLLECTION_SNAPSHOT_CRON:0 0 7 * * *}
+    # When the price alerts are checked and mailed (phase 12), in Dutch time. "-" switches it off.
+    # Keep this after the card sync, so the alerts see the prices of that night.
+    price-alert-cron: ${PRICE_ALERT_CRON:0 15 7 * * *}

@@ -294,7 +294,7 @@ function join() {
 }
 
 .position-number {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   font-family: var(--font-display);
   font-size: clamp(3rem, 12vw, 4.5rem);
   font-stretch: 80%;

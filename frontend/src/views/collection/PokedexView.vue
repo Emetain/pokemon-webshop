@@ -271,7 +271,7 @@ onMounted(load)
 
 @media (hover: hover) {
   .slot:hover .name {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
     text-decoration: underline;
   }
 }

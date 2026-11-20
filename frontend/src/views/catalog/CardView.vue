@@ -5,7 +5,10 @@ import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CardImage from '../../components/catalog/CardImage.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
 import NotFoundView from '../NotFoundView.vue'
+import CardBinderPanel from '../../components/catalog/CardBinderPanel.vue'
 import CardCollectionPanel from '../../components/collection/CardCollectionPanel.vue'
+import CardPriceHistory from '../../components/catalog/CardPriceHistory.vue'
+import PriceAlertPanel from '../../components/catalog/PriceAlertPanel.vue'
 import { findGame } from '../../data/games'
 import { catalogApi } from '../../services/api'
 import { useCurrency } from '../../stores/currency'
@@ -203,6 +206,10 @@ usePageMeta(() =>
 
           <p v-else class="source">{{ t('catalog.card.noPrices') }}</p>
         </section>
+
+        <CardPriceHistory :card="card" />
+        <PriceAlertPanel :card="card" />
+        <CardBinderPanel :card="card" />
       </div>
       <AdSlot place="catalog" />
     </div>
@@ -245,7 +252,7 @@ usePageMeta(() =>
 
 @media (hover: hover) {
   .offer-link:hover .offer-name {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
     text-decoration: underline;
   }
 }

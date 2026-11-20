@@ -1,5 +1,5 @@
 <script setup>
-import { BadgeCheck, ChartLine, ScanLine, Sparkles } from 'lucide-vue-next'
+import { BadgeCheck, BellRing, BookCopy, ChartLine, FileDown, Palette, ScanLine, ShieldOff } from 'lucide-vue-next'
 import { t } from '../../utils/i18n'
 
 /** What Premium adds. `compact` (the popup) shows the titles only, two to a row. */
@@ -8,10 +8,14 @@ defineProps({
 })
 
 const FEATURES = [
-  { icon: ScanLine, key: 'scanner' },
   { icon: ChartLine, key: 'history' },
+  { icon: BellRing, key: 'alerts' },
+  { icon: ShieldOff, key: 'noAds' },
+  { icon: FileDown, key: 'export' },
+  { icon: BookCopy, key: 'binders' },
+  { icon: Palette, key: 'themes' },
+  { icon: ScanLine, key: 'scanner' },
   { icon: BadgeCheck, key: 'pregrade' },
-  { icon: Sparkles, key: 'more' },
 ]
 </script>
 
@@ -56,7 +60,7 @@ const FEATURES = [
 .feature-icon {
   flex: none;
   margin-top: 2px;
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .compact .feature-icon {

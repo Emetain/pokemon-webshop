@@ -367,7 +367,7 @@ usePageMeta(() =>
 
 .drop-notice svg {
   flex: none;
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .drop-notice.live svg {
@@ -510,7 +510,7 @@ usePageMeta(() =>
 
 @media (hover: hover) {
   .step:hover:not(:disabled) {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }
 

@@ -29,8 +29,19 @@ import com.emetain.pokemonwebshop.service.CollectionStatsService
 import com.emetain.pokemonwebshop.service.UserService
 import com.emetain.pokemonwebshop.config.AppProperties
 import com.emetain.pokemonwebshop.service.PremiumService
+import com.emetain.pokemonwebshop.repository.CardPriceRepository
+import com.emetain.pokemonwebshop.service.CollectionExport
+import com.emetain.pokemonwebshop.service.CollectionPdf
+import com.emetain.pokemonwebshop.service.ExchangeRateService
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
+import java.time.Clock
+import java.time.LocalDate
+import java.time.ZoneId
+
+/** A file to download: its name without the extension, and its contents. */
+class CollectionFile(val name: String, val bytes: ByteArray)
 
 @Component
 class CollectionOrchestrator(
@@ -44,6 +55,10 @@ class CollectionOrchestrator(
     private val cardSetRepository: CardSetRepository,
     private val entryRepository: CollectionEntryRepository,
     private val premiumService: PremiumService,
+    private val cardPriceRepository: CardPriceRepository,
+    private val exchangeRateService: ExchangeRateService,
+    private val transaction: TransactionTemplate,
+    private val clock: Clock,
     properties: AppProperties,
 ) {
     private val historyDaysWithoutPremium = properties.premium.historyDaysWithoutPremium
@@ -94,6 +109,33 @@ class CollectionOrchestrator(
     fun addBulk(user: User, request: BulkAddRequest): BulkAddResultDto =
         BulkAddResultDto.from(retryingOnConflict { collectionService.addAll(user, request.cardIds) })
 
+    /** The collection as CSV (Premium, phase 12): see [CollectionExport]. */
+    fun exportCsv(user: User): CollectionFile {
+        val table = exportTable(user)
+        return CollectionFile(fileName(table.date), CollectionExport.csv(table).toByteArray(Charsets.UTF_8))
+    }
+
+    /** The collection as PDF (Premium, phase 12): see [CollectionPdf]. */
+    fun exportPdf(user: User): CollectionFile {
+        val table = exportTable(user)
+        return CollectionFile(fileName(table.date), CollectionPdf.write(table))
+    }
+
+    private fun exportTable(user: User) = transaction.execute {
+        premiumService.require(user, "Je collectie exporteren hoort bij Premium.")
+        val entries = entryRepository.findAllOfUserWithCards(user.id)
+        CollectionExport.table(
+            ownerName = user.displayName,
+            date = clock.instant().atZone(SHOP_ZONE).toLocalDate(),
+            entries = entries,
+            prices = if (entries.isEmpty()) emptyList() else cardPriceRepository.findAllByCardIds(entries.map { it.card.id }.toSet()),
+            currency = user.currency,
+            rates = exchangeRateService.current(),
+        )
+    }!!
+
+    private fun fileName(date: LocalDate) = "poketopia-collectie-$date"
+
     fun share(user: User): UserDto = UserDto.from(userService.shareCollection(user.id))
 
     fun stopSharing(user: User): UserDto = UserDto.from(userService.stopSharingCollection(user.id))
@@ -126,4 +168,8 @@ class CollectionOrchestrator(
         OwnedEntryDto.listOf(entryRepository.findAllByUserAndCards(user.id, listOf(cardId)))
 
     private fun game(slug: String): Game = Game.fromSlug(slug) ?: throw ApiException.notFound()
+
+    private companion object {
+        val SHOP_ZONE: ZoneId = ZoneId.of("Europe/Amsterdam")
+    }
 }

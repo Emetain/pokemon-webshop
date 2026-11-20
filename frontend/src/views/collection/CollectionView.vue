@@ -3,7 +3,9 @@ import { computed, onMounted, ref } from 'vue'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
+import CollectionMovers from '../../components/collection/CollectionMovers.vue'
 import CollectionSummary from '../../components/collection/CollectionSummary.vue'
+import CollectionTools from '../../components/collection/CollectionTools.vue'
 import GuestInvite from '../../components/collection/GuestInvite.vue'
 import ProgressBar from '../../components/collection/ProgressBar.vue'
 import ValueChart from '../../components/collection/ValueChart.vue'
@@ -76,7 +78,10 @@ onMounted(load)
           :premium="history.premium"
           :has-older="history.hasOlder"
         />
+        <CollectionMovers />
       </template>
+
+      <CollectionTools />
 
       <section v-if="pokedex" class="pokedex" data-game="pokemon">
         <div class="pokedex-head">

@@ -95,7 +95,7 @@ function pageLink(number) {
 @media (hover: hover) {
   .page:hover {
     background: var(--color-tint);
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }
 

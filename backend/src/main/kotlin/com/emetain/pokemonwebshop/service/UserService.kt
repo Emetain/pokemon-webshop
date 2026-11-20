@@ -1,6 +1,8 @@
 package com.emetain.pokemonwebshop.service
 
 import com.emetain.pokemonwebshop.domain.BinderSource
+import com.emetain.pokemonwebshop.domain.ColorMode
+import com.emetain.pokemonwebshop.domain.ColorTheme
 import com.emetain.pokemonwebshop.domain.Currency
 import com.emetain.pokemonwebshop.domain.Role
 import com.emetain.pokemonwebshop.domain.SUPPORTED_COUNTRIES
@@ -63,6 +65,8 @@ class UserService(
         country: String?,
         currency: Currency? = null,
         binderSource: BinderSource? = null,
+        colorMode: ColorMode? = null,
+        colorTheme: ColorTheme? = null,
     ): User {
         val user = userRepository.findById(userId).orElseThrow { ApiException.notAuthenticated() }
         displayName?.let { user.displayName = it.trim() }
@@ -72,6 +76,8 @@ class UserService(
         }
         currency?.let { user.currency = it }
         binderSource?.let { user.binderSource = it }
+        colorMode?.let { user.colorMode = it }
+        colorTheme?.let { user.colorTheme = it }
         return user
     }
 

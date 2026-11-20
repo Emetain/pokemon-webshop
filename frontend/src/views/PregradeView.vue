@@ -377,7 +377,7 @@ usePageMeta(() => ({ title: t('pregrade.title'), description: t('pregrade.intro'
   aspect-ratio: 63 / 88;
   border-radius: var(--radius-sm);
   background: var(--color-tint);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .upload-label {
@@ -497,7 +497,7 @@ usePageMeta(() => ({ title: t('pregrade.title'), description: t('pregrade.intro'
 }
 
 .score-max {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   font-size: clamp(1.5rem, 5vw, 2.25rem);
 }
 

@@ -230,7 +230,7 @@ watch(() => route.fullPath, () => cart.closeDrawer())
 
 @media (hover: hover) {
   .close:hover {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }
 
@@ -318,7 +318,7 @@ watch(() => route.fullPath, () => cart.closeDrawer())
 }
 
 .close:active {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   transform: scale(0.92);
   transition: transform var(--press-in);
 }

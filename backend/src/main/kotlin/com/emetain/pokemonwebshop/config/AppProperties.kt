@@ -55,6 +55,13 @@ data class AppProperties(
         val freeScans: Int = 100,
         /** How far back the value graph goes without Premium. */
         val historyDaysWithoutPremium: Long = 365,
+        /** Price alerts per customer (phase 12). */
+        val maxPriceAlerts: Int = 50,
+        /** Extra binders per customer, and different cards per binder (phase 12). */
+        val maxBinders: Int = 20,
+        val maxBinderCards: Int = 2000,
+        /** How many risers and how many fallers the collection page shows (phase 12). */
+        val moversShown: Int = 5,
     )
 
     data class Ads(

@@ -151,7 +151,7 @@ function remove(index) {
 
 .icon-button:hover:not(:disabled) {
   border-color: var(--color-brand);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .icon-button.danger:hover:not(:disabled) {

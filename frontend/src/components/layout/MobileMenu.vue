@@ -216,7 +216,7 @@ defineExpose({ open })
 
 .back-button {
   margin-left: calc(var(--space-1) * -1);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   font-weight: 600;
 }
 
@@ -343,7 +343,7 @@ defineExpose({ open })
 }
 
 .sub-all {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   font-size: var(--text-sm);
   font-weight: 650;
   text-decoration: none;

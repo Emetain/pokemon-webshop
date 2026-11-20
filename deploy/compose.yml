@@ -104,6 +104,7 @@ services:
       CATALOG_SYNC_CRON: ${CATALOG_SYNC_CRON:-0 0 3 * * *}
       RELEASE_SUGGESTION_CRON: ${RELEASE_SUGGESTION_CRON:-0 45 4 * * *}
       COLLECTION_SNAPSHOT_CRON: ${COLLECTION_SNAPSHOT_CRON:-0 0 7 * * *}
+      PRICE_ALERT_CRON: ${PRICE_ALERT_CRON:-0 15 7 * * *}
       TCGDEX_BASE_URL: ${TCGDEX_BASE_URL:-https://api.tcgdex.net/v2}
       SCRYFALL_BASE_URL: ${SCRYFALL_BASE_URL:-https://api.scryfall.com}
       LORCAST_BASE_URL: ${LORCAST_BASE_URL:-https://api.lorcast.com/v0}

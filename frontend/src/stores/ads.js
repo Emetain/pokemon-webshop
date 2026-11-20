@@ -18,6 +18,10 @@ const state = reactive({
 let loading = null
 let scriptAdded = false
 
+/**
+ * The server sends `enabled: false` to a Premium member (phase 12). The answer is kept for the whole visit, so the ad
+ * places also check the session themselves: someone who logs in with Premium sees no ads from then on.
+ */
 function load() {
   loading ??= shopApi
     .ads()

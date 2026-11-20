@@ -132,7 +132,7 @@ watch(() => props.page, load, { immediate: true })
 
 @media (hover: hover) {
   .order:hover .number {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
     text-decoration: underline;
   }
 }

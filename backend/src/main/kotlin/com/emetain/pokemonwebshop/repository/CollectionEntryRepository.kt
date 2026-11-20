@@ -66,6 +66,10 @@ interface CollectionEntryRepository : JpaRepository<CollectionEntry, Long> {
     )
     fun findOwnedLinesInSet(userId: Long, setId: Long): List<OwnedLine>
 
+    /** The whole collection with its cards and sets, for the export (phase 12). */
+    @Query("select e from CollectionEntry e join fetch e.card c join fetch c.set where e.user.id = :userId")
+    fun findAllOfUserWithCards(userId: Long): List<CollectionEntry>
+
     @Query("select distinct e.user.id from CollectionEntry e")
     fun findUserIdsWithEntries(): List<Long>
 

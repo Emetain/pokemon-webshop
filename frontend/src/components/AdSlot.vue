@@ -1,12 +1,14 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAds } from '../stores/ads'
+import { useSession } from '../stores/session'
 import { t } from '../utils/i18n'
 
 /**
  * One ad from Google AdSense, for the free card and news pages only: never on shop, cart, checkout, drop or account
  * pages. Shows nothing while ads are off or this place has no ad unit. The space is kept before the ad arrives, so
- * the page doesn't jump, and it says "Advertentie" above it.
+ * the page doesn't jump, and it says "Advertentie" above it. A Premium member never sees one (phase 12): the slot
+ * waits until it knows who is looking, so Google's script isn't loaded for them either.
  */
 const props = defineProps({
   /** Which ad unit: `catalog` (card lists and card pages) or `content` (news). */
@@ -14,8 +16,11 @@ const props = defineProps({
 })
 
 const ads = useAds()
+const session = useSession()
 const unit = ref(null)
-const slot = computed(() => (ads.state.enabled ? ads.state.slots[props.place] : null))
+const slot = computed(() =>
+  ads.state.enabled && session.state.loaded && !session.isPremium.value ? ads.state.slots[props.place] : null,
+)
 const development = import.meta.env.DEV
 let requested = false
 
@@ -34,7 +39,7 @@ async function request() {
 }
 
 onMounted(async () => {
-  await ads.load()
+  await Promise.all([ads.load(), session.ensureLoaded()])
   request()
 })
 watch(slot, request)

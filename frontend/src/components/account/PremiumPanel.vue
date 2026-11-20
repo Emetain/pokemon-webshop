@@ -82,7 +82,7 @@ async function manage() {
 }
 
 .state.on {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .detail,

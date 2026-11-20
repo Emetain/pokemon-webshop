@@ -249,12 +249,12 @@ onBeforeUnmount(() => {
 }
 
 .mega-top.is-open {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 @media (hover: hover) {
   .mega-top:hover {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }
 
@@ -334,7 +334,7 @@ onBeforeUnmount(() => {
 }
 
 .mega-all {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   font-size: var(--text-sm);
   font-weight: 650;
   text-decoration: none;
@@ -382,7 +382,7 @@ onBeforeUnmount(() => {
 
 @media (hover: hover) {
   .mega-link:hover {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }
 
@@ -461,7 +461,7 @@ onBeforeUnmount(() => {
 
 @media (hover: hover) {
   .mega-close:hover {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }
 

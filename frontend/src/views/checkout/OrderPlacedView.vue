@@ -189,7 +189,7 @@ onBeforeUnmount(() => window.clearTimeout(timer))
 
 .icon {
   flex: none;
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .done .icon {

@@ -94,7 +94,7 @@ onMounted(async () => {
 
 .step h2 svg {
   flex: none;
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .text {

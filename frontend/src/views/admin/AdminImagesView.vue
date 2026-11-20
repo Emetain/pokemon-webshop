@@ -593,7 +593,7 @@ watch([() => props.kind, setGame], loadSets, { immediate: true })
 
 .custom {
   margin-top: var(--space-half);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   font-size: var(--text-xs);
   font-weight: 600;
 }

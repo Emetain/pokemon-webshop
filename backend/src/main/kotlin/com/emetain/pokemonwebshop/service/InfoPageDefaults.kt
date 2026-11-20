@@ -95,10 +95,11 @@ object InfoPageDefaults {
                 Je hebt recht op een product dat doet wat je mag verwachten. Klachten meld je binnen redelijke tijd met een ticket op de [contactpagina](/info/contact). We reageren binnen 14 dagen.
 
                 ## 11. Premium
-                - Premium is een abonnement op extra functies van de site, zoals onbeperkt kaarten scannen, de volledige waardegrafiek en de pre-grade check. Het kost €6,99 per maand of €59,99 per jaar, inclusief btw, en wordt elke maand of elk jaar automatisch verlengd tot je opzegt.
+                - Premium is een abonnement op extra functies van de site, zoals geen advertenties, de prijsgeschiedenis van kaarten, prijsalerts, je collectie exporteren, extra binders, kleurthema's, onbeperkt kaarten scannen, de volledige waardegrafiek en de pre-grade check. Het kost €6,99 per maand of €59,99 per jaar, inclusief btw, en wordt elke maand of elk jaar automatisch verlengd tot je opzegt.
                 - Opzeggen of wisselen tussen maand en jaar doe je zelf onder Mijn account. Na opzeggen houd je Premium tot het einde van de periode die je al hebt betaald.
                 - Premium is een digitale dienst die direct begint. Bij het afsluiten vragen we je toestemming daarvoor en bevestig je dat je herroepingsrecht vervalt zodra Premium begint.
                 - Lukt een verlenging niet, dan stopt Premium tot de betaling alsnog lukt.
+                - Stopt Premium, dan blijven je prijsalerts en extra binders bewaard. Je alerts gaan dan niet meer af en je binders kun je bekijken maar niet aanpassen, tot je weer Premium hebt. Prijzen, prijsverloop en alerts zijn een indicatie op basis van marktprijzen.
                 - De pre-grade check is een indicatie, geen officiële beoordeling. Alleen een gradingbedrijf bepaalt een grade.
 
                 ## 12. Geschillen
@@ -124,6 +125,8 @@ object InfoPageDefaults {
                 - **Nieuwsbrief:** je e-mailadres, alleen als je je aanmeldt en dat bevestigt. Afmelden kan altijd via de link in elke mail.
                 - **Tickets:** je naam, e-mailadres, eventueel je bestelnummer en wat je ons schrijft, om je vraag te beantwoorden. We bewaren een ticket [bewaartermijn].
                 - **Premium:** je abonnement, wanneer het begon en tot wanneer het loopt, en je klantnummer bij Stripe, om Premium te leveren en te verlengen. Je betaalgegevens staan alleen bij Stripe.
+                - **Prijsalerts en binders:** de kaarten waarop je een prijsalert zet, met je grens of percentage, en de kaarten in je extra binders, om je de alertmail te sturen en je binders te tonen. Een alert zet je uit op de site of met de link in de mail.
+                - **Weergave:** of je de site licht, donker of zoals je apparaat wilt zien, en je kleurthema. Ook in je browser bewaard, zodat de site meteen in jouw kleuren opent.
                 - **Kaartscanner:** de foto die je scant gaat naar onze server en naar OpenAI, dat de naam en het nummer van de kaart leest. We bewaren de foto niet na de scan; OpenAI gebruikt hem niet voor het trainen van zijn modellen. We tellen alleen hoeveel scans je gebruikte.
                 - **Assistent:** wat je de digitale assistent vraagt gaat naar OpenAI, dat het antwoord maakt. OpenAI gebruikt het niet voor het trainen van zijn modellen en bewaart het hoogstens [termijn, zie de voorwaarden van OpenAI] tegen misbruik. Wij bewaren het gesprek niet. Stuur je het gesprek mee met een ticket, dan staat het bij dat ticket.
 

@@ -4,6 +4,7 @@ import NewsletterForm from '../content/NewsletterForm.vue'
 import { footerInfoLinks, footerShopLinks } from '../../data/navigation'
 import { shopApi } from '../../services/api'
 import { useAds } from '../../stores/ads'
+import { useSession } from '../../stores/session'
 import { t } from '../../utils/i18n'
 
 // The KVK number and the rest, once the owner has filled them in on the server. Nothing shows until then.
@@ -20,8 +21,9 @@ const companyParts = computed(() => {
   ].filter(Boolean)
 })
 
-// With ads on: a way back to Google's consent message, to change the choice.
+// With ads on: a way back to Google's consent message, to change the choice. Not for Premium, who sees no ads.
 const ads = useAds()
+const session = useSession()
 
 onMounted(async () => {
   ads.load()
@@ -73,7 +75,7 @@ onMounted(async () => {
       <p v-if="companyParts.length" class="company">
         <span v-for="part in companyParts" :key="part" class="company-part">{{ part }}</span>
       </p>
-      <p v-if="ads.state.enabled">
+      <p v-if="ads.state.enabled && !session.isPremium.value">
         <button class="ad-choices" type="button" @click="ads.showChoices()">{{ t('ads.choices') }}</button>
       </p>
       <div class="attribution">

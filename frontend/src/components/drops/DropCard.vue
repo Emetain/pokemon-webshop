@@ -174,7 +174,7 @@ const products = computed(() =>
 
 @media (hover: hover) {
   .card-link:hover .name {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
     text-decoration: underline;
   }
 }
@@ -202,7 +202,7 @@ const products = computed(() =>
 .cta {
   margin-top: auto;
   padding-top: var(--space-3);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   font-size: var(--text-sm);
   font-weight: 700;
 }

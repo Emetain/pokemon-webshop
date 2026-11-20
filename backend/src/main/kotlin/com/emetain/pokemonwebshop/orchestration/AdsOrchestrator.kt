@@ -2,7 +2,9 @@ package com.emetain.pokemonwebshop.orchestration
 
 import com.emetain.pokemonwebshop.config.AdsMode
 import com.emetain.pokemonwebshop.config.AppProperties
+import com.emetain.pokemonwebshop.domain.User
 import com.emetain.pokemonwebshop.dto.AdsDto
+import com.emetain.pokemonwebshop.service.PremiumService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -13,13 +15,15 @@ import org.springframework.stereotype.Component
 @Component
 class AdsOrchestrator(
     private val properties: AppProperties,
+    private val premiumService: PremiumService,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val settings: AdsDto by lazy { read() }
 
-    fun ads(): AdsDto = settings
+    /** A Premium member never sees ads (phase 12): the app then doesn't even load Google's script. */
+    fun ads(viewer: User? = null): AdsDto = if (premiumService.has(viewer)) AdsDto(enabled = false) else settings
 
     /**
      * The line AdSense asks for in `/ads.txt`: it says this account may sell ads on this site. Null without ads.

@@ -50,6 +50,32 @@ function request(method, path, body) {
   return send(method, path, { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 }
 
+/**
+ * A file from the backend, saved by the browser under the name the backend gives it. A refusal (such as
+ * `premium_required`) comes back as JSON and goes through the same error handling as every other call.
+ */
+async function download(path, fallbackName) {
+  let response
+  try {
+    response = await fetch(`${BASE_URL}${path}`)
+  } catch {
+    throw new ApiError(0, 'network_error', t('errors.network'))
+  }
+  if (!response.ok) {
+    const data = await response.json().catch(() => null)
+    if (data?.error === 'premium_required') openPremiumForRefusal(data.message)
+    throw new ApiError(response.status, data?.error ?? 'unknown', data?.message ?? messageWithoutBody(response.status, false))
+  }
+  const name = /filename="([^"]+)"/.exec(response.headers.get('Content-Disposition') ?? '')?.[1] ?? fallbackName
+  const url = URL.createObjectURL(await response.blob())
+  const link = Object.assign(document.createElement('a'), { href: url, download: name })
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  // Some browsers start the download after the click returns.
+  setTimeout(() => URL.revokeObjectURL(url), 10000)
+}
+
 /** The browser sets the content type of a form itself, with the boundary it needs. */
 function upload(path, file) {
   const body = new FormData()
@@ -87,6 +113,8 @@ export const catalogApi = {
   set: (game, code) => request('GET', setPath(game, code)),
   cards: (game, code, params) => request('GET', `${setPath(game, code)}/cards${queryString(params)}`),
   card: (id) => request('GET', `/catalog/cards/${id}`),
+  /** The price graph of a card, per variant (Premium, phase 12). */
+  cardHistory: (id) => request('GET', `/catalog/cards/${id}/history`),
   search: (params) => request('GET', `/catalog/search${queryString(params)}`),
   exchangeRates: () => request('GET', '/catalog/exchange-rates'),
 }
@@ -101,6 +129,10 @@ export const collectionApi = {
   addBulk: (cardIds) => request('POST', '/collection/entries/bulk', { cardIds }),
   update: (id, data) => request('PUT', `/collection/entries/${id}`, data),
   remove: (id) => request('DELETE', `/collection/entries/${id}`),
+  /** Risers and fallers among the owned cards: '1D', '1W' or '1M' (Premium, phase 12). */
+  movers: (period) => request('GET', `/collection/movers${queryString({ period })}`),
+  /** The whole collection as 'csv' or 'pdf' (Premium, phase 12). */
+  exportFile: (format) => download(`/collection/export.${format}`, `poketopia-collectie.${format}`),
   share: () => request('PUT', '/collection/share'),
   stopSharing: () => request('DELETE', '/collection/share'),
   shared: (slug) => request('GET', `/shared-collections/${encodeURIComponent(slug)}`),
@@ -325,6 +357,28 @@ export const pregradeApi = {
 }
 
 /** Premium (phase 11): status, Stripe's payment page and Stripe's customer portal. */
+/** Price alerts on cards (Premium, phase 12). */
+export const priceAlertApi = {
+  list: () => request('GET', '/price-alerts'),
+  forCard: (cardId) => request('GET', `/price-alerts/cards/${cardId}`),
+  save: (data) => request('POST', '/price-alerts', data),
+  remove: (id) => request('DELETE', `/price-alerts/${id}`),
+  /** The link in an alert mail, which works without logging in. */
+  switchOff: (token) => request('POST', '/price-alerts/off', { token }),
+}
+
+/** Extra binders next to the collection (Premium, phase 12). Not the home page binder (`binderApi`). */
+export const extraBinderApi = {
+  list: () => request('GET', '/binders'),
+  get: (id) => request('GET', `/binders/${id}`),
+  create: (name) => request('POST', '/binders', { name }),
+  rename: (id, name) => request('PATCH', `/binders/${id}`, { name }),
+  remove: (id) => request('DELETE', `/binders/${id}`),
+  add: (id, data) => request('POST', `/binders/${id}/entries`, data),
+  setQuantity: (id, entryId, quantity) => request('PUT', `/binders/${id}/entries/${entryId}`, { quantity }),
+  card: (cardId) => request('GET', `/binders/cards/${cardId}`),
+}
+
 export const premiumApi = {
   status: () => request('GET', '/premium'),
   checkout: (plan, consent) => request('POST', '/premium/checkout', { plan, consent }),

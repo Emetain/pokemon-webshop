@@ -251,12 +251,12 @@ watch(
 
 @media (hover: hover) {
   .action:hover {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }
 
 .action:active {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   transform: scale(0.92);
   transition: transform var(--press-in);
 }
@@ -359,12 +359,12 @@ watch(
 
 @media (hover: hover) {
   .search-submit:hover {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }
 
 .search-submit:active {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 @media (min-width: 480px) {
@@ -404,7 +404,7 @@ watch(
     position: static;
     min-width: 1.5rem;
     background: var(--color-tint-strong);
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
     line-height: 1.5rem;
   }
 }

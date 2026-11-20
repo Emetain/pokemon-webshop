@@ -178,7 +178,7 @@ watch(
 .avatar {
   flex: none;
   margin-top: var(--space-2);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .typing p {

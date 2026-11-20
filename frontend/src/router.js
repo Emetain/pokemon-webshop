@@ -246,6 +246,35 @@ const router = createRouter({
           meta: { title: 'collection.title', noindex: true },
         },
         {
+          // Extra binders (Premium, phase 12). Not `meta.premium`: a former member still opens them to look.
+          path: 'collectie/binders',
+          name: 'binders',
+          component: () => import('./views/collection/BindersView.vue'),
+          meta: { requiresLogin: true, title: 'binders.title', noindex: true },
+        },
+        {
+          path: 'collectie/binders/:id(\\d+)',
+          name: 'binder',
+          component: () => import('./views/collection/BinderView.vue'),
+          props: true,
+          meta: { requiresLogin: true, title: 'binders.title', noindex: true },
+        },
+        {
+          // Price alerts (Premium, phase 12). After Premium ended they can still be looked at and switched off.
+          path: 'prijsalerts',
+          name: 'price-alerts',
+          component: () => import('./views/account/PriceAlertsView.vue'),
+          meta: { requiresLogin: true, title: 'priceAlerts.title', noindex: true },
+        },
+        {
+          // The link in an alert mail, which works without logging in.
+          path: 'prijsalerts/uit',
+          name: 'price-alert-off',
+          component: () => import('./views/account/PriceAlertOffView.vue'),
+          props: withQuery('token'),
+          meta: { title: 'priceAlerts.off.title', noindex: true },
+        },
+        {
           path: 'verlanglijst',
           name: 'wishlist',
           component: () => import('./views/collection/WishlistView.vue'),

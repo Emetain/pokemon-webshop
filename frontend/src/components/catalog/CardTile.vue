@@ -114,7 +114,7 @@ const owned = computed(() => tracking.value && props.card.owned.length > 0)
 
 @media (hover: hover) {
   .tile-link:hover .name {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
     text-decoration: underline;
   }
 }
@@ -168,7 +168,7 @@ const owned = computed(() => tracking.value && props.card.owned.length > 0)
 }
 
 .owned-status {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .for-sale {

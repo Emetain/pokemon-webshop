@@ -35,6 +35,8 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("com.stripe:stripe-java:29.2.0")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0")
+    // The collection export as PDF (phase 12). Apache License 2.0.
+    implementation("org.apache.pdfbox:pdfbox:3.0.5")
 
     runtimeOnly("com.h2database:h2")
     // The H2 console of the dev profile. Switched off in prod.

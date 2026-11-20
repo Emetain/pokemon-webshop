@@ -1,4 +1,18 @@
-# Handover: phase 11 built, waiting for the owner; phase 10 still prepared, not finished
+# Handover: phase 12 built; phase 11 waiting for the owner's checks; phase 10 still prepared, not finished
+
+## Phase 12 (More Premium), 2026-11-21
+
+- **Branch:** `feature/phase-12-more-premium` from `main` at `549759f` (which holds phase 11). Commit
+  `Phase 12: More Premium`, tagged `phase-12`. Not pushed, not merged.
+- **Built and tested:** no ads for Premium, the price graph per card, risers and fallers, price alerts with one mail a
+  day, CSV and PDF export, extra binders, dark mode for everyone and four Premium colour themes. Everything is in
+  [phases/phase-12.md](phases/phase-12.md).
+- **For the owner:** restart the local backend; after merging and pushing, the server saves its first card prices at
+  the sync of 2026-11-21 03:00, so the graphs fill from then on; copy the new terms and privacy lines into the pages on
+  the server (legal check); say whether reverse holos should get their own tiles in the set lists.
+- **Online without the login:** the server's `shop-access.sh` is the version from before `unlisted` existed. Copy the
+  new one (`deploy/server/shop-access.sh`) to `/opt/poketopia/bin/` and run `shop-access.sh unlisted`; it needs the
+  owner's OK (Claude's attempt on 2026-11-21 was refused by the permission check, nothing changed).
 
 ## Phase 11 (Correct prices, Premium and the card scanner), 2026-11-19
 

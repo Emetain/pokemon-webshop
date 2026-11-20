@@ -124,7 +124,7 @@ h1 {
 }
 
 .title-icon {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .intro {

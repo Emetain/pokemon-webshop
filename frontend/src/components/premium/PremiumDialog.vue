@@ -23,7 +23,7 @@ const dialog = ref(null)
 const status = ref(null)
 const error = ref('')
 
-const FEATURES = ['general', 'scanner', 'scansUsed', 'history', 'pregrade']
+const FEATURES = ['general', 'scanner', 'scansUsed', 'history', 'pregrade', 'cardHistory', 'movers', 'alerts', 'export', 'binders', 'themes']
 const feature = computed(() => (FEATURES.includes(state.feature) ? state.feature : 'general'))
 const lead = computed(() => state.message || t(`premium.dialog.${feature.value}.text`))
 const loggedIn = computed(() => session.isLoggedIn.value)
@@ -165,7 +165,7 @@ async function show() {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.04em;

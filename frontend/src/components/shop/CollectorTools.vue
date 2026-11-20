@@ -5,8 +5,8 @@ import { useSession } from '../../stores/session'
 import { t } from '../../utils/i18n'
 
 /**
- * The home page's tiles for the collector tools: the value graph, the card scanner and the pre-grade check, so
- * visitors see there's more than the shop. The drawings are the shop's own, never card art.
+ * The home page's tiles for the collector tools: the value graph, the card scanner, the pre-grade check and the price
+ * alerts (phase 12), so visitors see there's more than the shop. The drawings are the shop's own, never card art.
  */
 const session = useSession()
 
@@ -18,6 +18,10 @@ const tools = computed(() => [
   },
   { key: 'scanner', to: '/scanner', action: t('home.tools.scanner.action') },
   { key: 'pregrade', to: '/pre-grade', action: t('home.tools.pregrade.action') },
+  // Premium members go to their alerts; anyone else gets the Premium popup (a link to /premium opens it).
+  session.isPremium.value
+    ? { key: 'alerts', to: '/prijsalerts', action: t('home.tools.alerts.toAlerts') }
+    : { key: 'alerts', to: '/premium', action: t('home.tools.alerts.action') },
 ])
 </script>
 
@@ -41,6 +45,13 @@ const tools = computed(() => [
               <path class="card-text" d="M90 84H140M90 94H128M90 110H106" />
               <path class="beam" d="M58 66H182" />
             </svg>
+            <svg v-else-if="tool.key === 'alerts'" viewBox="0 0 240 140" aria-hidden="true">
+              <path class="grid" d="M24 40H216M24 112H216" />
+              <path class="threshold" d="M24 84H216" />
+              <path class="line" d="M24 50L60 58L92 52L124 70L156 66L188 96L216 104" />
+              <circle class="dot" cx="188" cy="96" r="6" />
+              <path class="bell" d="M184 22a14 14 0 0 1 14 14v10l5 7h-38l5-7V36a14 14 0 0 1 14-14zM179 57a5 5 0 0 0 10 0" />
+            </svg>
             <svg v-else viewBox="0 0 240 140" aria-hidden="true">
               <rect class="card" x="82" y="18" width="76" height="104" rx="6" />
               <rect class="frame" x="93" y="28" width="58" height="84" rx="2" />
@@ -51,7 +62,7 @@ const tools = computed(() => [
             </svg>
           </span>
           <span class="body">
-            <span class="badge" :class="{ premium: tool.key === 'pregrade' }">{{ t(`home.tools.${tool.key}.badge`) }}</span>
+            <span class="badge" :class="{ premium: tool.key === 'pregrade' || tool.key === 'alerts' }">{{ t(`home.tools.${tool.key}.badge`) }}</span>
             <h3 class="name">{{ t(`home.tools.${tool.key}.title`) }}</h3>
             <span class="text">{{ t(`home.tools.${tool.key}.text`) }}</span>
             <span class="action">{{ tool.action }} <ArrowRight :size="16" aria-hidden="true" /></span>
@@ -228,16 +239,36 @@ const tools = computed(() => [
   stroke-width: 2;
 }
 
+.threshold {
+  fill: none;
+  stroke: var(--color-line-strong);
+  stroke-dasharray: 6 5;
+  stroke-width: 2;
+}
+
+.bell {
+  fill: var(--color-tint-strong);
+  stroke: var(--color-brand);
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
 .ratio {
-  fill: var(--color-brand-deep);
+  fill: var(--color-ink);
   font-family: var(--font-display);
   font-size: 20px;
   font-weight: 750;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 640px) {
   .tool-tiles {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .tool-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 </style>

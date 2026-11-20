@@ -131,7 +131,7 @@ const showPrice = computed(() => props.shopping && props.price?.priceCents != nu
 
 @media (hover: hover) {
   .name a:hover {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
     text-decoration: underline;
   }
 }

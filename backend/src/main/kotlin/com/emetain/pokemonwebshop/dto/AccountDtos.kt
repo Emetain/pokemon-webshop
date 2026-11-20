@@ -2,6 +2,8 @@ package com.emetain.pokemonwebshop.dto
 
 import com.emetain.pokemonwebshop.domain.Address
 import com.emetain.pokemonwebshop.domain.BinderSource
+import com.emetain.pokemonwebshop.domain.ColorMode
+import com.emetain.pokemonwebshop.domain.ColorTheme
 import com.emetain.pokemonwebshop.domain.Currency
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
@@ -18,6 +20,12 @@ data class UpdateProfileRequest(
     val currency: Currency? = null,
 
     val binderSource: BinderSource? = null,
+
+    /** Light, dark or the device's setting: free (phase 12). */
+    val colorMode: ColorMode? = null,
+
+    /** Every theme but Poketopia's own is Premium (phase 12). */
+    val colorTheme: ColorTheme? = null,
 )
 
 data class AddressRequest(

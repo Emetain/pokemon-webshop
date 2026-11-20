@@ -300,7 +300,7 @@ usePageMeta(() => ({ title: t('scanner.title'), description: t('scanner.intro') 
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   font-weight: 600;
 }
 

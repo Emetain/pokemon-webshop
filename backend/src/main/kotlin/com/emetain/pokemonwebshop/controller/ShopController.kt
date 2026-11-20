@@ -1,5 +1,6 @@
 package com.emetain.pokemonwebshop.controller
 
+import com.emetain.pokemonwebshop.domain.User
 import com.emetain.pokemonwebshop.dto.AdsDto
 import com.emetain.pokemonwebshop.dto.CompanyDto
 import com.emetain.pokemonwebshop.dto.HeroSlideDto
@@ -9,6 +10,7 @@ import com.emetain.pokemonwebshop.orchestration.AdsOrchestrator
 import com.emetain.pokemonwebshop.orchestration.CompanyOrchestrator
 import com.emetain.pokemonwebshop.orchestration.HeroSlideOrchestrator
 import com.emetain.pokemonwebshop.orchestration.ShopNavigationOrchestrator
+import com.emetain.pokemonwebshop.security.CurrentUser
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -43,8 +45,8 @@ class ShopController(
     fun company(): CompanyDto =
         companyOrchestrator.company()
 
-    /** Whether the free card pages show ads, and which ad units. */
+    /** Whether the free card pages show ads, and which ad units. Never for a Premium member (phase 12). */
     @GetMapping("/ads")
-    fun ads(): AdsDto =
-        adsOrchestrator.ads()
+    fun ads(@CurrentUser viewer: User?): AdsDto =
+        adsOrchestrator.ads(viewer)
 }

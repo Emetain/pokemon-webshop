@@ -2,6 +2,7 @@ package com.emetain.pokemonwebshop.controller
 
 import com.emetain.pokemonwebshop.domain.User
 import com.emetain.pokemonwebshop.dto.CardDetailDto
+import com.emetain.pokemonwebshop.dto.CardPriceHistoryDto
 import com.emetain.pokemonwebshop.dto.CardListRequest
 import com.emetain.pokemonwebshop.dto.CardPageDto
 import com.emetain.pokemonwebshop.dto.CardSearchResultDto
@@ -9,7 +10,9 @@ import com.emetain.pokemonwebshop.dto.CardSetDetailDto
 import com.emetain.pokemonwebshop.dto.CardSetDto
 import com.emetain.pokemonwebshop.dto.ExchangeRateDto
 import com.emetain.pokemonwebshop.orchestration.CatalogOrchestrator
+import com.emetain.pokemonwebshop.orchestration.PriceTrendOrchestrator
 import com.emetain.pokemonwebshop.security.CurrentUser
+import com.emetain.pokemonwebshop.security.RequiresLogin
 import org.springdoc.core.annotations.ParameterObject
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/v1/catalog")
 class CatalogController(
     private val catalogOrchestrator: CatalogOrchestrator,
+    private val priceTrendOrchestrator: PriceTrendOrchestrator,
 ) {
 
     @GetMapping("/{game}/sets")
@@ -42,6 +46,12 @@ class CatalogController(
     @GetMapping("/cards/{id}")
     fun card(@PathVariable id: Long): CardDetailDto =
         catalogOrchestrator.card(id)
+
+    /** The price graph of a card, per variant (Premium, phase 12). */
+    @GetMapping("/cards/{id}/history")
+    @RequiresLogin
+    fun cardHistory(@CurrentUser user: User, @PathVariable id: Long): CardPriceHistoryDto =
+        priceTrendOrchestrator.cardHistory(user, id)
 
     @GetMapping("/search")
     fun search(

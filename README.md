@@ -72,7 +72,7 @@ Keep API keys on the backend. Anything in a `VITE_` variable ends up in the brow
 | `OPENAI_API_KEY` | empty: AI switched off | Hero slides written by AI and the chatbot |
 | `OPENAI_MONTHLY_LIMIT_USD`, `OPENAI_CHAT_MONTHLY_LIMIT_USD`, `OPENAI_SCAN_MONTHLY_LIMIT_USD` | `5`, `3`, `5` | What each may spend per month (slides, chatbot, card scanner) |
 | `OPENAI_TEXT_MODEL`, `OPENAI_IMAGE_MODEL`, `OPENAI_CHAT_MODEL` | see `.env.example` | The OpenAI models |
-| `CATALOG_SYNC_CRON`, `RELEASE_SUGGESTION_CRON`, `COLLECTION_SNAPSHOT_CRON` | 03:00, 04:45, 07:00 | The nightly jobs; `-` switches one off |
+| `CATALOG_SYNC_CRON`, `RELEASE_SUGGESTION_CRON`, `COLLECTION_SNAPSHOT_CRON`, `PRICE_ALERT_CRON` | 03:00, 04:45, 07:00, 07:15 | The nightly jobs; `-` switches one off |
 | `TCGDEX_BASE_URL` and the other `*_BASE_URL` | the public APIs | The card data sources, see [Card data](#card-data) |
 | `MEDIA_DIRECTORY` | `data/media` | Uploaded images |
 | `AUTH_COOKIE_SECURE` | off locally, on in `prod` | `Secure` flag of the session cookie |
@@ -207,6 +207,12 @@ customer portal's settings in Stripe the first time someone buys or opens the po
 hand. Only the verified webhook switches Premium on, renews it and ends it; admins have it from their role. Details in
 [docs/phases/phase-11.md](docs/phases/phase-11.md).
 
+Phase 12 added more Premium: no ads, the price graph of every card, the risers and fallers of a collection, price
+alerts, the collection as CSV and PDF, extra binders and colour themes; dark mode is free for everyone. Price alerts are
+checked after the sync at `PRICE_ALERT_CRON` (07:15 by default) and mailed at most once a day per customer, with a link
+in the mail that switches an alert off. When Premium ends, alerts and binders are kept but alerts stop and binders can't
+be changed. The limits are under `app.premium`. Details in [docs/phases/phase-12.md](docs/phases/phase-12.md).
+
 ## Drops
 
 A drop is a limited release at a set time, managed at `/admin/drops`. The stock you allocate to a drop leaves the normal stock right away (a `DROP_ALLOCATION` line in the stock log). When the drop ends, whatever wasn't sold goes back, or stays with the drop until you give it back, as chosen per drop.
@@ -308,6 +314,8 @@ The shop was built in phases, each with notes on what was built, checked and dec
 | 8. Extras | [phase-08.md](docs/phases/phase-08.md) |
 | 9. Polish and hardening | [phase-09-audit.md](docs/phases/phase-09-audit.md): the audit, and what phase 9b fixed |
 | 10. Go live | [phase-10.md](docs/phases/phase-10.md): prepared, waiting for the domain, the KVK number and the legal check ([HANDOVER.md](docs/HANDOVER.md)) |
+| 11. Correct prices, Premium and the card scanner | [phase-11.md](docs/phases/phase-11.md) |
+| 12. More Premium | [phase-12.md](docs/phases/phase-12.md) |
 
 The plan for every phase is in [docs/build-prompt.md](docs/build-prompt.md).
 

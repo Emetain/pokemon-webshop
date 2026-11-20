@@ -83,6 +83,16 @@ class User(
     @Column
     var premiumConsentAt: Instant? = null,
 
+    /** Light, dark or the device's setting (phase 12, free for everyone). Null: light, the shop's own look. */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    var colorMode: ColorMode? = null,
+
+    /** The colour theme (phase 12). Every theme but [ColorTheme.POKETOPIA] is Premium. Null: Poketopia. */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    var colorTheme: ColorTheme? = null,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,

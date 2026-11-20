@@ -164,7 +164,7 @@ function remove() {
 
 @media (hover: hover) {
   .name:hover {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
     text-decoration: underline;
   }
 }
@@ -220,13 +220,13 @@ function remove() {
 
 @media (hover: hover) {
   .step:hover:not(:disabled) {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 }
 
 .step:active:not(:disabled),
 .remove:active:not(:disabled) {
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
   transform: scale(0.88);
   transition: transform var(--press-in);
 }

@@ -145,7 +145,7 @@ const shipmentText = computed(() => {
 
 @media (hover: hover) {
   a.name:hover {
-    color: var(--color-brand);
+    color: var(--color-brand-ink);
     text-decoration: underline;
   }
 }

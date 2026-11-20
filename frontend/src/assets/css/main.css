@@ -20,6 +20,9 @@
   /* Text */
   --color-ink: #0c1f4a;
   --color-ink-soft: #4a5f85;
+  /* Text and icons in the brand colour. The same blue here; lighter in dark mode, where --color-brand stays a
+     background for white text (phase 12). */
+  --color-brand-ink: var(--color-brand);
 
   /* Interaction */
   --color-link: #1a56db;
@@ -68,6 +71,13 @@
   --drop-green-end: #0f6c42;
   --drop-green-ink: #ffffff;
   --color-drop-picture-shadow: rgb(0 0 0 / 35%);
+
+  /* The colour themes in My account (phase 12): one swatch each. The themes themselves are below :root. */
+  --swatch-poketopia: #1a56db;
+  --swatch-fire: #c2361f;
+  --swatch-grass: #167a43;
+  --swatch-electric: #e0a400;
+  --swatch-psychic: #8a3fc7;
 
   /* The accent of the current context. [data-game] below overrides it. */
   --accent: var(--color-brand);
@@ -133,6 +143,183 @@
   --press-scale: 0.97;
   --press-in: 0.08s ease-out;
   --press-out: 0.3s var(--ease-spring);
+}
+
+/*
+ * Colour themes and dark mode (phase 12). stores/appearance.js sets them on <html>: data-theme for a Premium colour
+ * theme, data-mode="dark" for dark mode (also when the customer follows the device and the device is dark). Every
+ * theme keeps white text on its brand colour at 4.5:1 or more. The order matters: themes, then dark mode, then the
+ * dark version of each theme, which is more specific.
+ */
+:root[data-theme='fire'] {
+  --color-brand: #c2361f;
+  --color-brand-hover: #a62c18;
+  --color-brand-edge: #8a2412;
+  --color-brand-deep: #4a1408;
+  --color-brand-raised: #6e1f10;
+  --color-on-brand-soft: #ffd9cf;
+  --color-tint: #fff1ec;
+  --color-tint-strong: #ffdccf;
+  --color-line: #f3d6cc;
+  --color-line-strong: #b98b7d;
+  --color-ink: #3a1309;
+  --color-ink-soft: #7a4a3d;
+  --color-link: #a62c18;
+  --color-focus: #c2361f;
+  --game-pokemon: #c2361f;
+  --color-shadow: rgb(74 20 8 / 15%);
+}
+
+:root[data-theme='grass'] {
+  --color-brand: #167a43;
+  --color-brand-hover: #11653a;
+  --color-brand-edge: #0d5230;
+  --color-brand-deep: #0a2e1c;
+  --color-brand-raised: #0f4a2c;
+  --color-on-brand-soft: #cdeedd;
+  --color-tint: #ecf8f1;
+  --color-tint-strong: #d3efe0;
+  --color-line: #cfe6d9;
+  --color-line-strong: #7aa58d;
+  --color-ink: #0d2b1c;
+  --color-ink-soft: #44614f;
+  --color-link: #11653a;
+  --color-focus: #167a43;
+  --game-pokemon: #167a43;
+  --color-shadow: rgb(10 46 28 / 15%);
+}
+
+/* Lightning yellow can't carry white text, so buttons are a deep gold and the yellow is in the tints. */
+:root[data-theme='electric'] {
+  --color-brand: #946200;
+  --color-brand-hover: #7d5300;
+  --color-brand-edge: #664400;
+  --color-brand-deep: #3a2700;
+  --color-brand-raised: #5a3d00;
+  --color-on-brand-soft: #ffeeb3;
+  --color-tint: #fff8dc;
+  --color-tint-strong: #ffefb0;
+  --color-line: #f0e3b4;
+  --color-line-strong: #b19a5a;
+  --color-ink: #2e2100;
+  --color-ink-soft: #66562e;
+  --color-link: #7d5300;
+  --color-focus: #946200;
+  --game-pokemon: #946200;
+  --color-shadow: rgb(58 39 0 / 15%);
+}
+
+:root[data-theme='psychic'] {
+  --color-brand: #8a3fc7;
+  --color-brand-hover: #7433ab;
+  --color-brand-edge: #5e2890;
+  --color-brand-deep: #2e1250;
+  --color-brand-raised: #4a1f7a;
+  --color-on-brand-soft: #ead9ff;
+  --color-tint: #f6effe;
+  --color-tint-strong: #eadcfc;
+  --color-line: #e3d5f5;
+  --color-line-strong: #9a82ba;
+  --color-ink: #24113d;
+  --color-ink-soft: #5e4a78;
+  --color-link: #7433ab;
+  --color-focus: #8a3fc7;
+  --game-pokemon: #8a3fc7;
+  --color-shadow: rgb(46 18 80 / 15%);
+}
+
+/* Dark mode, free for everyone (the owner's choice, 2026-11-20). Poketopia's own blue in the dark. */
+:root[data-mode='dark'] {
+  color-scheme: dark;
+  --color-page: #0b1220;
+  --color-surface: #121b2e;
+  --color-tint: #182746;
+  --color-tint-strong: #1f335c;
+  --color-line: #263752;
+  --color-line-strong: #5f7499;
+  --color-brand: #346ce0;
+  --color-brand-hover: #2a5ccc;
+  --color-brand-edge: #1f479f;
+  --color-brand-deep: #0a1838;
+  --color-brand-raised: #12306f;
+  --color-on-brand: #ffffff;
+  --color-on-brand-soft: #c7d9ff;
+  --color-brand-ink: #86abff;
+  --color-ink: #e6ecf8;
+  --color-ink-soft: #a3b2cf;
+  --color-link: #86abff;
+  --color-focus: #86abff;
+  --color-danger: #ff8d98;
+  --color-danger-soft: #3b1a22;
+  --color-success: #5ad19c;
+  --color-success-soft: #10342a;
+  --color-sale: #e33a52;
+  --color-sale-soft: #3b1822;
+  --color-warning: #ffc069;
+  --color-warning-soft: #3a2b12;
+  --color-muted-soft: #1a2335;
+  --color-shadow: rgb(0 0 0 / 45%);
+  --game-pokemon: #346ce0;
+}
+
+:root[data-mode='dark'][data-theme='fire'] {
+  --color-brand: #c2361f;
+  --color-brand-hover: #a62c18;
+  --color-brand-edge: #8a2412;
+  --color-brand-deep: #2b0d06;
+  --color-brand-raised: #5a1a0d;
+  --color-on-brand-soft: #ffd9cf;
+  --color-brand-ink: #ff9a82;
+  --color-tint: #2e1915;
+  --color-tint-strong: #42221b;
+  --color-link: #ff9a82;
+  --color-focus: #ff9a82;
+  --game-pokemon: #c2361f;
+}
+
+:root[data-mode='dark'][data-theme='grass'] {
+  --color-brand: #167a43;
+  --color-brand-hover: #11653a;
+  --color-brand-edge: #0d5230;
+  --color-brand-deep: #061d12;
+  --color-brand-raised: #0c3a23;
+  --color-on-brand-soft: #cdeedd;
+  --color-brand-ink: #6fd69b;
+  --color-tint: #12261c;
+  --color-tint-strong: #183627;
+  --color-link: #6fd69b;
+  --color-focus: #6fd69b;
+  --game-pokemon: #167a43;
+}
+
+:root[data-mode='dark'][data-theme='electric'] {
+  --color-brand: #946200;
+  --color-brand-hover: #7d5300;
+  --color-brand-edge: #664400;
+  --color-brand-deep: #241800;
+  --color-brand-raised: #4a3200;
+  --color-on-brand-soft: #ffeeb3;
+  --color-brand-ink: #ffd34d;
+  --color-tint: #2a2412;
+  --color-tint-strong: #3a3116;
+  --color-link: #ffd34d;
+  --color-focus: #ffd34d;
+  --game-pokemon: #946200;
+}
+
+:root[data-mode='dark'][data-theme='psychic'] {
+  --color-brand: #8a3fc7;
+  --color-brand-hover: #7433ab;
+  --color-brand-edge: #5e2890;
+  --color-brand-deep: #1c0b33;
+  --color-brand-raised: #3b1964;
+  --color-on-brand-soft: #ead9ff;
+  --color-brand-ink: #c9a0ff;
+  --color-tint: #221a33;
+  --color-tint-strong: #2f2347;
+  --color-link: #c9a0ff;
+  --color-focus: #c9a0ff;
+  --game-pokemon: #8a3fc7;
 }
 
 [data-game='pokemon'] {
@@ -350,7 +537,7 @@ main:focus {
 .btn-on-brand {
   background: var(--color-surface);
   box-shadow: inset 0 -3px 0 var(--color-tint-strong);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 @media (hover: hover) {

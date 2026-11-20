@@ -50,7 +50,7 @@ defineEmits(['increase', 'decrease'])
   border: 1.5px solid var(--color-brand);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
-  color: var(--color-brand);
+  color: var(--color-brand-ink);
 }
 
 .step {
