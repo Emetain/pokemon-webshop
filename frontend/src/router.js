@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { GAMES } from './data/games'
 import { navDestinations } from './data/navigation'
+import { openPremium } from './stores/premiumDialog'
 import { useSession } from './stores/session'
 import { setRouteMeta, updateCanonical } from './utils/pageMeta'
 
@@ -112,12 +113,13 @@ const router = createRouter({
         {
           path: 'pre-grade',
           component: () => import('./views/PregradeView.vue'),
-          meta: { requiresLogin: true, title: 'pregrade.title' },
+          // `premium`: a link here opens the Premium popup for customers without it; the value names the feature.
+          meta: { requiresLogin: true, premium: 'pregrade', title: 'pregrade.title' },
         },
         {
           path: 'premium',
           component: () => import('./views/PremiumView.vue'),
-          meta: { title: 'premium.title' },
+          meta: { premium: true, title: 'premium.title' },
         },
         {
           path: 'account',
@@ -404,9 +406,18 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
   const session = useSession()
   await session.ensureLoaded()
+
+  // A link to a Premium page opens the Premium popup instead, for anyone without Premium (the owner's wish,
+  // 2026-11-20). Only for links inside the shop: an address typed in, shared or coming back from Stripe opens the page
+  // itself, and so does the way back after logging in.
+  const premiumFeature = to.meta.premium
+  if (premiumFeature && from.matched.length > 0 && !from.meta.guestOnly && !session.isPremium.value) {
+    openPremium(premiumFeature === true ? null : premiumFeature, '', to.fullPath)
+    return false
+  }
 
   const needsLogin = to.meta.requiresLogin || to.meta.requiresAdmin
   if (needsLogin && !session.isLoggedIn.value) {

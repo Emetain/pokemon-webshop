@@ -6,6 +6,7 @@ import AppLogo from './AppLogo.vue'
 import MegaMenu from './MegaMenu.vue'
 import MobileMenu from './MobileMenu.vue'
 import CartDrawer from '../cart/CartDrawer.vue'
+import PremiumDialog from '../premium/PremiumDialog.vue'
 import { useCart } from '../../stores/cart'
 import { useSession } from '../../stores/session'
 import { t } from '../../utils/i18n'
@@ -136,6 +137,7 @@ watch(
     <MegaMenu />
     <MobileMenu ref="mobileMenu" />
     <CartDrawer />
+    <PremiumDialog />
   </header>
 </template>
 

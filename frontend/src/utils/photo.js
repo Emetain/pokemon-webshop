@@ -1,3 +1,12 @@
+/**
+ * Whether "Foto maken" opens the live camera view (`CameraCapture.vue`). Phones open their own camera app from a file
+ * input with `capture`, with autofocus and full resolution. A computer's browser ignores `capture` and opens the file
+ * picker, so it gets the live view; that needs https or localhost.
+ */
+export function canUseLiveCamera() {
+  return Boolean(navigator.mediaDevices?.getUserMedia) && window.isSecureContext && !window.matchMedia('(pointer: coarse)').matches
+}
+
 /** Longest side a scanned photo is sent at: enough for a collector number, about a thousand tokens at the model. */
 export const SCAN_MAX_SIDE = 1280
 const SCAN_QUALITY = 0.85

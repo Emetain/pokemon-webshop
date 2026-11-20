@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import BallMark from '../components/BallMark.vue'
 import BinderPage from '../components/BinderPage.vue'
 import FormMessage from '../components/FormMessage.vue'
+import CollectorTools from '../components/shop/CollectorTools.vue'
+import HomeValueChart from '../components/collection/HomeValueChart.vue'
 import HeroCarousel from '../components/shop/HeroCarousel.vue'
 import NewsCard from '../components/content/NewsCard.vue'
 import ProductRow from '../components/shop/ProductRow.vue'
@@ -88,6 +90,10 @@ function onWished(product, wished) {
       @wished="onWished"
       @error="error = $event"
     />
+
+    <!-- Right below the new stock: the customer's own value graph, and what the shop offers besides selling. -->
+    <HomeValueChart />
+    <CollectorTools />
 
     <section class="games" aria-labelledby="home-games">
       <h2 id="home-games">{{ t('home.games') }}</h2>

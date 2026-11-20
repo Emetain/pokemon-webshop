@@ -1,14 +1,16 @@
 <script setup>
-import { computed, onBeforeUnmount, reactive, ref } from 'vue'
-import { BadgeCheck, Crown, ImageUp } from 'lucide-vue-next'
+import { computed, nextTick, onBeforeUnmount, reactive, ref } from 'vue'
+import { BadgeCheck, Camera, Crown, ImageUp } from 'lucide-vue-next'
+import CameraCapture from '../components/CameraCapture.vue'
 import CatalogBand from '../components/catalog/CatalogBand.vue'
 import FormMessage from '../components/FormMessage.vue'
 import EdgeGuides from '../components/pregrade/EdgeGuides.vue'
 import { pregradeApi } from '../services/api'
+import { openPremium } from '../stores/premiumDialog'
 import { useSession } from '../stores/session'
 import { DEFAULT_OUTER, PERFECT_BACK, PERFECT_FRONT, centering, guessInner, maxGradeByCentering } from '../utils/centering'
 import { t } from '../utils/i18n'
-import { shrinkPhoto } from '../utils/photo'
+import { canUseLiveCamera, shrinkPhoto } from '../utils/photo'
 import { usePageMeta } from '../utils/pageMeta'
 
 /**
@@ -30,10 +32,44 @@ const needsPremium = ref(false)
 const premium = computed(() => session.isPremium.value)
 const ready = computed(() => photos.front && photos.back && !busy.value)
 
-async function choose(side, event) {
+// The photo of each side: taken now (the phone's camera app, or the live camera view on a computer) or chosen from
+// the photos already on the device.
+const cameraSide = ref(null)
+const cameraInputs = {}
+const fileInputs = {}
+const takeButtons = {}
+
+function takePhoto(side) {
+  if (canUseLiveCamera()) cameraSide.value = side
+  else cameraInputs[side].click()
+}
+
+async function closeCamera() {
+  const side = cameraSide.value
+  cameraSide.value = null
+  await nextTick()
+  takeButtons[side]?.focus()
+}
+
+function pickInstead() {
+  const side = cameraSide.value
+  cameraSide.value = null
+  fileInputs[side].click()
+}
+
+function onCameraPhoto(photo) {
+  const side = cameraSide.value
+  cameraSide.value = null
+  choose(side, photo)
+}
+
+function onFile(side, event) {
   const file = event.target.files?.[0]
   event.target.value = ''
-  if (!file) return
+  if (file) choose(side, file)
+}
+
+async function choose(side, file) {
   error.value = ''
   try {
     const photo = await shrinkPhoto(file, PHOTO_SIDE)
@@ -58,7 +94,10 @@ async function check() {
       boxes[side] = { outer, inner: found?.inner ?? guessInner(outer) }
     }
   } catch (exception) {
-    if (exception.code === 'premium_required') needsPremium.value = true
+    if (exception.code === 'premium_required') {
+      needsPremium.value = true
+      openPremium('pregrade')
+    }
     error.value = exception.message
   } finally {
     busy.value = false
@@ -98,7 +137,7 @@ usePageMeta(() => ({ title: t('pregrade.title'), description: t('pregrade.intro'
     <section v-if="!premium" class="panel locked">
       <h2><Crown :size="20" aria-hidden="true" /> {{ t('pregrade.lockedTitle') }}</h2>
       <p>{{ t('pregrade.lockedText') }}</p>
-      <router-link class="btn btn-primary" to="/premium">{{ t('scanner.toPremium') }}</router-link>
+      <button class="btn btn-primary" type="button" aria-haspopup="dialog" @click="openPremium('pregrade')">{{ t('scanner.toPremium') }}</button>
     </section>
 
     <template v-else>
@@ -110,14 +149,41 @@ usePageMeta(() => ({ title: t('pregrade.title'), description: t('pregrade.intro'
           <li>{{ t('pregrade.tips.light') }}</li>
           <li>{{ t('pregrade.tips.sleeve') }}</li>
         </ul>
-        <div class="uploads">
-          <label v-for="side in SIDES" :key="side" class="upload">
+        <div v-if="cameraSide" class="camera">
+          <h3 class="camera-side">{{ t('pregrade.cameraFor', { side: t(`pregrade.${cameraSide}`).toLowerCase() }) }}</h3>
+          <CameraCapture :hint="t('pregrade.cameraHint')" @photo="onCameraPhoto" @pick="pickInstead" @close="closeCamera" />
+        </div>
+        <div v-else class="uploads">
+          <div v-for="side in SIDES" :key="side" class="upload" role="group" :aria-labelledby="`upload-${side}`">
+            <span :id="`upload-${side}`" class="upload-label">{{ t(`pregrade.${side}`) }}</span>
             <img v-if="previews[side]" :src="previews[side]" :alt="t(`pregrade.${side}`)" />
             <span v-else class="placeholder"><ImageUp :size="28" aria-hidden="true" /></span>
-            <span class="upload-label">{{ previews[side] ? t('pregrade.replace', { side: t(`pregrade.${side}`) }) : t(`pregrade.${side}`) }}</span>
-            <input class="hidden-input" type="file" accept="image/*" @change="choose(side, $event)" />
-          </label>
+            <button
+              :ref="(element) => (takeButtons[side] = element)"
+              class="btn btn-primary btn-small"
+              type="button"
+              @click="takePhoto(side)"
+            >
+              <Camera :size="16" aria-hidden="true" />
+              {{ t('scanner.takePhoto') }}
+            </button>
+            <button class="btn btn-secondary btn-small" type="button" @click="fileInputs[side].click()">
+              <ImageUp :size="16" aria-hidden="true" />
+              {{ t('scanner.choosePhoto') }}
+            </button>
+          </div>
         </div>
+        <template v-for="side in SIDES" :key="side">
+          <input
+            :ref="(element) => (cameraInputs[side] = element)"
+            class="hidden-input"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            @change="onFile(side, $event)"
+          />
+          <input :ref="(element) => (fileInputs[side] = element)" class="hidden-input" type="file" accept="image/*" @change="onFile(side, $event)" />
+        </template>
         <button class="btn btn-primary check" type="button" :disabled="!ready" @click="check">
           {{ busy ? t('pregrade.checking') : t('pregrade.check') }}
         </button>
@@ -125,7 +191,9 @@ usePageMeta(() => ({ title: t('pregrade.title'), description: t('pregrade.intro'
       </section>
 
       <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
-      <p v-if="needsPremium"><router-link to="/premium">{{ t('scanner.toPremium') }}</router-link></p>
+      <p v-if="needsPremium">
+        <button class="link-button" type="button" aria-haspopup="dialog" @click="openPremium('pregrade')">{{ t('scanner.toPremium') }}</button>
+      </p>
 
       <section v-if="result" class="results" aria-live="polite">
         <h2>{{ t('pregrade.resultTitle') }}</h2>
@@ -245,18 +313,32 @@ usePageMeta(() => ({ title: t('pregrade.title'), description: t('pregrade.intro'
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
-  max-width: 28rem;
+  max-width: 30rem;
 }
 
 .upload {
   display: grid;
+  align-content: start;
   gap: var(--space-2);
-  justify-items: center;
   padding: var(--space-3);
   border: 1.5px dashed var(--color-line-strong);
   border-radius: var(--radius-md);
-  cursor: pointer;
   text-align: center;
+}
+
+.upload .btn {
+  width: 100%;
+  padding-inline: var(--space-2);
+}
+
+.camera {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 40rem;
+}
+
+.camera-side {
+  font-size: var(--text-md);
 }
 
 .upload img {

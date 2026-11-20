@@ -4,6 +4,7 @@ import { Lock, Minus, TrendingDown, TrendingUp } from 'lucide-vue-next'
 import { formatMoney, formatPercent, formatShortDate, formatWholeMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 import { prefersReducedMotion, tween } from '../../utils/tween'
+import { openPremium } from '../../stores/premiumDialog'
 
 /**
  * `key` is also the text on the button. Without a length it means everything there is. 1D compares yesterday's
@@ -38,7 +39,6 @@ const props = defineProps({
 })
 
 const rangeKey = ref('1M')
-const lockedNotice = ref(false)
 const activeIndex = ref(null)
 const plot = ref(null)
 
@@ -251,10 +251,9 @@ const locked = (item) => item.premium && !props.premium
 
 function chooseRange(item) {
   if (locked(item)) {
-    lockedNotice.value = true
+    openPremium('history', props.hasOlder ? t('collection.history.maxLockedOlder') : '')
     return
   }
-  lockedNotice.value = false
   rangeKey.value = item.key
   activeIndex.value = null
 }
@@ -351,18 +350,15 @@ function onKeydown(event) {
           class="range"
           type="button"
           :class="{ locked: locked(item) }"
-          :aria-pressed="item.key === rangeKey"
-          :aria-describedby="locked(item) ? 'max-locked' : undefined"
+          :aria-pressed="locked(item) ? undefined : item.key === rangeKey"
+          :aria-haspopup="locked(item) ? 'dialog' : undefined"
+          :aria-label="locked(item) ? t('collection.history.maxLockedLabel') : undefined"
           @click="chooseRange(item)"
         >
           <Lock v-if="locked(item)" :size="13" aria-hidden="true" />
           {{ item.key }}
         </button>
       </div>
-      <p v-if="lockedNotice" id="max-locked" class="locked-notice" role="status">
-        {{ hasOlder ? t('collection.history.maxLockedOlder') : t('collection.history.maxLocked') }}
-        <router-link to="/premium">{{ t('collection.history.toPremium') }}</router-link>
-      </p>
 
       <p class="note">{{ t('collection.history.note') }}</p>
 
@@ -568,14 +564,6 @@ function onKeydown(event) {
   align-items: center;
   gap: var(--space-1);
   color: var(--color-ink-soft);
-}
-
-.locked-notice {
-  margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  background: var(--color-tint);
-  font-size: var(--text-sm);
 }
 
 .note {

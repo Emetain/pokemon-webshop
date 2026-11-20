@@ -1,12 +1,15 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Camera, Crown, ImageUp, ScanLine } from 'lucide-vue-next'
+import CameraCapture from '../components/CameraCapture.vue'
 import CardGrid from '../components/catalog/CardGrid.vue'
+import CardTile from '../components/catalog/CardTile.vue'
 import CatalogBand from '../components/catalog/CatalogBand.vue'
 import FormMessage from '../components/FormMessage.vue'
 import { GAMES } from '../data/games'
-import { scannerApi } from '../services/api'
-import { shrinkPhoto } from '../utils/photo'
+import { catalogApi, scannerApi } from '../services/api'
+import { openPremium } from '../stores/premiumDialog'
+import { canUseLiveCamera, shrinkPhoto } from '../utils/photo'
 import { t } from '../utils/i18n'
 import { usePageMeta } from '../utils/pageMeta'
 
@@ -23,6 +26,16 @@ const error = ref('')
 const needsPremium = ref(false)
 const cameraInput = ref(null)
 const fileInput = ref(null)
+const takeButton = ref(null)
+const cameraOpen = ref(false)
+
+const largeImage = ref('')
+
+/** The card found, with its large picture once that has loaded: the small one is blurry at the size of the photo. */
+const matchCard = computed(() => {
+  const match = result.value?.match
+  return match && largeImage.value ? { ...match, imageUrl: largeImage.value } : match
+})
 
 const scansLeft = computed(() => result.value?.scansLeft ?? status.value?.scansLeft ?? null)
 const others = computed(() => {
@@ -43,24 +56,67 @@ onBeforeUnmount(() => {
   if (preview.value) URL.revokeObjectURL(preview.value)
 })
 
-async function onPhoto(event) {
+function takePhoto() {
+  if (canUseLiveCamera()) cameraOpen.value = true
+  else cameraInput.value.click()
+}
+
+async function closeCamera() {
+  cameraOpen.value = false
+  await nextTick()
+  takeButton.value?.focus()
+}
+
+function pickInstead() {
+  cameraOpen.value = false
+  fileInput.value.click()
+}
+
+function onCameraPhoto(photo) {
+  cameraOpen.value = false
+  scan(photo)
+}
+
+function onFile(event) {
   const file = event.target.files?.[0]
   event.target.value = ''
-  if (!file) return
+  if (file) scan(file)
+}
+
+async function scan(file) {
   error.value = ''
   needsPremium.value = false
   result.value = null
+  largeImage.value = ''
   scanning.value = true
   try {
     const photo = await shrinkPhoto(file)
     if (preview.value) URL.revokeObjectURL(preview.value)
     preview.value = URL.createObjectURL(photo)
     result.value = await scannerApi.scan(photo, game.value || undefined)
+    if (result.value.match) loadLargeImage(result.value.match)
   } catch (exception) {
-    if (exception.code === 'premium_required') needsPremium.value = true
+    if (exception.code === 'premium_required') {
+      needsPremium.value = true
+      openPremium('scansUsed')
+    }
     error.value = exception.message === 'photo' ? t('scanner.unreadable') : exception.message
   } finally {
     scanning.value = false
+  }
+}
+
+/** Swaps in the large picture only once it has loaded, so the card never shows an empty frame in between. */
+async function loadLargeImage(card) {
+  try {
+    const url = (await catalogApi.card(card.id)).imageLargeUrl
+    if (!url || url === card.imageUrl) return
+    const image = new Image()
+    image.src = url
+    await image.decode()
+    if (result.value?.match?.id === card.id) largeImage.value = url
+  } catch {
+    // Keeps the small picture.
   }
 }
 
@@ -93,8 +149,9 @@ usePageMeta(() => ({ title: t('scanner.title'), description: t('scanner.intro') 
         </button>
       </div>
 
-      <div class="actions">
-        <button class="btn btn-primary" type="button" :disabled="scanning || needsPremium" @click="cameraInput.click()">
+      <CameraCapture v-if="cameraOpen" @photo="onCameraPhoto" @pick="pickInstead" @close="closeCamera" />
+      <div v-else class="actions">
+        <button ref="takeButton" class="btn btn-primary" type="button" :disabled="scanning || needsPremium" @click="takePhoto">
           <Camera :size="18" aria-hidden="true" />
           {{ t('scanner.takePhoto') }}
         </button>
@@ -102,13 +159,13 @@ usePageMeta(() => ({ title: t('scanner.title'), description: t('scanner.intro') 
           <ImageUp :size="18" aria-hidden="true" />
           {{ t('scanner.choosePhoto') }}
         </button>
-        <input ref="cameraInput" class="hidden-input" type="file" accept="image/*" capture="environment" @change="onPhoto" />
-        <input ref="fileInput" class="hidden-input" type="file" accept="image/jpeg,image/png,image/webp,image/*" @change="onPhoto" />
       </div>
+      <input ref="cameraInput" class="hidden-input" type="file" accept="image/*" capture="environment" @change="onFile" />
+      <input ref="fileInput" class="hidden-input" type="file" accept="image/jpeg,image/png,image/webp,image/*" @change="onFile" />
 
       <p v-if="status && !status.premium && scansLeft !== null" class="left">
         {{ t('scanner.left', { count: scansLeft, total: status.freeScans }) }}
-        <router-link to="/premium">{{ t('scanner.unlimited') }}</router-link>
+        <button class="link-button" type="button" aria-haspopup="dialog" @click="openPremium('scanner')">{{ t('scanner.unlimited') }}</button>
       </p>
       <p v-else-if="status?.premium" class="left premium"><Crown :size="16" aria-hidden="true" /> {{ t('scanner.premium') }}</p>
       <p v-if="status && !status.available" class="left">{{ t('scanner.unavailable') }}</p>
@@ -129,32 +186,41 @@ usePageMeta(() => ({ title: t('scanner.title'), description: t('scanner.intro') 
     <section v-if="needsPremium" class="panel premium-prompt">
       <h2><Crown :size="20" aria-hidden="true" /> {{ t('scanner.premiumTitle') }}</h2>
       <p>{{ t('scanner.premiumText') }}</p>
-      <router-link class="btn btn-primary" to="/premium">{{ t('scanner.toPremium') }}</router-link>
+      <button class="btn btn-primary" type="button" aria-haspopup="dialog" @click="openPremium('scansUsed')">{{ t('scanner.toPremium') }}</button>
     </section>
 
     <div v-if="scanning || result" class="outcome">
-      <img v-if="preview" class="preview" :src="preview" :alt="t('scanner.yourPhoto')" />
-      <div class="found">
-        <p v-if="scanning" class="reading" role="status"><ScanLine :size="18" aria-hidden="true" /> {{ t('scanner.reading') }}</p>
+      <!-- The photo and the card found side by side at the same size, so the customer can see it's the right one. -->
+      <div class="compare">
+        <figure v-if="preview" class="photo">
+          <img class="preview" :src="preview" :alt="t('scanner.yourPhoto')" />
+          <figcaption>{{ t('scanner.yourPhoto') }}</figcaption>
+        </figure>
+        <div class="found">
+          <p v-if="scanning" class="reading" role="status"><ScanLine :size="18" aria-hidden="true" /> {{ t('scanner.reading') }}</p>
 
-        <template v-else-if="result">
-          <template v-if="result.match">
+          <template v-else-if="result?.match">
             <h2>{{ t('scanner.found') }}</h2>
-            <CardGrid :cards="[result.match]" show-set class="match" @change="onCollectionChange" />
+            <CardTile :card="matchCard" show-set @change="onCollectionChange(result.match, $event)" />
           </template>
-          <template v-if="others.length">
-            <h2>{{ result.match ? t('scanner.orOneOf') : t('scanner.choose') }}</h2>
-            <CardGrid :cards="others" show-set @change="onCollectionChange" />
+          <template v-else-if="others.length">
+            <h2>{{ t('scanner.choose') }}</h2>
+            <p class="read">{{ t('scanner.chooseBelow') }}</p>
           </template>
-          <template v-if="!result.candidates.length">
+          <template v-else-if="result">
             <h2>{{ t('scanner.notFound') }}</h2>
             <p v-if="result.reading.name || result.reading.number" class="read">
               {{ t('scanner.read', { text: [result.reading.name, result.reading.setCode, result.reading.number].filter(Boolean).join(' · ') }) }}
             </p>
             <p>{{ t('scanner.notFoundText') }}</p>
           </template>
-        </template>
+        </div>
       </div>
+
+      <section v-if="!scanning && others.length" class="others">
+        <h2>{{ result.match ? t('scanner.orOneOf') : t('scanner.candidates') }}</h2>
+        <CardGrid :cards="others" show-set @change="onCollectionChange" />
+      </section>
     </div>
   </div>
 </template>
@@ -263,23 +329,56 @@ usePageMeta(() => ({ title: t('scanner.title'), description: t('scanner.intro') 
 
 .outcome {
   display: grid;
+  gap: var(--space-6);
+}
+
+/* Two equal columns, also on a phone: comparing works best side by side. */
+.compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
+  align-items: start;
+  max-width: 36rem;
+}
+
+.photo {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+/* Below the h2 of the column next to it, so the photo and the card image start at the same height. */
+.photo figcaption {
+  order: -1;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: var(--leading-tight);
 }
 
 .preview {
-  width: min(12rem, 60%);
+  display: block;
+  width: 100%;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-panel);
 }
 
 .found {
   display: grid;
-  gap: var(--space-3);
+  align-content: start;
+  gap: var(--space-2);
   min-width: 0;
 }
 
-.found h2 {
+.found h2,
+.others h2 {
   font-size: var(--text-lg);
+  line-height: var(--leading-tight);
+}
+
+.others {
+  display: grid;
+  gap: var(--space-3);
 }
 
 .reading {
@@ -294,18 +393,4 @@ usePageMeta(() => ({ title: t('scanner.title'), description: t('scanner.intro') 
   font-size: var(--text-sm);
 }
 
-.match {
-  max-width: 16rem;
-}
-
-@media (min-width: 768px) {
-  .outcome {
-    grid-template-columns: 12rem minmax(0, 1fr);
-    align-items: start;
-  }
-
-  .preview {
-    width: 100%;
-  }
-}
 </style>

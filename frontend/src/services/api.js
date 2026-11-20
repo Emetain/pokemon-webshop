@@ -1,3 +1,4 @@
+import { openPremiumForRefusal } from '../stores/premiumDialog'
 import { sampleServerTime } from '../stores/serverClock'
 import { t } from '../utils/i18n'
 
@@ -35,6 +36,8 @@ async function send(method, path, options, { isUpload = false } = {}) {
 
   const data = await response.json().catch(() => null)
   if (!response.ok) {
+    // Every Premium feature the server refuses opens the Premium popup, also features added later.
+    if (data?.error === 'premium_required') openPremiumForRefusal(data.message)
     throw new ApiError(response.status, data?.error ?? 'unknown', data?.message ?? messageWithoutBody(response.status, isUpload))
   }
   // Replies for a countdown carry the shop's time. Measured here, where the time the request took is known.
