@@ -36,6 +36,8 @@ export default {
     home: 'Naar de homepage',
   },
   layout: {
+    // What screen readers hear while a page shows its skeleton.
+    loading: 'Laden…',
     skipToContent: 'Ga naar de inhoud',
     shippingNotice: 'We verzenden naar Nederland en België',
     search: 'Zoeken',
@@ -1343,6 +1345,8 @@ export default {
       date: 'Datum',
       value: 'Waarde',
       noChange: 'Geen verandering',
+      // The buttons of the periods. "J" is jaar; in English it's "Y".
+      rangeLabels: { '1D': '1D', '1W': '1W', '1M': '1M', '3M': '3M', '6M': '6M', '1J': '1J', Max: 'Max' },
       maxLocked: 'Max laat de hele geschiedenis van je collectie zien. Dat hoort bij Premium.',
       maxLockedOlder: 'Je grafiek gaat verder terug dan een jaar. De hele geschiedenis zie je met Premium.',
       maxLockedLabel: 'Max, hoort bij Premium',

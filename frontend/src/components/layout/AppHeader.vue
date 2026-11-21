@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Heart, Menu, Search, ShoppingBag, Truck, User } from 'lucide-vue-next'
+import LanguageSwitch from './LanguageSwitch.vue'
 import AppLogo from './AppLogo.vue'
 import MegaMenu from './MegaMenu.vue'
 import MobileMenu from './MobileMenu.vue'
@@ -70,10 +71,13 @@ watch(
 </script>
 
 <template>
-  <p ref="topBar" class="top-bar">
-    <Truck :size="16" aria-hidden="true" />
-    {{ t('layout.shippingNotice') }}
-  </p>
+  <div ref="topBar" class="top-bar">
+    <p class="notice">
+      <Truck :size="16" aria-hidden="true" />
+      {{ t('layout.shippingNotice') }}
+    </p>
+    <LanguageSwitch class="language" />
+  </div>
 
   <header class="site-header" :class="{ stuck }">
     <div class="container bar">
@@ -142,16 +146,42 @@ watch(
 </template>
 
 <style scoped>
+/* The notice in the middle, the language switch at the right (2026-11-21). */
 .top-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, auto) 1fr;
   align-items: center;
-  justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-1) var(--gutter);
+  padding: var(--space-half) var(--gutter);
   background: var(--color-brand-deep);
   color: var(--color-on-brand-soft);
   font-size: var(--text-xs);
+}
+
+.notice {
+  display: flex;
+  grid-column: 2;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   text-align: center;
+}
+
+.language {
+  justify-self: end;
+}
+
+/* On a phone the notice moves to the left, so the two fit on one line. */
+@media (max-width: 559px) {
+  .top-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .notice {
+    grid-column: 1;
+    justify-content: flex-start;
+    text-align: left;
+  }
 }
 
 /*

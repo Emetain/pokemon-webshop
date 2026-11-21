@@ -8,6 +8,7 @@ import FormMessage from '../FormMessage.vue'
 import { useServerClock } from '../../stores/serverClock'
 import { formatDateTime, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import { formatLocale } from '../../stores/language'
 
 /**
  * The waiting room part of a drop page: what to do now, and where you are. The page asks the shop for the state,
@@ -33,7 +34,7 @@ const state = computed(() => props.queue?.state ?? 'LOADING')
 const live = computed(() => props.drop.status === 'LIVE')
 const loginLink = computed(() => ({ path: '/inloggen', query: { redirect: route.fullPath } }))
 const registerLink = computed(() => ({ path: '/registreren', query: { redirect: route.fullPath } }))
-const time = (instant) => new Intl.DateTimeFormat('nl-NL', { timeStyle: 'short', timeZone: 'Europe/Amsterdam' }).format(new Date(instant))
+const time = (instant) => new Intl.DateTimeFormat(formatLocale, { timeStyle: 'short', timeZone: 'Europe/Amsterdam' }).format(new Date(instant))
 
 const waiting = computed(() => {
   const count = props.queue?.waitingCount ?? 0

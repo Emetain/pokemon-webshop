@@ -1,15 +1,17 @@
-const dateFormat = new Intl.DateTimeFormat('nl-NL', {
+import { formatLocale } from '../stores/language'
+
+const dateFormat = new Intl.DateTimeFormat(formatLocale, {
   dateStyle: 'long',
   timeZone: 'Europe/Amsterdam',
 })
 
-const dateTimeFormat = new Intl.DateTimeFormat('nl-NL', {
+const dateTimeFormat = new Intl.DateTimeFormat(formatLocale, {
   dateStyle: 'medium',
   timeStyle: 'short',
   timeZone: 'Europe/Amsterdam',
 })
 
-const shortDateFormat = new Intl.DateTimeFormat('nl-NL', {
+const shortDateFormat = new Intl.DateTimeFormat(formatLocale, {
   dateStyle: 'medium',
   timeZone: 'Europe/Amsterdam',
 })
@@ -20,17 +22,17 @@ function moneyFormat(currency) {
   if (!moneyFormats.has(currency)) {
     moneyFormats.set(
       currency,
-      new Intl.NumberFormat('nl-NL', { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }),
+      new Intl.NumberFormat(formatLocale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }),
     )
   }
   return moneyFormats.get(currency)
 }
 
-const rateFormat = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 4 })
+const rateFormat = new Intl.NumberFormat(formatLocale, { maximumFractionDigits: 4 })
 
-const numberFormat = new Intl.NumberFormat('nl-NL')
+const numberFormat = new Intl.NumberFormat(formatLocale)
 
-const percentFormat = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 1 })
+const percentFormat = new Intl.NumberFormat(formatLocale, { maximumFractionDigits: 1 })
 
 export function formatDate(instant) {
   return dateFormat.format(new Date(instant))
@@ -50,7 +52,7 @@ export function formatMoney(cents, currency) {
 
 /** Without cents, for the numbers along a chart. */
 export function formatWholeMoney(cents, currency) {
-  return new Intl.NumberFormat('nl-NL', {
+  return new Intl.NumberFormat(formatLocale, {
     style: 'currency',
     currency,
     currencyDisplay: 'narrowSymbol',
@@ -70,10 +72,10 @@ export function formatPercent(percent) {
   return `${percentFormat.format(percent)}%`
 }
 
-const monthFormat = new Intl.DateTimeFormat('nl-NL', { month: 'long', year: 'numeric', timeZone: 'Europe/Amsterdam' })
-const weekdayFormat = new Intl.DateTimeFormat('nl-NL', { weekday: 'short', timeZone: 'Europe/Amsterdam' })
-const shortMonthFormat = new Intl.DateTimeFormat('nl-NL', { month: 'short', timeZone: 'Europe/Amsterdam' })
-const dayFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', timeZone: 'Europe/Amsterdam' })
+const monthFormat = new Intl.DateTimeFormat(formatLocale, { month: 'long', year: 'numeric', timeZone: 'Europe/Amsterdam' })
+const weekdayFormat = new Intl.DateTimeFormat(formatLocale, { weekday: 'short', timeZone: 'Europe/Amsterdam' })
+const shortMonthFormat = new Intl.DateTimeFormat(formatLocale, { month: 'short', timeZone: 'Europe/Amsterdam' })
+const dayFormat = new Intl.DateTimeFormat(formatLocale, { day: 'numeric', timeZone: 'Europe/Amsterdam' })
 
 /** "november 2026", for a date such as `2026-11-28`. */
 export function formatMonth(date) {

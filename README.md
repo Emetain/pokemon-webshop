@@ -282,6 +282,13 @@ and for going live [docs/phases/phase-10.md](docs/phases/phase-10.md).
 
 `postgres`, `docker` and `prod` read `DB_URL`, `DB_USERNAME` and `DB_PASSWORD`. `prod` has no defaults, so all three must be set.
 
+## Languages
+
+The website is Dutch, with English for customers since 2026-11-21: the NL/EN switch in the top bar. Texts live in
+`frontend/src/data/i18n/nl.js` and `en.js` (same keys; the admin area is Dutch only), and the backend's own messages
+in English in `backend/src/main/resources/i18n/messages-en.tsv`, used when the app sends `Accept-Language: en`. Mails,
+info pages, news and product texts are Dutch only for now.
+
 ## Conventions
 
 ### Backend

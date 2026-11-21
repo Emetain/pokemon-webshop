@@ -1,0 +1,323 @@
+# English versions of the backend's own Dutch messages (2026-11-21): Dutch, a tab, English. {} stands for a value
+# that changes, such as a number or a name. GlobalExceptionHandler uses them when the app asks for English.
+Alleen een concept kan weg. Haal de drop eerst offline.	Only a draft can be deleted. Take the drop offline first.
+Alleen een geplande drop kan terug naar concept.	Only a scheduled drop can go back to draft.
+Alleen een live drop kan vroeg stoppen.	Only a live drop can stop early.
+Alleen een mystery box heeft batches.	Only a mystery box has batches.
+Alleen verzegelde producten horen bij een set.	Only sealed products belong to a set.
+Beschrijf in een paar woorden waar de slide over gaat.	Describe in a few words what the slide is about.
+Controleer de ingevulde gegevens.	Check the details you filled in.
+Dat zijn wel erg hoge verzendkosten.	Those are very high shipping costs.
+De aanbiedingsprijs moet lager zijn dan de normale prijs.	The sale price must be lower than the normal price.
+De assistent is er even niet. Kijk bij de veelgestelde vragen of maak een ticket.	The assistant isn't available right now. See the frequently asked questions or create a ticket.
+De assistent kon nu geen antwoord geven. Probeer het opnieuw of maak een ticket.	The assistant couldn't answer right now. Try again or create a ticket.
+De betaling van deze bestelling loopt nog of is net binnengekomen. Kijk over een minuut opnieuw.	The payment of this order is still running or just came in. Check again in a minute.
+De drop begint zo. Ga meteen naar de wachtkamer.	The drop is about to start. Go to the waiting room right away.
+De einddatum moet na de startdatum liggen.	The end date must be after the start date.
+De eindtijd moet na de starttijd liggen.	The end time must be after the start time.
+De knoptekst mag maximaal 40 tekens hebben.	The button text can be at most 40 characters.
+De levertijd mag maximaal 200 tekens lang zijn.	The delivery time can be at most 200 characters long.
+De link mag maximaal 300 tekens hebben.	The link can be at most 300 characters.
+De naam mag maximaal 100 tekens hebben.	The name can be at most 100 characters.
+De naam mag maximaal 150 tekens hebben.	The name can be at most 150 characters.
+De naam mag maximaal 60 tekens lang zijn.	The name can be at most 60 characters long.
+De naam mag maximaal {} tekens lang zijn.	The name can be at most {} characters long.
+De notitie mag maximaal 200 tekens hebben.	The note can be at most 200 characters.
+De notitie mag maximaal 500 tekens hebben.	The note can be at most 500 characters.
+De omschrijving mag maximaal 1000 tekens hebben.	The description can be at most 1000 characters.
+De plaats mag maximaal 100 tekens lang zijn.	The city can be at most 100 characters long.
+De postcode mag maximaal 10 tekens lang zijn.	The postcode can be at most 10 characters long.
+De pre-grade check hoort bij Premium.	The pre-grade check is part of Premium.
+De pre-grade check is er even niet. Probeer het later opnieuw.	The pre-grade check isn't available right now. Try again later.
+De prijs moet hoger zijn dan € 0.	The price must be higher than € 0.
+De prijsgeschiedenis van een kaart hoort bij Premium.	The price history of a card is part of Premium.
+De samenvatting mag maximaal 300 tekens hebben.	The summary can be at most 300 characters.
+De scanner is er even niet. Probeer het later opnieuw.	The scanner isn't available right now. Try again later.
+De straat mag maximaal 100 tekens lang zijn.	The street can be at most 100 characters long.
+De tekst mag maximaal 20.000 tekens hebben.	The text can be at most 20,000 characters.
+De tekst mag maximaal 300 tekens hebben.	The text can be at most 300 characters.
+De tekst mag maximaal 50.000 tekens hebben.	The text can be at most 50,000 characters.
+De titel mag maximaal 100 tekens hebben.	The title can be at most 100 characters.
+De titel mag maximaal 120 tekens hebben.	The title can be at most 120 characters.
+De titel mag maximaal 150 tekens hebben.	The title can be at most 150 characters.
+De verzenddatum kan niet voor de releasedatum liggen.	The shipping date can't be before the release date.
+De volgorde past niet bij de afbeeldingen van dit product. Herlaad de pagina.	The order doesn't match the images of this product. Reload the page.
+De voorraad is net door iemand anders gewijzigd. Probeer het opnieuw.	Someone else just changed the stock. Try again.
+De voorraad van deze drop is al teruggezet.	The stock of this drop has already been returned.
+De wachtkamer is nog niet open. Kom terug vlak voor de start.	The waiting room isn't open yet. Come back just before the start.
+De webshop is nog niet open. Bestellen kan nog niet.	The webshop isn't open yet. You can't order yet.
+Deze afbeelding bestaat niet.	This image doesn't exist.
+Deze bestelling kan niet meer geannuleerd worden.	This order can no longer be cancelled.
+Deze bestelling kan niet verzonden worden.	This order can't be shipped.
+Deze binder bestaat niet.	This binder doesn't exist.
+Deze code bestaat al.	This code already exists.
+Deze code is al gebruikt in een bestelling. Maak een nieuwe code in plaats van deze te hernoemen.	This code has already been used in an order. Create a new code instead of renaming this one.
+Deze code is al gebruikt in een bestelling. Zet hem uit in plaats van hem te verwijderen.	This code has already been used in an order. Turn it off instead of deleting it.
+Deze drop begint al.	This drop is starting already.
+Deze drop is afgelopen.	This drop has ended.
+Deze drop is al begonnen.	This drop has already started.
+Deze drop is al gepubliceerd.	This drop has already been published.
+Deze kaart bestaat niet in deze variant.	This card doesn't exist in this variant.
+Deze kaart bestaat niet.	This card doesn't exist.
+Deze kaart heeft die variant niet.	This card doesn't have that variant.
+Deze kaart hoort bij een ander spel.	This card belongs to another game.
+Deze kaart staat niet in je collectie.	This card isn't in your collection.
+Deze kaart zit al in de binder. Probeer het opnieuw.	This card is already in the binder. Try again.
+Deze kortingscode is te lang.	This discount code is too long.
+Deze link is verlopen of al gebruikt. Vraag een nieuwe link aan.	This link has expired or has already been used. Ask for a new link.
+Deze link klopt niet.	This link isn't right.
+Deze link werkt niet meer. De alert staat misschien al uit, of er kwam een nieuwere mail.	This link no longer works. The alert may already be off, or a newer email came.
+Deze link werkt niet meer. Meld je opnieuw aan, dan krijg je een nieuwe mail.	This link no longer works. Sign up again and you'll get a new email.
+Deze link werkt niet.	This link doesn't work.
+Deze postcode klopt niet. Gebruik de notatie {}	This postcode isn't right. Use the format {}
+Deze prijs is te hoog.	This price is too high.
+Deze prijsalert staat al aan.	This price alert is already on.
+Deze set staat niet in de kaartencatalogus van dit spel.	This set isn't in the card catalog of this game.
+Deze setcode is te lang.	This set code is too long.
+Deze webhook is niet van Stripe.	This webhook isn't from Stripe.
+Dit CSV-bestand is leeg.	This CSV file is empty.
+Dit CSV-bestand kunnen we niet lezen: {}	We can't read this CSV file: {}
+Dit Cardmarket-product kennen we niet.	We don't know this Cardmarket product.
+Dit bestelnummer is te lang.	This order number is too long.
+Dit e-mailadres is te lang.	This email address is too long.
+Dit e-mailadres klopt niet.	This email address isn't right.
+Dit gesprek is te lang. Begin een nieuw gesprek of maak een ticket.	This conversation is too long. Start a new conversation or create a ticket.
+Dit hoort bij Premium.	This is part of Premium.
+Dit is geen foto die we kunnen lezen. Gebruik JPG, PNG of WebP.	This isn't a photo we can read. Use JPG, PNG or WebP.
+Dit product is op voorraad. Je kunt het nu bestellen.	This product is in stock. You can order it now.
+Dit product kun je nu niet bestellen.	You can't order this product right now.
+Dit product zit al in de drop.	This product is already in the drop.
+Dit product zit niet in de drop.	This product isn't in the drop.
+Dit product zit niet in deze drop.	This product isn't in this drop.
+Dit product zit niet in je winkelwagen.	This product isn't in your cart.
+Dit soort product hoort niet bij een set van dit spel.	This kind of product doesn't belong to a set of this game.
+Dit wachtwoord is te lang. Kies een korter wachtwoord.	This password is too long. Choose a shorter password.
+E-mailadres of wachtwoord klopt niet.	Email address or password isn't right.
+Een URL-naam heeft alleen kleine letters, cijfers en streepjes.	A URL name only has lowercase letters, numbers and hyphens.
+Een andere drop heeft dit webadres al.	Another drop already has this web address.
+Een batch heeft maximaal {} dozen.	A batch has at most {} boxes.
+Een batch heeft maximaal {} soorten dozen.	A batch has at most {} kinds of boxes.
+Een bericht aan de assistent mag maximaal 2000 tekens hebben.	A message to the assistant can be at most 2000 characters.
+Een bestelling met deze status kan niet naar {}.	An order with this status can't go to {}.
+Een binder kan maximaal {} verschillende kaarten hebben.	A binder can have at most {} different cards.
+Een code heeft 3 tot 40 letters, cijfers, - of _, zonder spaties.	A code has 3 to 40 letters, numbers, - or _, without spaces.
+Een code heeft maximaal 40 tekens.	A code has at most 40 characters.
+Een drop kan maximaal {} producten hebben.	A drop can have at most {} products.
+Een gearchiveerd product kan niet in een drop.	An archived product can't be in a drop.
+Een gekozen product bestaat niet meer.	A chosen product no longer exists.
+Een link begint met / voor een pagina in de shop, of met https://.	A link starts with / for a page in the shop, or with https://.
+Een omschrijving mag maximaal 150 tekens hebben.	A description can be at most 150 characters.
+Een pagina kan niet leeg zijn.	A page can't be empty.
+Een pre-order heeft een releasedatum nodig.	A pre-order needs a release date.
+Een prijs kan niet negatief zijn.	A price can't be negative.
+Een product kan maximaal {} afbeeldingen hebben.	A product can have at most {} images.
+Een toewijzing kan niet negatief zijn.	An allocation can't be negative.
+Een verkoop of drop-toewijzing boekt af.	A sale or drop allocation takes stock off.
+Een waarde kan niet negatief zijn.	A value can't be negative.
+Een webadres heeft alleen kleine letters, cijfers en streepjes.	A web address only has lowercase letters, numbers and hyphens.
+Elke soort doos heeft een omschrijving.	Every kind of box has a description.
+Er bestaat al een account met dit e-mailadres.	An account with this email address already exists.
+Er is al een product met deze URL-naam.	There's already a product with this URL name.
+Er is geen OpenAI-sleutel ingesteld.	No OpenAI key has been set.
+Er is geen product met id {}	There's no product with id {}
+Er loopt al een synchronisatie voor dit spel.	A sync is already running for this game.
+Er lopen nog bestellingen met deze dozen. Probeer het over een kwartier opnieuw.	Orders with these boxes are still running. Try again in fifteen minutes.
+Er valt bij deze bestelling niets terug te betalen.	There's nothing to refund for this order.
+Er wordt vanaf jouw netwerk op dit moment veel tegelijk afgerekend. Probeer het over een paar minuten opnieuw.	Many checkouts are running from your network right now. Try again in a few minutes.
+Er zijn er al {} verkocht of gereserveerd, dus er moeten er minstens zoveel in de drop blijven.	{} have already been sold or reserved, so at least that many must stay in the drop.
+Er zijn {} gereserveerd, dus er moeten er minstens zoveel op voorraad blijven.	{} are reserved, so at least that many must stay in stock.
+Extra binders maken en aanpassen hoort bij Premium. Je binders blijven zichtbaar.	Creating and changing extra binders is part of Premium. Your binders stay visible.
+Ga akkoord met de algemene voorwaarden om te bestellen.	Agree to the terms and conditions to order.
+Gebruik een link die met https:// begint.	Use a link that starts with https://.
+Gebruik twee foto's in JPG, PNG of WebP: de voorkant en de achterkant.	Use two photos in JPG, PNG or WebP: the front and the back.
+Geef de batch een naam.	Give the batch a name.
+Geef de voorraad terug nadat de drop is afgelopen.	Return the stock after the drop has ended.
+Geef je binder een naam.	Give your binder a name.
+Geef toestemming dat Premium direct begint.	Agree that Premium starts right away.
+Het bestand heeft een kolom id, slug of name nodig.	The file needs an id, slug or name column.
+Het gesprek met de assistent is te lang om mee te sturen.	The conversation with the assistant is too long to include.
+Het huisnummer mag maximaal 20 tekens lang zijn.	The house number can be at most 20 characters long.
+Het minimale bedrag kan niet negatief zijn.	The minimum amount can't be negative.
+Het onderwerp mag maximaal 150 tekens hebben.	The subject can be at most 150 characters.
+Het zoeken naar afbeeldingen loopt al voor dit spel.	The image search is already running for this game.
+Houd de opdracht onder de 500 tekens.	Keep the prompt under 500 characters.
+Importeer maximaal {} regels per keer.	Import at most {} lines at a time.
+Inkoop en retouren tellen op. Gebruik een correctie om af te boeken.	Purchases and returns add stock. Use a correction to take stock off.
+Je antwoord mag maximaal 5000 tekens hebben.	Your answer can be at most 5000 characters.
+Je bent nog niet aan de beurt. Wacht in de rij tot je erin mag.	It's not your turn yet. Wait in the queue until you're let in.
+Je bericht mag maximaal 5000 tekens hebben.	Your message can be at most 5000 characters.
+Je binder zit vol: je kunt maximaal {} kaarten kiezen.	Your binder is full: you can choose at most {} cards.
+Je collectie exporteren hoort bij Premium.	Exporting your collection is part of Premium.
+Je drop-mandje is leeg.	Your drop basket is empty.
+Je hebt al {} bestellingen die op betaling wachten. Betaal of annuleer er eerst een, of probeer het over {} minuten opnieuw.	You already have {} orders waiting for payment. Pay for or cancel one first, or try again in {} minutes.
+Je hebt geen toegang tot deze pagina.	You don't have access to this page.
+Je hebt nog geen abonnement.	You don't have a subscription yet.
+Je kunt een review schrijven als je dit product bij ons hebt gekocht.	You can write a review if you bought this product from us.
+Je kunt maximaal 1000 kaarten tegelijk toevoegen.	You can add at most 1000 cards at once.
+Je kunt maximaal 99 stuks tegelijk bestellen.	You can order at most 99 at a time.
+Je kunt maximaal {} binders maken.	You can create at most {} binders.
+Je kunt maximaal {} prijsalerts hebben. Zet er eerst een uit.	You can have at most {} price alerts. Turn one off first.
+Je kunt maximaal {} stuks van een product bestellen.	You can order at most {} of a product.
+Je kunt maximaal {} verschillende producten in één bestelling doen.	You can have at most {} different products in one order.
+Je naam mag maximaal 100 tekens hebben.	Your name can be at most 100 characters.
+Je naam mag maximaal 100 tekens lang zijn.	Your name can be at most 100 characters long.
+Je review mag maximaal 1000 tekens hebben.	Your review can be at most 1000 characters.
+Je tijd om te bestellen is om. Ga opnieuw in de rij.	Your time to order is up. Join the queue again.
+Je winkelwagen is leeg.	Your cart is empty.
+Je {} gratis scans zijn op. Met Premium scan je zoveel je wilt.	Your {} free scans are used up. With Premium you scan as much as you like.
+Kies 1 tot 5 sterren.	Choose 1 to 5 stars.
+Kies 1D, 1W of 1M.	Choose 1D, 1W or 1M.
+Kies de conditie van de kaart.	Choose the condition of the card.
+Kies de kaart uit de catalogus.	Choose the card from the catalog.
+Kies een aantal van 0 of meer.	Choose a quantity of 0 or more.
+Kies een aantal van 0 tot {}.	Choose a quantity from 0 to {}.
+Kies een aantal van 1 tot en met {}	Choose a quantity from 1 to {}
+Kies een aantal van 1 tot {}.	Choose a quantity from 1 to {}.
+Kies een afbeelding in JPG, PNG of WebP.	Choose an image in JPG, PNG or WebP.
+Kies een bedrag tot {}.	Choose an amount up to {}.
+Kies een eindtijd in de toekomst, of beëindig de drop met de knop.	Choose an end time in the future, or end the drop with the button.
+Kies een geldig soort product.	Choose a valid kind of product.
+Kies een geldig spel.	Choose a valid game.
+Kies een geldige status.	Choose a valid status.
+Kies een kaart.	Choose a card.
+Kies een land.	Choose a country.
+Kies een limiet van 1 tot {}.	Choose a limit from 1 to {}.
+Kies een percentage of een vast bedrag.	Choose a percentage or a fixed amount.
+Kies een percentage van 1 tot 100.	Choose a percentage from 1 to 100.
+Kies een product.	Choose a product.
+Kies een snelheid van 1 tot {} mensen per minuut.	Choose a speed of 1 to {} people per minute.
+Kies een starttijd in de toekomst.	Choose a start time in the future.
+Kies een starttijd.	Choose a start time.
+Kies een van de voorgestelde afbeeldingen.	Choose one of the suggested images.
+Kies een wachtwoord van 8 tot 72 tekens.	Choose a password of 8 to 72 characters.
+Kies een wachtwoord van minstens 8 tekens.	Choose a password of at least 8 characters.
+Kies eerst een spel.	Choose a game first.
+Kies eerst het spel van de set.	Choose the game of the set first.
+Kies het gradingbedrijf en vul het cijfer in.	Choose the grading company and fill in the grade.
+Kies het spel van dit product.	Choose the game of this product.
+Kies maximaal {} producten.	Choose at most {} products.
+Kies minstens 1 keer, of laat het leeg.	Choose at least 1 time, or leave it empty.
+Kies minstens 1 stuk.	Choose at least 1.
+Kies minstens één kaart.	Choose at least one card.
+Kies open of gesloten.	Choose open or closed.
+Kies per soort 1 tot {} dozen.	Choose 1 to {} boxes per kind.
+Kies wat voor accessoire dit is.	Choose what kind of accessory this is.
+Kies wat voor alert je wilt.	Choose what kind of alert you want.
+Kies zwart, rood, geel of groen als kleur van de hero.	Choose black, red, yellow or green as the colour of the hero.
+Kleurthema's horen bij Premium. Licht en donker zijn gratis.	Colour themes are part of Premium. Light and dark are free.
+Log in om een opgeslagen adres te gebruiken.	Log in to use a saved address.
+Log in om verder te gaan.	Log in to continue.
+Na de start kun je geen producten meer toevoegen of weghalen.	After the start you can't add or remove products any more.
+Niet alle kaarten bestaan.	Not all cards exist.
+Onbekende afzender.	Unknown sender.
+Online betalen is nog niet ingesteld. Probeer het later opnieuw.	Online payment isn't set up yet. Try again later.
+Online betalen staat nog uit.	Online payment is still off.
+OpenAI gaf een afbeelding die we niet konden lezen.	OpenAI gave an image we couldn't read.
+OpenAI gaf geen titel terug. Probeer het opnieuw.	OpenAI didn't return a title. Try again.
+Over deze suggestie is al beslist.	This suggestion has already been decided on.
+Prijsalerts horen bij Premium.	Price alerts are part of Premium.
+Reserveringen lopen via de winkelwagen, niet via een aanpassing.	Reservations go through the cart, not through an adjustment.
+Schrijf de tekst van het bericht.	Write the text of the message.
+Schrijf een bericht van minstens {} tekens.	Write a message of at least {} characters.
+Schrijf eerst een antwoord.	Write an answer first.
+Schrijf eerst een bericht.	Write a message first.
+Schrijf minstens {} tekens.	Write at least {} characters.
+Stel eerst een vraag.	Ask a question first.
+Stijgers en dalers horen bij Premium.	Risers and fallers are part of Premium.
+Stripe is even niet bereikbaar. Probeer het zo opnieuw.	Stripe can't be reached for a moment. Try again shortly.
+Stripe is niet bereikbaar.	Stripe can't be reached.
+Stripe kon het bedrag niet terugstorten. Probeer het opnieuw of kijk in het Stripe-dashboard.	Stripe couldn't refund the amount. Try again or check the Stripe dashboard.
+Tijdens de drop kun je de starttijd, het adres, de limiet en de accountplicht niet meer wijzigen.	During the drop you can no longer change the start time, the address, the limit or the account requirement.
+Tijdens de drop kun je prijzen en limieten niet meer wijzigen, alleen de toewijzing.	During the drop you can no longer change prices and limits, only the allocation.
+Uit deze batch zijn al dozen verkocht. Hij blijft staan, zodat de bestellingen kloppen.	Boxes from this batch have already been sold. It stays, so the orders add up.
+Verzendkosten kunnen niet negatief zijn.	Shipping costs can't be negative.
+Voeg eerst producten toe.	Add products first.
+Voeg minstens één soort doos toe.	Add at least one kind of box.
+Voor deze bestelling kun je geen account meer aanmaken. Log in of registreer je via de accountpagina.	You can no longer create an account for this order. Log in or register through the account page.
+Voorraad kan niet negatief zijn.	Stock can't be negative.
+Vul de knoptekst en de link allebei in, of allebei niet.	Fill in both the button text and the link, or neither.
+Vul de levertijd in.	Fill in the delivery time.
+Vul de naam van de set in.	Fill in the name of the set.
+Vul de plaats in.	Fill in the city.
+Vul de postcode in.	Fill in the postcode.
+Vul de releasedatum in.	Fill in the release date.
+Vul de straat in.	Fill in the street.
+Vul een aantal in dat niet 0 is.	Fill in a quantity that isn't 0.
+Vul een bedrag in van meer dan € 0.	Fill in an amount of more than € 0.
+Vul een bedrag voor gratis verzending in, of laat het leeg.	Fill in an amount for free shipping, or leave it empty.
+Vul een geldig e-mailadres in.	Fill in a valid email address.
+Vul een naam in.	Fill in a name.
+Vul een onderwerp in.	Fill in a subject.
+Vul een percentage in tussen {} en {}.	Fill in a percentage between {} and {}.
+Vul een prijs in tussen 0,01 en 1.000.000.	Fill in a price between 0.01 and 1,000,000.
+Vul een titel in.	Fill in a title.
+Vul eerst de normale prijs in.	Fill in the normal price first.
+Vul het huisnummer in.	Fill in the house number.
+Vul je adres in.	Fill in your address.
+Vul je e-mailadres in.	Fill in your email address.
+Vul je naam in.	Fill in your name.
+Vul je wachtwoord in.	Fill in your password.
+Vul minstens {} tekens in om te zoeken.	Enter at least {} characters to search.
+We konden de betaalpagina niet openen. Probeer het over een paar minuten opnieuw.	We couldn't open the payment page. Try again in a few minutes.
+We konden de foto nu niet lezen. Probeer het opnieuw.	We couldn't read the photo right now. Try again.
+We konden de foto's nu niet bekijken. Probeer het opnieuw.	We couldn't look at the photos right now. Try again.
+We konden deze aanmelding niet vinden. Misschien ben je al afgemeld.	We couldn't find this signup. Maybe you've already unsubscribed.
+We konden deze batch niet vinden.	We couldn't find this batch.
+We konden deze bestelling niet vinden.	We couldn't find this order.
+We konden deze drop niet vinden.	We couldn't find this drop.
+We konden deze kaart niet vinden.	We couldn't find this card.
+We konden deze kortingscode niet vinden.	We couldn't find this discount code.
+We konden deze pagina niet vinden.	We couldn't find this page.
+We konden deze release niet vinden.	We couldn't find this release.
+We konden deze review niet vinden.	We couldn't find this review.
+We konden deze serie niet vinden.	We couldn't find this series.
+We konden deze set niet vinden.	We couldn't find this set.
+We konden deze slide niet vinden.	We couldn't find this slide.
+We konden deze suggestie niet vinden.	We couldn't find this suggestion.
+We konden dit adres niet vinden.	We couldn't find this address.
+We konden dit bericht niet vinden.	We couldn't find this message.
+We konden dit niet verwerken. Probeer het opnieuw.	We couldn't process this. Try again.
+We konden dit niet vinden.	We couldn't find this.
+We konden dit product niet vinden.	We couldn't find this product.
+We konden dit ticket niet vinden.	We couldn't find this ticket.
+We leveren nog niet in dit land.	We don't deliver to this country yet.
+We verzenden alleen naar Nederland en België.	We only ship to the Netherlands and Belgium.
+We verzenden niet naar dit land.	We don't ship to this country.
+We verzenden op dit moment niet naar dit land.	We don't ship to this country at the moment.
+Webhooks zijn niet ingesteld.	Webhooks haven't been set up.
+Wijs voorraad toe aan {}, of haal het uit de drop.	Allocate stock to {}, or remove it from the drop.
+{} Pas je drop-mandje aan en probeer het opnieuw.	{} Change your drop basket and try again.
+{} heeft geen prijs. Geef het een dropprijs of een prijs in de winkel.	{} has no price. Give it a drop price or a price in the shop.
+De beschrijving mag maximaal 10.000 tekens hebben.	The description can be at most 10,000 characters.
+De beschrijving mag maximaal 5000 tekens hebben.	The description can be at most 5000 characters.
+De code mag maximaal 100 tekens lang zijn.	The code can be at most 100 characters long.
+De link mag maximaal 500 tekens lang zijn.	The link can be at most 500 characters long.
+De naam mag maximaal 120 tekens hebben.	The name can be at most 120 characters.
+De naam mag maximaal 255 tekens hebben.	The name can be at most 255 characters.
+De notitie mag maximaal 300 tekens lang zijn.	The note can be at most 300 characters long.
+De productlijst van Cardmarket is nu niet te bereiken. Probeer het later opnieuw.	Cardmarket's product list can't be reached right now. Try again later.
+De reden mag maximaal 300 tekens lang zijn.	The reason can be at most 300 characters long.
+De waarschuwing voor lage voorraad kan niet negatief zijn.	The low stock warning can't be negative.
+Er loopt al een import. Wacht tot die klaar is.	An import is already running. Wait until it's done.
+Het aantal kan niet negatief zijn.	The quantity can't be negative.
+Het cijfer mag maximaal 20 tekens hebben.	The grade can be at most 20 characters.
+Het webadres mag maximaal 140 tekens hebben.	The web address can be at most 140 characters.
+Kies een lager aantal voor de waarschuwing.	Choose a lower number for the warning.
+Kies een lager aantal.	Choose a lower quantity.
+Kies minstens één soort product.	Choose at least one kind of product.
+Kies twijfelachtig of met de hand.	Choose doubtful or by hand.
+Onbekend spel.	Unknown game.
+Prijskoppelingen zijn er voor Pokémon en Magic.	Price links are for Pokémon and Magic.
+Vul de track & trace-code in.	Fill in the track & trace code.
+Dit kon niet worden opgeslagen omdat het conflicteert met bestaande gegevens.	This couldn't be saved because it conflicts with existing data.
+Er ging iets mis aan onze kant. Probeer het later opnieuw.	Something went wrong on our side. Try again later.
+Dit bestand is te groot. Kies een afbeelding tot 5 MB.	This file is too large. Choose an image up to 5 MB.
+Deze actie is hier niet mogelijk.	This action isn't possible here.
+Dit bestandstype of formaat wordt niet ondersteund.	This file type or format isn't supported.
+Dit verzoek kon niet worden verwerkt.	This request couldn't be processed.
+Dit verzoek klopt niet. Controleer de ingevulde gegevens.	This request isn't right. Check the details you filled in.
+Dit product is uitverkocht.	This product is sold out.
+We hebben niet genoeg meer van dit product voor dit aantal.	We don't have enough of this product left for this quantity.
+Te veel pogingen. Probeer het over een minuut opnieuw.	Too many attempts. Try again in a minute.
+Te veel pogingen. Probeer het over {} minuten opnieuw.	Too many attempts. Try again in {} minutes.
+Dit verzoek is te groot.	This request is too large.

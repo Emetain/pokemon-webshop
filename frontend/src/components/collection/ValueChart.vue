@@ -360,7 +360,7 @@ function onKeydown(event) {
           @click="chooseRange(item)"
         >
           <Lock v-if="locked(item)" :size="13" aria-hidden="true" />
-          {{ item.key }}
+          {{ t(`collection.history.rangeLabels.${item.key}`) }}
         </button>
       </div>
 

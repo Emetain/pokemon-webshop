@@ -33,7 +33,7 @@ const width = (percent) => ({ width: `${percent}%` })
 
 <template>
   <div class="page-skeleton" aria-busy="true">
-    <p class="visually-hidden" role="status">{{ t('catalog.loading') }}</p>
+    <p class="visually-hidden" role="status">{{ t('layout.loading') }}</p>
 
     <div v-if="band || kind === 'home'" class="band" :class="{ hero: kind === 'home' }" aria-hidden="true">
       <div class="container band-body">

@@ -214,4 +214,21 @@ Added to `.env.example`, `deploy/server/env.example` and both compose files. New
   - Checked in the browser with a deliberately slow server (1.5 s) and slow page downloads (1.2 s), on desktop and phone
     width: after every click a skeleton and the bar within 0.4 s, the right shape per page, the back button back at its
     place, no new console errors. The very first visit still shows the browser's own loading until the app has started.
+- **Dutch and English** (the owner's wish, 2026-11-21):
+  - **The switch:** "NL | EN" at the right of the top bar, on every page and on a phone. The choice is kept in the
+    browser (`stores/language.js`); switching reloads the page, so every text, date and amount changes at once, also
+    the ones a page worked out when it opened. Dutch stays the default, also for search engines.
+  - **The texts:** `data/i18n/en.js` has all 1,427 customer texts with the same keys as `nl.js`, built and checked
+    with a script: no text missing, every placeholder such as `{name}` the same. The admin area isn't translated and
+    falls back to Dutch, like any text English might miss. Dates and amounts follow the language (`en-GB`: €187.58,
+    21 November 2026). The period buttons say 1Y instead of 1J.
+  - **The server's own messages:** the app sends `Accept-Language`, and `ErrorLanguageAdvice` puts every error answer
+    in English from `i18n/messages-en.tsv` (321 messages; ones with a number or name, such as "at most {} binders",
+    are matched as a pattern). The admin area's answers stay Dutch. A message that isn't listed stays Dutch.
+  - **Not yet in English:** mails (order confirmations, alerts, resets), the info pages (terms, privacy, shipping),
+    news and product texts, and the chatbot's info. The legal pages in Dutch only are something for the legal check.
+  - Checked: unit and integration tests for the messages (Dutch by default and with `nl`, English with `en` and
+    `en-GB,en;q=0.9`, a form check, values kept, the admin area Dutch); all 1183 backend tests pass; in the browser on
+    desktop and phone the switch, the home page, a card page with English amounts and dates, the login page, and back
+    to Dutch.
 

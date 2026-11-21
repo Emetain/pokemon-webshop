@@ -1,3 +1,4 @@
+import { language } from '../stores/language'
 import { openPremiumForRefusal } from '../stores/premiumDialog'
 import { sampleServerTime } from '../stores/serverClock'
 import { t } from '../utils/i18n'
@@ -26,7 +27,12 @@ async function send(method, path, options, { isUpload = false } = {}) {
   let response
   const sentAt = Date.now()
   try {
-    response = await fetch(`${BASE_URL}${path}`, { method, ...options })
+    // The server's own messages (errors, checks) come back in the visitor's language (2026-11-21).
+    response = await fetch(`${BASE_URL}${path}`, {
+      method,
+      ...options,
+      headers: { 'Accept-Language': language, ...options?.headers },
+    })
   } catch {
     throw new ApiError(0, 'network_error', t('errors.network'))
   }
@@ -57,7 +63,7 @@ function request(method, path, body) {
 async function download(path, fallbackName) {
   let response
   try {
-    response = await fetch(`${BASE_URL}${path}`)
+    response = await fetch(`${BASE_URL}${path}`, { headers: { 'Accept-Language': language } })
   } catch {
     throw new ApiError(0, 'network_error', t('errors.network'))
   }
