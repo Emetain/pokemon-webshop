@@ -12,6 +12,7 @@ import { useCurrency } from '../../stores/currency'
 import { cardCountLabel, filterQuery, pageFromQuery } from '../../utils/catalog'
 import { formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const PAGE_SIZE = 100
 
@@ -141,7 +142,7 @@ watch(() => [props.game, props.setCode, filters.value, masterMode.value, current
         />
         <p v-if="cards && !loading" class="count" role="status">{{ cardCountLabel(cards.totalItems) }}</p>
 
-        <p v-if="loading" class="loading" role="status">{{ t('catalog.loading') }}</p>
+        <PageSkeleton v-if="loading" kind="list" :page="false" :heading="false" />
 
         <CatalogNotice
           v-else-if="!cards?.items.length && hasFilters"

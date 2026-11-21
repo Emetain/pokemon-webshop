@@ -9,6 +9,7 @@ import { formatDate, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 import { usePageMeta } from '../../utils/pageMeta'
 import NotFoundView from '../NotFoundView.vue'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /** A page under /info with the text from admin. Contact gets the form, shipping the rates as they are set now. */
 const props = defineProps({
@@ -43,7 +44,7 @@ usePageMeta(() => (page.value ? { title: page.value.title, description: page.val
   <NotFoundView v-if="notFound" />
   <div v-else class="container page">
     <FormMessage v-if="error">{{ error }}</FormMessage>
-    <p v-else-if="!page" class="muted" aria-busy="true">{{ t('info.loading') }}</p>
+    <PageSkeleton v-else-if="!page" kind="article" :page="false" />
     <article v-else>
       <h1>{{ page.title }}</h1>
       <p v-if="page.draft" class="draft" role="note">

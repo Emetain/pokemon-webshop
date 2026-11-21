@@ -7,6 +7,7 @@ import OrderStatusBadge from '../../components/order/OrderStatusBadge.vue'
 import { orderApi } from '../../services/api'
 import { formatDate } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const props = defineProps({
   number: { type: String, required: true },
@@ -38,7 +39,7 @@ watch(() => props.number, load, { immediate: true })
       {{ t('orders.detail.back') }}
     </router-link>
 
-    <p v-if="loading" class="muted" aria-busy="true">{{ t('orders.list.loading') }}</p>
+    <PageSkeleton v-if="loading" kind="list" :page="false" :heading="false" />
     <CatalogNotice v-else-if="error" :title="error" />
     <template v-else>
       <header class="head">

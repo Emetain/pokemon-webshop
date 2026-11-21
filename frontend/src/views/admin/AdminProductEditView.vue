@@ -26,6 +26,7 @@ import { adminShopApi, catalogApi } from '../../services/api'
 import { statusLabel } from '../../utils/admin'
 import { variantLabel } from '../../utils/catalog'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /** Creates a product without `id`, edits one with it. Photos and stock come once the product exists. */
 const props = defineProps({
@@ -255,7 +256,7 @@ watch(() => form.game, loadSets, { immediate: true })
     <FormMessage v-if="message" type="success" class="message">{{ message }}</FormMessage>
     <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
 
-    <p v-if="loading" class="admin-intro">{{ t('admin.images.loading') }}</p>
+    <PageSkeleton v-if="loading" kind="form" :page="false" :heading="false" />
 
     <form v-else class="form" @submit.prevent="save">
       <section class="admin-panel">

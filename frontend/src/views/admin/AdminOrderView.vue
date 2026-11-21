@@ -9,6 +9,7 @@ import { eurosToCents } from '../../data/shop'
 import { adminOrderApi } from '../../services/api'
 import { formatDateTime, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const props = defineProps({
   number: { type: String, required: true },
@@ -111,7 +112,7 @@ watch(() => props.number, load, { immediate: true })
     {{ t('admin.orders.back') }}
   </router-link>
 
-  <p v-if="loading" class="muted">{{ t('admin.orders.loading') }}</p>
+  <PageSkeleton v-if="loading" kind="list" :page="false" :heading="false" />
   <CatalogNotice v-else-if="loadError" :title="loadError" />
 
   <template v-else>

@@ -18,7 +18,8 @@ const ROW_SIZE = 12
 const session = useSession()
 
 const slides = ref([])
-const newArrivals = ref([])
+// null while loading: the row shows skeleton tiles until then (2026-11-21).
+const newArrivals = ref(null)
 const bestsellers = ref([])
 const preOrders = ref([])
 const news = ref([])
@@ -40,7 +41,10 @@ const gameTiles = mainNav
 
 // Each part of the page loads on its own, so one that fails leaves the others standing.
 shopApi.heroSlides().then((result) => (slides.value = result)).catch(() => {})
-shopApi.newArrivals(ROW_SIZE).then((result) => (newArrivals.value = result)).catch(() => {})
+shopApi
+  .newArrivals(ROW_SIZE)
+  .then((result) => (newArrivals.value = result))
+  .catch(() => (newArrivals.value = []))
 shopApi.bestsellers(ROW_SIZE).then((result) => (bestsellers.value = result)).catch(() => {})
 contentApi.news({ size: NEWS_SIZE }).then((result) => (news.value = result.articles)).catch(() => {})
 shopApi
@@ -51,7 +55,7 @@ shopApi
 /** The same product can be in more than one row: the heart changes in all of them. */
 function onWished(product, wished) {
   for (const row of [newArrivals, bestsellers, preOrders]) {
-    row.value.filter((item) => item.id === product.id).forEach((item) => (item.wished = wished))
+    (row.value ?? []).filter((item) => item.id === product.id).forEach((item) => (item.wished = wished))
   }
 }
 </script>
@@ -83,9 +87,10 @@ function onWished(product, wished) {
     <FormMessage v-if="error">{{ error }}</FormMessage>
 
     <ProductRow
-      v-if="newArrivals.length"
+      v-if="newArrivals === null || newArrivals.length"
       :title="t('home.newArrivals')"
-      :products="newArrivals"
+      :products="newArrivals ?? []"
+      :loading="newArrivals === null"
       to="/producten?stock=true"
       @wished="onWished"
       @error="error = $event"

@@ -8,7 +8,11 @@ defineProps({
   title: { type: String, required: true },
   products: { type: Array, required: true },
   to: { type: [String, Object], default: null },
+  /** Skeleton tiles while the products load (2026-11-21). */
+  loading: { type: Boolean, default: false },
 })
+
+const SKELETON_TILES = 6
 
 const emit = defineEmits(['wished', 'error'])
 const id = useId()
@@ -21,7 +25,14 @@ const id = useId()
       <router-link v-if="to" class="all" :to="to">{{ t('home.viewAll') }}</router-link>
     </div>
     <!-- The list itself scrolls, so the page never does. It can take focus for scrolling with the keyboard. -->
-    <ul class="scroller" tabindex="0" :aria-labelledby="id">
+    <ul v-if="loading" class="scroller" aria-busy="true" :aria-label="t('shop.loading')">
+      <li v-for="tile in SKELETON_TILES" :key="tile" class="item skeleton-tile" aria-hidden="true">
+        <span class="skeleton picture"></span>
+        <span class="skeleton line"></span>
+        <span class="skeleton line short"></span>
+      </li>
+    </ul>
+    <ul v-else class="scroller" tabindex="0" :aria-labelledby="id">
       <li v-for="product in products" :key="product.id" class="item">
         <ProductTile :product="product" @wished="emit('wished', product, $event)" @error="emit('error', $event)" />
       </li>
@@ -73,6 +84,26 @@ const id = useId()
 
 .item {
   scroll-snap-align: start;
+}
+
+.skeleton-tile {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.skeleton.picture {
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+}
+
+.skeleton.line {
+  width: 85%;
+  height: 0.875rem;
+}
+
+.skeleton.line.short {
+  width: 35%;
 }
 
 @media (min-width: 640px) {

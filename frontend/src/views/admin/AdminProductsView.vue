@@ -12,6 +12,7 @@ import { filterQuery, pageFromQuery } from '../../utils/catalog'
 import { formatMoney, formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
 import { useAdminList } from '../../utils/infiniteList'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const SEARCH_DELAY_MS = 350
 const PAGE_SIZES = [25, 50, 100]
@@ -207,7 +208,7 @@ const countText = computed(() =>
     </label>
   </div>
 
-  <p v-if="loading && !products.items.length" class="count">{{ t('admin.images.loading') }}</p>
+  <PageSkeleton v-if="loading && !products.items.length" kind="table" :page="false" :heading="false" />
   <p v-else-if="products.loaded && !products.items.length" class="count">
     {{ hasFilters ? t('admin.products.noResults') : t('admin.products.empty') }}
   </p>

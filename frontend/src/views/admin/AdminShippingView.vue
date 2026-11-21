@@ -5,6 +5,7 @@ import { centsToEuros, eurosToCents } from '../../data/shop'
 import { adminOrderApi } from '../../services/api'
 import { formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const rates = ref([])
 const error = ref('')
@@ -65,7 +66,7 @@ async function save(rate) {
   <p class="admin-intro">{{ t('admin.shipping.intro') }}</p>
 
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
-  <p v-else-if="loading" class="admin-intro">{{ t('cart.loading') }}</p>
+  <PageSkeleton v-else-if="loading" kind="table" :page="false" :heading="false" />
 
   <form v-for="rate in rates" :key="rate.country" class="admin-panel" novalidate @submit.prevent="save(rate)">
     <h2>{{ t(`countries.${rate.country}`) }}</h2>

@@ -6,6 +6,7 @@ import OrderStatusBadge from '../../components/order/OrderStatusBadge.vue'
 import { orderApi } from '../../services/api'
 import { formatDate } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /** An order opened from the link in a mail. Guests need the key in the link, a logged-in owner doesn't. */
 const props = defineProps({
@@ -34,7 +35,7 @@ watch(() => [props.number, props.token], load, { immediate: true })
 
 <template>
   <div class="container page">
-    <p v-if="loading" class="muted" aria-busy="true">{{ t('orders.list.loading') }}</p>
+    <PageSkeleton v-if="loading" kind="list" :page="false" :heading="false" />
     <CatalogNotice v-else-if="error" :title="error" />
     <template v-else>
       <header class="head">

@@ -11,6 +11,7 @@ import { dexLabel, filterQuery, pageFromQuery } from '../../utils/catalog'
 import { useAdminList } from '../../utils/infiniteList'
 import { formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024
 const SEARCH_DELAY_MS = 350
@@ -318,7 +319,7 @@ watch([() => props.kind, setGame], loadSets, { immediate: true })
   </div>
 
   <template v-if="!showingSets">
-    <p v-if="loading && !cards.items.length" class="hint" role="status">{{ t('admin.images.loading') }}</p>
+    <PageSkeleton v-if="loading && !cards.items.length" kind="table" :page="false" :heading="false" />
     <p v-else-if="cards.loaded && !cards.items.length" class="hint">{{ t('admin.images.noResults') }}</p>
 
     <ul v-else-if="cards.items.length" class="items" :aria-busy="loading">

@@ -8,6 +8,7 @@ import NewsCard from '../../components/content/NewsCard.vue'
 import PageLinks from '../../components/catalog/PageLinks.vue'
 import { contentApi } from '../../services/api'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const props = defineProps({
   game: { type: String, default: undefined },
@@ -38,7 +39,7 @@ watch(() => [props.game, props.page], load, { immediate: true })
     <GameFilter :current="game ?? null" :label="t('news.filterLabel')" />
 
     <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
-    <p v-else-if="!news" class="muted message" aria-busy="true">{{ t('news.loading') }}</p>
+    <PageSkeleton v-else-if="!news" kind="list" :page="false" :heading="false" />
     <p v-else-if="!news.articles.length" class="muted message">{{ t('news.empty') }}</p>
     <template v-else>
       <ul class="grid">

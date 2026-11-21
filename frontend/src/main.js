@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import { prefetchPages } from './utils/prefetch'
 import '@fontsource-variable/bricolage-grotesque/standard.css'
 import '@fontsource-variable/schibsted-grotesk/wght.css'
 import './assets/css/main.css'
@@ -9,3 +10,4 @@ import './assets/css/main.css'
 document.addEventListener('touchstart', () => {}, { passive: true })
 
 createApp(App).use(router).mount('#app')
+prefetchPages(router)

@@ -7,6 +7,7 @@ import CardImage from '../../components/catalog/CardImage.vue'
 import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import NotFoundView from '../NotFoundView.vue'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 import QuantityStepper from '../../components/collection/QuantityStepper.vue'
 import { extraBinderApi } from '../../services/api'
 import { useCurrency } from '../../stores/currency'
@@ -106,6 +107,7 @@ usePageMeta(() => (binder.value ? { title: binder.value.name, noindex: true } : 
 
     <div class="container page">
       <FormMessage v-if="error">{{ error }}</FormMessage>
+      <PageSkeleton v-else-if="!binder" kind="cards" :page="false" />
 
       <template v-if="binder">
         <p v-if="!premium" class="notice">{{ t('binders.readOnly') }}</p>

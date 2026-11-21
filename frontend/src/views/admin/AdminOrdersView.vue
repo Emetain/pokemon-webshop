@@ -9,6 +9,7 @@ import { filterQuery, pageFromQuery } from '../../utils/catalog'
 import { formatDateTime, formatMoney, formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
 import { useAdminList } from '../../utils/infiniteList'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const SEARCH_DELAY_MS = 350
 const STATUSES = ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'PENDING_PAYMENT', 'CANCELLED', 'REFUNDED', 'ABANDONED']
@@ -83,7 +84,7 @@ const error = computed(() => orders.error?.message ?? '')
   </nav>
 
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
-  <p v-else-if="orders.loading && !orders.items.length" class="muted">{{ t('admin.orders.loading') }}</p>
+  <PageSkeleton v-else-if="orders.loading && !orders.items.length" kind="table" :page="false" :heading="false" />
   <p v-else-if="orders.loaded && !orders.items.length" class="muted">{{ t('admin.orders.empty') }}</p>
 
   <template v-if="orders.items.length">

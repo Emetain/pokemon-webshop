@@ -9,6 +9,7 @@ import { extraBinderApi } from '../../services/api'
 import { openPremium } from '../../stores/premiumDialog'
 import { formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /** The extra binders of a customer (Premium, phase 12). A former member still sees them, without changing them. */
 const router = useRouter()
@@ -64,7 +65,7 @@ onMounted(load)
     <p class="intro">{{ t('binders.intro') }}</p>
 
     <FormMessage v-if="error">{{ error }}</FormMessage>
-    <p v-if="!list && !error" class="note" role="status">{{ t('binders.loading') }}</p>
+    <PageSkeleton v-if="!list && !error" kind="sets" :page="false" />
 
     <template v-if="list">
       <p v-if="!premium && list.binders.length" class="notice">{{ t('binders.readOnly') }}</p>

@@ -8,6 +8,7 @@ import { useCurrency } from '../../stores/currency'
 import { variantLabel } from '../../utils/catalog'
 import { formatDate, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /** All price alerts of a customer (Premium, phase 12). After Premium ended they're listed and can be switched off. */
 const { formatPrice } = useCurrency()
@@ -55,7 +56,7 @@ onMounted(load)
 
     <FormMessage v-if="error">{{ error }}</FormMessage>
     <FormMessage v-if="message" type="success">{{ message }}</FormMessage>
-    <p v-if="!list && !error" class="note" role="status">{{ t('priceAlerts.loading') }}</p>
+    <PageSkeleton v-if="!list && !error" kind="list" :page="false" :heading="false" />
 
     <template v-if="list">
       <p v-if="!list.premium && list.alerts.length" class="notice">{{ t('priceAlerts.paused') }}</p>

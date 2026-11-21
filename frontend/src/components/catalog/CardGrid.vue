@@ -16,7 +16,11 @@ defineEmits(['change'])
 
 <template>
   <ul v-if="loading" class="grid" :aria-label="t('catalog.loading')" aria-busy="true">
-    <li v-for="tile in SKELETON_TILES" :key="tile" class="skeleton"></li>
+    <li v-for="tile in SKELETON_TILES" :key="tile" class="skeleton-tile" aria-hidden="true">
+      <span class="skeleton picture"></span>
+      <span class="skeleton line"></span>
+      <span class="skeleton line short"></span>
+    </li>
   </ul>
   <ul v-else class="grid">
     <li v-for="card in cards" :key="card.id">
@@ -37,10 +41,24 @@ defineEmits(['change'])
   list-style: none;
 }
 
-.skeleton {
+.skeleton-tile {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.skeleton.picture {
   aspect-ratio: 63 / 88;
   border-radius: var(--radius-card);
-  background: var(--color-tint);
+}
+
+.skeleton.line {
+  width: 80%;
+  height: 0.875rem;
+}
+
+.skeleton.line.short {
+  width: 40%;
 }
 
 @media (min-width: 560px) {

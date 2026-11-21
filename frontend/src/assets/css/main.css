@@ -72,6 +72,11 @@
   --drop-green-ink: #ffffff;
   --color-drop-picture-shadow: rgb(0 0 0 / 35%);
 
+  /* Skeletons: the grey shapes a page shows while its content loads, and the light that sweeps over them. */
+  --color-skeleton: var(--color-tint);
+  --color-skeleton-shine: rgb(255 255 255 / 65%);
+  --color-skeleton-on-brand: rgb(255 255 255 / 22%);
+
   /* The colour themes in My account (phase 12): one swatch each. The themes themselves are below :root. */
   --swatch-poketopia: #1a56db;
   --swatch-fire: #c2361f;
@@ -260,6 +265,7 @@
   --color-muted-soft: #1a2335;
   --color-shadow: rgb(0 0 0 / 45%);
   --game-pokemon: #346ce0;
+  --color-skeleton-shine: rgb(255 255 255 / 7%);
 }
 
 :root[data-mode='dark'][data-theme='fire'] {
@@ -469,6 +475,38 @@ main:focus {
   max-width: var(--container);
   margin-inline: auto;
   padding-inline: var(--gutter);
+}
+
+/*
+ * Skeletons (2026-11-21, the owner's wish): every page shows the shape of what's coming while it loads, so a click
+ * never looks like nothing happened. A light sweeps over the shapes; with reduced motion they stay still.
+ */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-skeleton);
+}
+
+.skeleton::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--color-skeleton-shine), transparent);
+  transform: translateX(-100%);
+  animation: skeleton-shine 1.6s ease-in-out infinite;
+  content: '';
+}
+
+@keyframes skeleton-shine {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    display: none;
+  }
 }
 
 .visually-hidden {

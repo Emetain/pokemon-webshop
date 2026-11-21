@@ -8,6 +8,7 @@ import { supportApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /** A ticket, opened with the secret link from the mail, logged in or not. The customer can add a message. */
 const props = defineProps({
@@ -57,7 +58,7 @@ watch(() => props.token, load, { immediate: true })
     </router-link>
 
     <FormMessage v-if="loadError">{{ loadError }}</FormMessage>
-    <p v-else-if="!ticket" class="muted" aria-busy="true">{{ t('support.ticket.loading') }}</p>
+    <PageSkeleton v-else-if="!ticket" kind="article" :page="false" />
     <template v-else>
       <header class="head">
         <p class="number">{{ t('support.ticket.number', { number: ticket.number }) }}</p>

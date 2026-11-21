@@ -5,6 +5,7 @@ import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
 import CollectionSummary from '../../components/collection/CollectionSummary.vue'
 import { collectionApi } from '../../services/api'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const props = defineProps({
   slug: { type: String, required: true },
@@ -49,7 +50,7 @@ watch(() => props.slug, load, { immediate: true })
       <button class="btn btn-secondary" type="button" @click="load">{{ t('catalog.retry') }}</button>
     </CatalogNotice>
 
-    <p v-else-if="loading" class="loading" role="status">{{ t('catalog.loading') }}</p>
+    <PageSkeleton v-else-if="loading" kind="collection" :page="false" />
 
     <CatalogNotice v-else-if="shared.collection.copies === 0" :title="t('collection.empty.sharedTitle')" />
 

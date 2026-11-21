@@ -25,9 +25,12 @@ import {
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLogo from './AppLogo.vue'
+import PageSkeleton from '../skeleton/PageSkeleton.vue'
+import { useNavigation } from '../../stores/navigation'
 import { t } from '../../utils/i18n'
 
 const route = useRoute()
+const navigation = useNavigation()
 
 // The import has its own menu item, so the products item leaves it out.
 const onProducts = computed(
@@ -153,7 +156,8 @@ function closeMenu() {
     </aside>
 
     <main class="admin-main">
-      <router-view />
+      <PageSkeleton v-if="navigation.slow" :kind="navigation.skeleton.kind" :page="false" />
+      <div v-show="!navigation.slow" class="route-view"><router-view /></div>
     </main>
   </div>
 </template>
@@ -282,5 +286,10 @@ function closeMenu() {
   .admin-main {
     padding: var(--space-6);
   }
+}
+
+/* Takes no room of its own: the page inside lays out as if it were the main element's child. */
+.route-view {
+  display: contents;
 }
 </style>

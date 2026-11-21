@@ -14,6 +14,7 @@ import { formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
 import { usePageMeta } from '../../utils/pageMeta'
 import NotFoundView from '../NotFoundView.vue'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /**
  * The page of one drop: banner, countdown, products, and the waiting room. It asks the shop for two things: the drop
@@ -180,7 +181,7 @@ usePageMeta(() =>
 
   <div v-else-if="!drop" class="container page">
     <FormMessage v-if="loadError">{{ loadError }}</FormMessage>
-    <p v-else class="muted" aria-busy="true">{{ t('drops.loading') }}</p>
+    <PageSkeleton v-else kind="product" :page="false" />
   </div>
 
   <div v-else>

@@ -6,6 +6,7 @@ import TicketStatusBadge from '../../components/support/TicketStatusBadge.vue'
 import { supportApi } from '../../services/api'
 import { formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /** The tickets sent from this account, the last changed first. */
 const tickets = ref(null)
@@ -29,7 +30,7 @@ onMounted(async () => {
     <h1>{{ t('support.mine.title') }}</h1>
 
     <FormMessage v-if="error">{{ error }}</FormMessage>
-    <p v-else-if="!tickets" class="muted" aria-busy="true">{{ t('support.ticket.loading') }}</p>
+    <PageSkeleton v-else-if="!tickets" kind="list" :page="false" :heading="false" />
     <div v-else-if="!tickets.length" class="empty">
       <LifeBuoy :size="40" aria-hidden="true" />
       <p>{{ t('support.mine.empty') }}</p>

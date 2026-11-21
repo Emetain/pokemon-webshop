@@ -9,6 +9,7 @@ import CountrySelect from '../../components/account/CountrySelect.vue'
 import { useCart } from '../../stores/cart'
 import { useRegion } from '../../stores/region'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const cart = useCart()
 const region = useRegion()
@@ -34,7 +35,7 @@ const country = computed({
   <div class="container page">
     <h1>{{ t('cart.title') }}</h1>
 
-    <p v-if="!current && cart.state.loading" class="loading" aria-busy="true">{{ t('cart.loading') }}</p>
+    <PageSkeleton v-if="!current && cart.state.loading" kind="list" :page="false" :heading="false" />
     <FormMessage v-else-if="!current && cart.state.error">{{ cart.state.error }}</FormMessage>
 
     <div v-else-if="!items.length" class="empty">

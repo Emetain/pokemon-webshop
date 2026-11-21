@@ -6,6 +6,7 @@ import { findGame } from '../../data/games'
 import { adminApi } from '../../services/api'
 import { formatDateTime, formatNumber } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const POLL_INTERVAL_MS = 3000
 
@@ -77,7 +78,7 @@ onBeforeUnmount(() => {
 
   <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
 
-  <p v-if="loading" class="intro" role="status">{{ t('admin.sync.loading') }}</p>
+  <PageSkeleton v-if="loading" kind="table" :page="false" :heading="false" />
 
   <ul v-else class="games">
     <li v-for="game in games" :key="game.game" class="game" :data-game="findGame(game.game).accent">

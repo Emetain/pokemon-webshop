@@ -9,6 +9,7 @@ import CardBinderPanel from '../../components/catalog/CardBinderPanel.vue'
 import CardCollectionPanel from '../../components/collection/CardCollectionPanel.vue'
 import CardPriceHistory from '../../components/catalog/CardPriceHistory.vue'
 import PriceAlertPanel from '../../components/catalog/PriceAlertPanel.vue'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 import { findGame } from '../../data/games'
 import { catalogApi } from '../../services/api'
 import { useCurrency } from '../../stores/currency'
@@ -104,11 +105,7 @@ usePageMeta(() =>
     </CatalogNotice>
   </div>
 
-  <div v-else-if="loading" class="container page" :aria-label="t('catalog.loading')" aria-busy="true">
-    <div class="layout">
-      <div class="skeleton"></div>
-    </div>
-  </div>
+  <PageSkeleton v-else-if="loading" kind="card" />
 
   <article v-else class="container page" :data-game="game?.accent">
     <BreadcrumbTrail class="trail" :items="breadcrumbs" />
@@ -277,17 +274,10 @@ usePageMeta(() =>
   gap: var(--space-5);
 }
 
-.image,
-.skeleton {
+.image {
   width: 100%;
   max-width: 24rem;
   margin-inline: auto;
-}
-
-.skeleton {
-  aspect-ratio: 63 / 88;
-  border-radius: var(--radius-card);
-  background: var(--color-tint);
 }
 
 .info {
@@ -382,8 +372,7 @@ usePageMeta(() =>
     align-items: start;
   }
 
-  .image,
-  .skeleton {
+  .image {
     max-width: none;
   }
 }

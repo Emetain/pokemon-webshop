@@ -15,6 +15,7 @@ import { useServerClock } from '../../stores/serverClock'
 import { useSession } from '../../stores/session'
 import { formatDate, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /** With `dropSlug`, this is the checkout of a drop: the lines come from the drop cart, and only while it is your turn. */
 const props = defineProps({
@@ -195,7 +196,7 @@ const loginLink = computed(() => ({ path: '/inloggen', query: { redirect: route.
     <h1>{{ dropSlug && drop ? t('drops.checkout.title', { name: drop.name }) : t('checkout.title') }}</h1>
     <FormMessage v-if="options && options.canOrder === false" class="not-open">{{ t('checkout.notOpen') }}</FormMessage>
 
-    <p v-if="loading" class="muted" aria-busy="true">{{ t('cart.loading') }}</p>
+    <PageSkeleton v-if="loading" kind="form" :page="false" :heading="false" />
     <FormMessage v-else-if="loadError">{{ loadError }}</FormMessage>
 
     <div v-else-if="dropSlug && noAccess" class="empty">

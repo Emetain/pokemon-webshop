@@ -75,7 +75,11 @@ watch([() => props.card.id, premium], load, { immediate: true })
       </div>
     </div>
 
-    <p v-else-if="loading" class="note" role="status">{{ t('priceHistory.loading') }}</p>
+    <div v-else-if="loading" class="chart-skeleton" aria-busy="true">
+      <p class="visually-hidden" role="status">{{ t('priceHistory.loading') }}</p>
+      <span class="skeleton line" aria-hidden="true"></span>
+      <span class="skeleton plot" aria-hidden="true"></span>
+    </div>
     <p v-else-if="error" class="error" role="alert">{{ error }}</p>
     <p v-else-if="history && !variants.length" class="note">{{ t('priceHistory.none') }}</p>
 
@@ -153,6 +157,22 @@ watch([() => props.card.id, premium], load, { immediate: true })
   max-width: 34ch;
   font-size: var(--text-sm);
   font-weight: 600;
+}
+
+.chart-skeleton {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.chart-skeleton .line {
+  width: 40%;
+  height: 1.1rem;
+}
+
+.chart-skeleton .plot {
+  height: 13rem;
+  border-radius: var(--radius-md);
 }
 
 .variants {

@@ -3,7 +3,11 @@ import AppFooter from './AppFooter.vue'
 import AppHeader from './AppHeader.vue'
 import CookieNotice from './CookieNotice.vue'
 import ChatWidget from '../support/ChatWidget.vue'
+import PageSkeleton from '../skeleton/PageSkeleton.vue'
+import { useNavigation } from '../../stores/navigation'
 import { t } from '../../utils/i18n'
+
+const navigation = useNavigation()
 </script>
 
 <template>
@@ -11,7 +15,9 @@ import { t } from '../../utils/i18n'
     <a class="skip-link" href="#main">{{ t('layout.skipToContent') }}</a>
     <AppHeader />
     <main id="main" class="shop-main" tabindex="-1">
-      <router-view />
+      <!-- The next page's skeleton while it's on its way; the old page stays mounted, in case the click is cancelled. -->
+      <PageSkeleton v-if="navigation.slow" :kind="navigation.skeleton.kind" :band="navigation.skeleton.band" />
+      <div v-show="!navigation.slow" class="route-view"><router-view /></div>
     </main>
     <AppFooter />
     <ChatWidget />
@@ -44,5 +50,10 @@ import { t } from '../../utils/i18n'
 
 .skip-link:focus {
   transform: none;
+}
+
+/* Takes no room of its own: the page inside lays out as if it were the main element's child. */
+.route-view {
+  display: contents;
 }
 </style>

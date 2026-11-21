@@ -10,6 +10,7 @@ import { findGame } from '../../data/games'
 import { releaseApi } from '../../services/api'
 import { daysUntil, formatDate, formatMonth } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /** Upcoming sets per game, managed in admin, each with its pre-orders. A hero slide links to `#release-{id}`. */
 const props = defineProps({
@@ -76,7 +77,7 @@ function when(release) {
     <GameFilter :current="game ?? null" :label="t('releases.filterLabel')" />
 
     <FormMessage v-if="error" class="message">{{ error }}</FormMessage>
-    <p v-else-if="!calendar" class="muted message" aria-busy="true">{{ t('releases.loading') }}</p>
+    <PageSkeleton v-else-if="!calendar" kind="list" :page="false" :heading="false" />
 
     <template v-else>
       <p v-if="!months.length" class="muted message">{{ game ? t('releases.emptyGame') : t('releases.empty') }}</p>

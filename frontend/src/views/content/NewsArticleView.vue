@@ -10,6 +10,7 @@ import { formatDate } from '../../utils/format'
 import { t } from '../../utils/i18n'
 import { usePageMeta } from '../../utils/pageMeta'
 import NotFoundView from '../NotFoundView.vue'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const props = defineProps({
   slug: { type: String, required: true },
@@ -50,7 +51,7 @@ usePageMeta(() =>
       {{ t('news.back') }}
     </router-link>
     <FormMessage v-if="error">{{ error }}</FormMessage>
-    <p v-else-if="!article" class="muted" aria-busy="true">{{ t('news.loading') }}</p>
+    <PageSkeleton v-else-if="!article" kind="article" :page="false" />
     <article v-else class="article" :data-game="findGame(article.game)?.accent">
       <p v-if="!article.published" class="draft">{{ t('news.preview') }}</p>
       <p class="meta">

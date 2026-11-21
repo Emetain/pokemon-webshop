@@ -5,6 +5,7 @@ import DropCard from '../../components/drops/DropCard.vue'
 import FormMessage from '../../components/FormMessage.vue'
 import { dropApi } from '../../services/api'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /** Live drops first, then what's coming, then the last drops that ended. */
 const drops = ref(null)
@@ -38,7 +39,7 @@ onBeforeUnmount(() => clearInterval(timer))
     </header>
 
     <FormMessage v-if="error">{{ error }}</FormMessage>
-    <p v-else-if="!drops" class="muted" aria-busy="true">{{ t('drops.loading') }}</p>
+    <PageSkeleton v-else-if="!drops" kind="list" :page="false" :heading="false" />
 
     <template v-else>
       <section v-if="drops.live.length" class="section" aria-labelledby="drops-live">

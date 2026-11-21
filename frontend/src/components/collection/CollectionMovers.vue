@@ -8,6 +8,7 @@ import { useSession } from '../../stores/session'
 import { variantLabel } from '../../utils/catalog'
 import { formatMoney, formatPercent, formatShortDate } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../skeleton/PageSkeleton.vue'
 
 /** The owned cards that rose and fell most in a day, a week or a month (Premium, phase 12). */
 const PERIODS = ['1D', '1W', '1M']
@@ -73,7 +74,7 @@ const cardLink = (card) => ({ name: 'card', params: { game: card.game, setCode: 
     </div>
 
     <p v-else-if="error" class="error" role="alert">{{ error }}</p>
-    <p v-else-if="!result" class="note" role="status">{{ t('catalog.loading') }}</p>
+    <PageSkeleton v-else-if="!result" kind="list" :page="false" :heading="false" />
     <p v-else-if="!result.since" class="note">{{ t('movers.noHistory') }}</p>
 
     <template v-else>

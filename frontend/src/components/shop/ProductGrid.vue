@@ -16,7 +16,11 @@ const emit = defineEmits(['wished', 'error'])
 
 <template>
   <ul v-if="loading" class="grid" :class="{ narrow }" :aria-label="t('shop.loading')" aria-busy="true">
-    <li v-for="tile in SKELETON_TILES" :key="tile" class="skeleton"></li>
+    <li v-for="tile in SKELETON_TILES" :key="tile" class="skeleton-tile" aria-hidden="true">
+      <span class="skeleton picture"></span>
+      <span class="skeleton line"></span>
+      <span class="skeleton line short"></span>
+    </li>
   </ul>
   <ul v-else class="grid" :class="{ narrow }">
     <li v-for="(product, index) in products" :key="product.id">
@@ -47,10 +51,25 @@ const emit = defineEmits(['wished', 'error'])
   flex-direction: column;
 }
 
-.skeleton {
+.skeleton-tile {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.skeleton.picture {
   aspect-ratio: 1;
   border-radius: var(--radius-md);
-  background: var(--color-tint);
+}
+
+.skeleton.line {
+  width: 85%;
+  height: 0.875rem;
+}
+
+.skeleton.line.short {
+  width: 35%;
+  height: 1rem;
 }
 
 @media (min-width: 640px) {

@@ -8,6 +8,7 @@ import ProductImage from '../../components/shop/ProductImage.vue'
 import { orderApi } from '../../services/api'
 import { formatDate, formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const props = defineProps({
   page: { type: String, default: undefined },
@@ -40,7 +41,7 @@ watch(() => props.page, load, { immediate: true })
     </router-link>
     <h1>{{ t('orders.list.title') }}</h1>
 
-    <p v-if="loading && !result" class="muted" aria-busy="true">{{ t('orders.list.loading') }}</p>
+    <PageSkeleton v-if="loading && !result" kind="list" :page="false" :heading="false" />
     <FormMessage v-else-if="error">{{ error }}</FormMessage>
     <div v-else-if="!result.items.length" class="empty">
       <Package :size="40" aria-hidden="true" />

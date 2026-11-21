@@ -12,6 +12,7 @@ import ValueChart from '../../components/collection/ValueChart.vue'
 import { collectionApi, pokedexApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const session = useSession()
 
@@ -61,7 +62,7 @@ onMounted(load)
       <button class="btn btn-secondary" type="button" @click="load">{{ t('catalog.retry') }}</button>
     </CatalogNotice>
 
-    <p v-else-if="loading" class="loading" role="status">{{ t('catalog.loading') }}</p>
+    <PageSkeleton v-else-if="loading" kind="collection" :page="false" />
 
     <CatalogNotice v-else-if="empty" :title="t('collection.empty.title')" :text="t('collection.empty.text')">
       <router-link class="btn btn-primary" :to="{ name: 'sets', params: { game: 'pokemon' } }">

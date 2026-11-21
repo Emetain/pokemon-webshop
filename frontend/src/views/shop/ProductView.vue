@@ -31,6 +31,7 @@ import { variantLabel } from '../../utils/catalog'
 import { formatDate, formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
 import { usePageMeta } from '../../utils/pageMeta'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 const props = defineProps({
   slug: { type: String, required: true },
@@ -178,9 +179,7 @@ usePageMeta(() =>
     </CatalogNotice>
   </div>
 
-  <div v-else-if="loading" class="container page" aria-busy="true">
-    <div class="skeleton"></div>
-  </div>
+  <PageSkeleton v-else-if="loading" kind="product" />
 
   <div v-else :data-game="game?.accent" class="container page">
     <BreadcrumbTrail class="trail" :items="breadcrumbs" />
@@ -376,13 +375,6 @@ usePageMeta(() =>
 
 .page {
   padding-block: var(--space-4) 0;
-}
-
-.skeleton {
-  aspect-ratio: 1;
-  max-width: 32rem;
-  border-radius: var(--radius-md);
-  background: var(--color-tint);
 }
 
 .trail {

@@ -7,6 +7,7 @@ import TicketThread from '../../components/support/TicketThread.vue'
 import { adminTicketApi } from '../../services/api'
 import { formatDateTime } from '../../utils/format'
 import { t } from '../../utils/i18n'
+import PageSkeleton from '../../components/skeleton/PageSkeleton.vue'
 
 /** One ticket: the conversation, an answer that the customer gets by mail, and closing it. */
 const props = defineProps({
@@ -107,7 +108,7 @@ watch(() => props.number, load, { immediate: true })
       </div>
     </section>
   </template>
-  <p v-else class="admin-intro" aria-busy="true">{{ t('admin.tickets.loading') }}</p>
+  <PageSkeleton v-else kind="article" :page="false" :heading="false" />
 </template>
 
 <style scoped>

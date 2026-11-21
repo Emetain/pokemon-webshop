@@ -191,3 +191,27 @@ Added to `.env.example`, `deploy/server/env.example` and both compose files. New
 - **Reverse holos as their own tile** in the set lists were mentioned on 2026-11-21. Not built: the reverse holo
   already shows on the card page (variants, price table, collection, and now the price graph, alerts and binders), and
   for Delta Reign after the next Pokémon sync. Ask the owner whether they want separate tiles.
+
+## Added after the phase (2026-11-21)
+
+- **Favicon** (`d300806`): the owner's badge (`docs/poketopia-transparent.png`) as `favicon.ico` (16, 32 and 48 px), a 32
+  and a 192 px PNG, and a 180 px `apple-touch-icon` on white, because iOS shows a transparent icon on black.
+- **Skeleton loading** (the owner's wish: after a click it looked like nothing happened while a page loaded):
+  - `PageSkeleton.vue` draws the shape of a page in grey blocks with a light sweeping over them (still with reduced
+    motion): card lists, sets, shop lists, a card, a product, the collection, lists, articles, forms, the home page and
+    admin tables. Screen readers hear "Laden…" once.
+  - **Between a click and the next page** (`stores/navigation.js`): when the next page takes more than 120 ms (its code
+    still downloading, or a check), the layout swaps the old page for the skeleton of the next one (`meta.skeleton` on
+    every route) and a bar runs along the top (`NavigationProgress.vue`). The old page stays mounted behind it, so a
+    cancelled click (the Premium popup, a login redirect) simply shows it again. A new page starts at the top; the back
+    button keeps its scroll position.
+  - **While a page loads its data**: every "Laden…" line became a skeleton of the right shape, the card and product
+    grids show a name and a price under each picture, and the "Nieuw binnen" row on the home page shows tiles instead
+    of appearing later and pushing the page down.
+  - **Faster as well** (`utils/prefetch.js`): a page's code starts downloading when a finger, the mouse or the keyboard
+    focus is on a link to it, and the pages opened most are fetched in the background after the first page (not with
+    the browser's data saver on).
+  - Checked in the browser with a deliberately slow server (1.5 s) and slow page downloads (1.2 s), on desktop and phone
+    width: after every click a skeleton and the bar within 0.4 s, the right shape per page, the back button back at its
+    place, no new console errors. The very first visit still shows the browser's own loading until the app has started.
+
