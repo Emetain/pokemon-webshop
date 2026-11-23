@@ -120,6 +120,10 @@ The owner asked for ads from other companies through Google AdSense. Built, and 
 - **Settings:** `ADSENSE_CLIENT` (the publisher id, checked: `ca-pub-` and 16 digits) and `ADSENSE_SLOT_CATALOG`,
   `ADSENSE_SLOT_CONTENT` (ids of ad units; an empty one shows no ad there). A wrong value keeps ads off and logs why.
 - **In development** (`npm run dev`) an ad place shows a dashed box instead of loading Google.
+- **Applying while unlisted** (added 2026-11-23): the `unlisted` robots.txt lets Google's ad crawler
+  (`Mediapartners-Google`) read every page and any crawler read `/ads.txt`; everything else stays `Disallow: /` with
+  `X-Robots-Tag: noindex`. Without that, Google can't read `/ads.txt` or review the site. `ADS=adsense` with only
+  `ADSENSE_CLIENT` and no ad units serves `/ads.txt` and shows no ads, which is what AdSense needs to approve the site.
 
 Checked: 1042 backend tests pass (7 new: `AdsOrchestratorTest`, one in `SeoIntegrationTest`), `npm run build` passes,
 `caddy validate` passes for `off` and `adsense` in both access modes and fails for a typo. With `ADS=adsense` and a

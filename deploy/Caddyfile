@@ -72,11 +72,17 @@ Disallow: /
 	}
 }
 
-# unlisted: the same robots.txt as the preview, without the login
+# unlisted: no login, and search engines are kept out like in the preview. Two exceptions, so an AdSense account can
+# be approved before the shop opens: Google's ad crawler (Mediapartners-Google, which reads pages to pick ads and
+# doesn't put anything in search) may read every page, and any crawler may read /ads.txt.
 (unlisted_gate) {
 	handle /robots.txt {
 		header Content-Type "text/plain; charset=utf-8"
-		respond "User-agent: *
+		respond "User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: *
+Allow: /ads.txt
 Disallow: /
 "
 	}
