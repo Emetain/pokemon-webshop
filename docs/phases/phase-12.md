@@ -231,4 +231,12 @@ Added to `.env.example`, `deploy/server/env.example` and both compose files. New
     `en-GB,en;q=0.9`, a form check, values kept, the admin area Dutch); all 1183 backend tests pass; in the browser on
     desktop and phone the switch, the home page, a card page with English amounts and dates, the login page, and back
     to Dutch.
+- **Giving Premium from admin** (the owner's wish, 2026-11-21: for friends who help): `/admin/premium`, "Premium" in
+  the admin menu. Fill in the address of an account and choose "Voor altijd" or "Tot en met" a day; the list shows
+  everyone with Premium (given or paid) with "Intrekken" for a gift. Works right away, also for someone who's logged in;
+  under My account they see "Je hebt Premium gekregen, tot en met …". The friend makes an account first. Someone who
+  already pays is refused, because Stripe would keep charging them (cancel the subscription in Stripe first); admins
+  have Premium anyway. Giving again replaces the earlier gift. Every gift and revoke is logged with the admin's id.
+  `PremiumService.grant`/`revoke`, `AdminPremiumController`, `AdminPremiumView.vue`; 4 integration tests; checked in
+  the browser on a database copy (give for good, then until a day, what the friend sees, take back, phone width).
 

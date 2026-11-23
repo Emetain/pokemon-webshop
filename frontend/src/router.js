@@ -398,6 +398,7 @@ const router = createRouter({
         { path: 'verzending', component: () => import('./views/admin/AdminShippingView.vue') },
         { path: 'hero', component: () => import('./views/admin/AdminSlidesView.vue') },
         { path: 'kortingscodes', component: () => import('./views/admin/AdminDiscountCodesView.vue') },
+        { path: 'premium', component: () => import('./views/admin/AdminPremiumView.vue') },
         {
           path: 'tickets',
           component: () => import('./views/admin/AdminTicketsView.vue'),

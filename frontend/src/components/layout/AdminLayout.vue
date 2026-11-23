@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Boxes,
   CalendarDays,
+  Crown,
   DatabaseZap,
   FileText,
   FileUp,
@@ -106,6 +107,10 @@ function closeMenu() {
           <router-link class="sidebar-link" to="/admin/kortingscodes" active-class="is-active">
             <TicketPercent :size="18" aria-hidden="true" />
             {{ t('admin.discounts.nav') }}
+          </router-link>
+          <router-link class="sidebar-link" to="/admin/premium" active-class="is-active">
+            <Crown :size="18" aria-hidden="true" />
+            {{ t('admin.premium.nav') }}
           </router-link>
           <router-link class="sidebar-link" to="/admin/tickets" active-class="is-active">
             <LifeBuoy :size="18" aria-hidden="true" />

@@ -44,6 +44,10 @@ async function manage() {
 
       <p v-if="status.reason === 'ADMIN'" class="detail">{{ t('premium.admin') }}</p>
       <p v-else-if="status.reason === 'FOREVER'" class="detail">{{ t('premium.forever') }}</p>
+      <!-- Given from admin until a day: Premium runs until the start of the day after. -->
+      <p v-else-if="status.reason === 'GRANT'" class="detail">
+        {{ t('premium.grantedUntil', { date: formatDate(new Date(Date.parse(status.until) - 1)) }) }}
+      </p>
       <template v-else-if="status.premium">
         <p v-if="status.since" class="detail">{{ t('account.premium.since', { date: formatDate(status.since) }) }}</p>
         <p v-if="status.cancelAtPeriodEnd" class="detail">{{ t('premium.endsOn', { date: formatDate(status.until) }) }}</p>

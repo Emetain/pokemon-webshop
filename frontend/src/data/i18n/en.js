@@ -453,6 +453,7 @@ export default {
     active: 'You have Premium',
     admin: 'As an admin you always have Premium, without paying.',
     forever: 'You have Premium forever.',
+    grantedUntil: 'You were given Premium, until and including {date}.',
     endsOn: 'You cancelled. Premium runs until {date}.',
     renewsOn: 'Renews on {date}.',
     manage: 'Manage in My account',

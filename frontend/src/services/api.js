@@ -412,6 +412,13 @@ export const adminTicketApi = {
   setStatus: (number, status) => request('PUT', `/admin/tickets/${encodeURIComponent(number)}/status`, { status }),
 }
 
+/** Premium from admin (2026-11-21): who has it, giving it to a friend, and taking a gift back. */
+export const adminPremiumApi = {
+  members: () => request('GET', '/admin/premium'),
+  grant: (email, lastDay) => request('POST', '/admin/premium/grants', { email, lastDay }),
+  revoke: (userId) => request('DELETE', `/admin/premium/grants/${userId}`),
+}
+
 export const adminContentApi = {
   discountCodes: () => request('GET', '/admin/discount-codes'),
   createDiscountCode: (data) => request('POST', '/admin/discount-codes', data),

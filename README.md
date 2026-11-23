@@ -204,7 +204,8 @@ In production, add a webhook endpoint in the Stripe dashboard for `checkout.sess
 Premium (phase 11) is a Stripe Billing subscription of €6.99 a month or €59.99 a year (`app.premium`). The backend
 makes the product, its two prices (lookup keys `poketopia_premium_monthly` and `poketopia_premium_yearly`) and the
 customer portal's settings in Stripe the first time someone buys or opens the portal, so nothing has to be set up by
-hand. Only the verified webhook switches Premium on, renews it and ends it; admins have it from their role. Details in
+hand. Only the verified webhook switches Premium on, renews it and ends it; admins have it from their role. An admin
+can also give someone Premium without paying, for good or until a day, at `/admin/premium`. Details in
 [docs/phases/phase-11.md](docs/phases/phase-11.md).
 
 Phase 12 added more Premium: no ads, the price graph of every card, the risers and fallers of a collection, price

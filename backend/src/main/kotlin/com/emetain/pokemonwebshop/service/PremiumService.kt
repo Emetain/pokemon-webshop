@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 /** Why a user has Premium, or doesn't. */
 enum class PremiumReason { ADMIN, FOREVER, SUBSCRIPTION, GRANT, NONE }
@@ -102,6 +104,56 @@ class PremiumService(
     fun require(user: User?, message: String = "Dit hoort bij Premium.") {
         if (user == null) throw ApiException.notAuthenticated()
         if (!has(user)) throw ApiException.premiumRequired(message)
+    }
+
+    /**
+     * Gives an account Premium without paying (2026-11-21, the owner's wish: for friends who help): for good, or until
+     * and including [lastDay]. The person makes an account first. Someone who already pays is refused, because their
+     * subscription would keep charging them: cancel it in Stripe first. Giving again replaces the earlier gift.
+     */
+    fun grant(email: String, lastDay: LocalDate?, by: User): User = transaction.execute {
+        val user = userRepository.findByEmail(email.trim().lowercase())
+            ?: throw ApiException.validation("Er is geen account met dit e-mailadres. Laat de klant eerst een account maken.")
+        val now = clock.instant()
+        when (PremiumAccess.reason(user, now)) {
+            PremiumReason.ADMIN -> throw ApiException.validation("Beheerders hebben Premium altijd al.")
+            PremiumReason.SUBSCRIPTION -> throw ApiException.validation(
+                "Deze klant betaalt al voor Premium. Zeg eerst het abonnement op in Stripe, dan kun je het hier geven.",
+            )
+            PremiumReason.NONE -> user.premiumSince = now
+            PremiumReason.FOREVER, PremiumReason.GRANT -> Unit
+        }
+        if (lastDay == null) {
+            user.premiumForever = true
+        } else {
+            val end = lastDay.plusDays(1).atStartOfDay(SHOP_ZONE).toInstant()
+            if (!end.isAfter(now)) throw ApiException.validation("Kies een datum vanaf vandaag.")
+            user.premiumForever = false
+            user.premiumUntil = end
+            user.premiumSource = PremiumSource.GRANT
+        }
+        log.info("Admin {} gave user {} Premium {}", by.id, user.id, lastDay?.let { "until and including $it" } ?: "for good")
+        user
+    }!!
+
+    /** Takes back Premium that was given. A paid subscription is cancelled in Stripe, never here. */
+    fun revoke(userId: Long, by: User): User = transaction.execute {
+        val user = userRepository.findById(userId).orElseThrow { ApiException.notFound() }
+        val now = clock.instant()
+        val reason = PremiumAccess.reason(user, now)
+        if (reason != PremiumReason.FOREVER && reason != PremiumReason.GRANT) {
+            throw ApiException.validation("Deze klant heeft geen gegeven Premium. Een betaald abonnement zeg je op in Stripe.")
+        }
+        user.premiumForever = false
+        if (user.premiumSource == PremiumSource.GRANT && user.premiumUntil?.isAfter(now) == true) user.premiumUntil = now
+        log.info("Admin {} took back the Premium of user {}", by.id, user.id)
+        user
+    }!!
+
+    /** Everyone with Premium right now, with why: for the admin page. */
+    fun members(): List<Pair<User, PremiumReason>> {
+        val now = clock.instant()
+        return userRepository.findPremiumMembers(now).map { it to PremiumAccess.reason(it, now) }
     }
 
     fun status(user: User): PremiumStatus {
@@ -259,6 +311,7 @@ class PremiumService(
     }
 
     private companion object {
+        val SHOP_ZONE: ZoneId = ZoneId.of("Europe/Amsterdam")
         const val CONSENT_TEXT = "Premium begint direct na je betaling. Je hebt ermee ingestemd dat je herroepingsrecht " +
             "dan vervalt. Opzeggen kan altijd onder Mijn account, tegen het einde van de betaalde periode."
     }
