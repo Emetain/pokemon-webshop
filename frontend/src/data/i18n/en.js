@@ -178,6 +178,7 @@ export default {
       play: 'Play',
       choose: 'Go to slide {number}',
     },
+    wantedForSale: 'From your wishlist, for sale now',
     newArrivals: 'New arrivals',
     newArrivalsEmpty: "As soon as new stock arrives, you'll see it here.",
     bestsellers: 'Popular',

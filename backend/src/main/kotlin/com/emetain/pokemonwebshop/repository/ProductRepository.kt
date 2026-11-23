@@ -88,6 +88,19 @@ interface ProductRepository : JpaRepository<Product, Long>, JpaSpecificationExec
     )
     fun findBuyableForCards(cardIds: Collection<Long>, status: ProductStatus = ProductStatus.ACTIVE): List<Product>
 
+    /**
+     * Singles and slabs that can be bought right now of the cards on a customer's wishlist, the newest arrival first
+     * (also back in stock). Stock in a drop has left the normal stock, so a drop never shows here before it opens.
+     */
+    @EntityGraph(attributePaths = ["stock"])
+    @Query(
+        "select p from Product p where p.status = :status " +
+            "and p.priceCents is not null and p.stock.onHand - p.stock.reserved > 0 " +
+            "and p.card.id in (select w.card.id from CardWishlistEntry w where w.user.id = :userId) " +
+            "order by case when p.arrivedAt is null then 1 else 0 end, p.arrivedAt desc, p.createdAt desc, p.id desc",
+    )
+    fun findBuyableWantedBy(userId: Long, pageable: Pageable, status: ProductStatus = ProductStatus.ACTIVE): List<Product>
+
     @Query(
         "select distinct new com.emetain.pokemonwebshop.repository.ProductFacetRow(p.type, p.accessoryType, p.language, s.id) " +
             "from Product p left join p.cardSet s where p.status = :status and p.game = :game and $LISTED",

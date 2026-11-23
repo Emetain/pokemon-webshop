@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import BallMark from '../components/BallMark.vue'
 import BinderPage from '../components/BinderPage.vue'
 import FormMessage from '../components/FormMessage.vue'
@@ -9,7 +9,7 @@ import HeroCarousel from '../components/shop/HeroCarousel.vue'
 import NewsCard from '../components/content/NewsCard.vue'
 import ProductRow from '../components/shop/ProductRow.vue'
 import { mainNav } from '../data/navigation'
-import { contentApi, shopApi } from '../services/api'
+import { contentApi, shopApi, wishlistApi } from '../services/api'
 import { useSession } from '../stores/session'
 import { t } from '../utils/i18n'
 
@@ -18,6 +18,8 @@ const ROW_SIZE = 12
 const session = useSession()
 
 const slides = ref([])
+/** Cards on the customer's wishlist that are for sale now (2026-11-23). Only shown when there are any. */
+const wanted = ref([])
 // null while loading: the row shows skeleton tiles until then (2026-11-21).
 const newArrivals = ref(null)
 const bestsellers = ref([])
@@ -52,9 +54,25 @@ shopApi
   .then((result) => (preOrders.value = result.results.items))
   .catch(() => {})
 
+// The session can still be loading when the page opens, and logging in or out doesn't reload it.
+watch(
+  () => session.isLoggedIn.value,
+  (loggedIn) => {
+    wanted.value = []
+    if (!loggedIn) return
+    wishlistApi
+      .forSale(ROW_SIZE)
+      .then((result) => {
+        if (session.isLoggedIn.value) wanted.value = result
+      })
+      .catch(() => {})
+  },
+  { immediate: true },
+)
+
 /** The same product can be in more than one row: the heart changes in all of them. */
 function onWished(product, wished) {
-  for (const row of [newArrivals, bestsellers, preOrders]) {
+  for (const row of [wanted, newArrivals, bestsellers, preOrders]) {
     (row.value ?? []).filter((item) => item.id === product.id).forEach((item) => (item.wished = wished))
   }
 }
@@ -85,6 +103,16 @@ function onWished(product, wished) {
 
   <div class="container sections">
     <FormMessage v-if="error">{{ error }}</FormMessage>
+
+    <!-- First, above the new stock: cards the customer is looking for that came in, the newest first. -->
+    <ProductRow
+      v-if="wanted.length"
+      :title="t('home.wantedForSale')"
+      :products="wanted"
+      to="/verlanglijst"
+      @wished="onWished"
+      @error="error = $event"
+    />
 
     <ProductRow
       v-if="newArrivals === null || newArrivals.length"

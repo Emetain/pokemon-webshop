@@ -152,6 +152,8 @@ export const pokedexApi = {
 
 export const wishlistApi = {
   cards: (params) => request('GET', `/wishlist/cards${queryString(params)}`),
+  /** The cards on the wishlist that are for sale now: one product per card, the newest arrival first. */
+  forSale: (limit) => request('GET', `/wishlist/cards/for-sale${queryString({ limit })}`),
   add: (cardId) => request('PUT', `/wishlist/cards/${cardId}`),
   remove: (cardId) => request('DELETE', `/wishlist/cards/${cardId}`),
 }

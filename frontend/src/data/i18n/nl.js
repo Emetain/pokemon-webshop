@@ -179,6 +179,7 @@ export default {
       play: 'Afspelen',
       choose: 'Naar slide {number}',
     },
+    wantedForSale: 'Van je verlanglijst, nu te koop',
     newArrivals: 'Nieuw binnen',
     newArrivalsEmpty: 'Zodra er nieuwe voorraad binnen is, zie je die hier.',
     bestsellers: 'Populair',
