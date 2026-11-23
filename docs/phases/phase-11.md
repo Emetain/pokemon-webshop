@@ -261,6 +261,16 @@ The real test with about 50 of your own photos is still to do (see below).
 - **Home page:** the customer's value graph and tiles for the value graph, the scanner and the pre-grade check, right
   below "Nieuw binnen".
 
+### Fixed on 2026-11-23: photos from a phone were refused
+
+The owner couldn't use the scanner or the pre-grade check on the phone. Caddy only allowed multipart bodies above
+256 kB on `/api/v1/admin/*` (phase 9b, before this phase), so a scan photo from a phone (1280 px) was often refused
+with 413 "Dit bestand is te groot", and the pre-grade check (two photos of 1600 px) nearly always. A webcam photo is
+cropped and softer, so it often stayed under the limit on a computer. `/api/v1/scanner` and `/api/v1/pregrade` now
+get the same 7 MB as admin uploads; the backend limits each photo to 5 MB. Checked through the real Caddyfile with a
+backend stand-in that reads the whole body: before, a 400 kB scan and an 850 kB pre-grade got 413; after, both get
+through, and 8 MB, 400 kB of JSON and a 400 kB upload to another path still get 413.
+
 ## Main files
 
 - Backend: `CardmarketSinglesProvider`/`Parser`, `CardmarketSingleService`, `CardmarketLinks` (with `PriceAgreement`),

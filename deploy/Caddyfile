@@ -140,14 +140,16 @@ Disallow: /
 		}
 
 		handle /api/* {
-			# Request bodies: uploads and the CSV import in admin are multipart, up to 6 MB in the backend. Everything
-			# else is JSON, 256 kB at most (app.http.max-body-size). Larger ones get 413 before they reach the backend.
+			# Request bodies: uploads are multipart, up to 6 MB in the backend. They are admin's images and CSV import,
+			# and a customer's photos for the card scanner and the pre-grade check (two photos), which are often
+			# larger than 256 kB from a phone. Everything else is JSON, 256 kB at most (app.http.max-body-size).
+			# Larger ones get 413 before they reach the backend. A new upload outside admin needs its path here.
 			@upload {
-				path /api/v1/admin/*
+				path /api/v1/admin/* /api/v1/scanner /api/v1/pregrade
 				header Content-Type multipart/form-data*
 			}
 			@notUpload not {
-				path /api/v1/admin/*
+				path /api/v1/admin/* /api/v1/scanner /api/v1/pregrade
 				header Content-Type multipart/form-data*
 			}
 			request_body @upload {
