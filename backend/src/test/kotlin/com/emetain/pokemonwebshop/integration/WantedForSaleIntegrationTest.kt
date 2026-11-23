@@ -48,7 +48,7 @@ class WantedForSaleIntegrationTest : ShopTestSupport() {
 
         val names = mockMvc.perform(get("/v1/wishlist/cards/for-sale").cookie(customer))
             .andExpect(status().isOk)
-            .json().values().map { it["name"].asString() }
+            .json().values().map { it["product"]["name"].asString() }
         assertEquals(listOf("$word Charizard PSA 10", "$word Pikachu played"), names)
 
         // Someone else's wishlist is empty.
@@ -69,6 +69,71 @@ class WantedForSaleIntegrationTest : ShopTestSupport() {
         adjustStock(product["id"].asLong(), -1, reason = "CORRECTION").andExpect(status().isOk)
         assertEquals(0, mockMvc.perform(get("/v1/wishlist/cards/for-sale").cookie(customer)).json().size())
     }
+
+    @Test
+    fun `each card gets the colour of its frame from the customer's maximum and collection`() {
+        val customer = loggedInUser()
+        val (free, owned, dear, ownedDear, cheap) = List(5) { uniqueCode() }
+        importCards(
+            listOf(
+                providerCard(free, number = "1", name = "Free"),
+                providerCard(owned, number = "2", name = "Owned"),
+                providerCard(dear, number = "3", name = "Dear"),
+                providerCard(ownedDear, number = "4", name = "OwnedDear"),
+                providerCard(cheap, number = "5", name = "Cheap"),
+            ),
+        )
+        mockMvc.perform(put("/v1/wishlist/cards/${card(free).id}").cookie(customer)).andExpect(status().isNoContent)
+        mockMvc.perform(put("/v1/wishlist/cards/${card(owned).id}").cookie(customer)).andExpect(status().isNoContent)
+        // A maximum puts a card on the wishlist by itself.
+        maxPrice(customer, dear, 999).andExpect(status().isNoContent)
+        maxPrice(customer, ownedDear, 999).andExpect(status().isNoContent)
+        maxPrice(customer, cheap, 2000).andExpect(status().isNoContent)
+        add(customer, card(owned).id)
+        add(customer, card(ownedDear).id)
+        for (id in listOf(free, owned, dear, ownedDear, cheap)) {
+            stocked("$word ${card(id).name}", type = "SINGLE", priceCents = 1000, extra = single(id, "NEAR_MINT"))
+        }
+
+        val rows = mockMvc.perform(get("/v1/wishlist/cards/for-sale").cookie(customer)).andExpect(status().isOk).json()
+            .values().associate { it["product"]["name"].asString().removePrefix("$word ") to it }
+        assertEquals("WITHIN", rows.getValue("Free")["match"].asString())
+        assertEquals("OWNED", rows.getValue("Owned")["match"].asString())
+        assertEquals("ABOVE_MAX", rows.getValue("Dear")["match"].asString())
+        assertEquals("ABOVE_MAX", rows.getValue("OwnedDear")["match"].asString())
+        assertEquals("WITHIN", rows.getValue("Cheap")["match"].asString())
+        assertEquals(2000, rows.getValue("Cheap")["maxPriceCents"].asLong())
+        assertEquals(true, rows.getValue("Free")["maxPriceCents"].isNull)
+    }
+
+    @Test
+    fun `the maximum shows on the card page, can be taken away, and must be an amount`() {
+        val customer = loggedInUser()
+        val id = uniqueCode()
+        importCards(listOf(providerCard(id, name = "Lugia")))
+        val cardId = card(id).id
+
+        mockMvc.perform(put("/v1/wishlist/cards/$cardId/max-price").json(mapOf("maxPriceCents" to 500)))
+            .andExpect(status().isUnauthorized)
+        maxPrice(customer, id, 0).andExpect(status().isBadRequest)
+        maxPrice(customer, id, -100).andExpect(status().isBadRequest)
+        maxPrice(customer, id, 10_000_001).andExpect(status().isBadRequest)
+        mockMvc.perform(put("/v1/wishlist/cards/999999999/max-price").cookie(customer).json(mapOf("maxPriceCents" to 500)))
+            .andExpect(status().isNotFound)
+
+        maxPrice(customer, id, 1250).andExpect(status().isNoContent)
+        val state = mockMvc.perform(get("/v1/collection/cards/$cardId").cookie(customer)).andExpect(status().isOk).json()
+        assertEquals(true, state["onWishlist"].asBoolean())
+        assertEquals(1250, state["wishlistMaxPriceCents"].asLong())
+
+        maxPrice(customer, id, null).andExpect(status().isNoContent)
+        val cleared = mockMvc.perform(get("/v1/collection/cards/$cardId").cookie(customer)).json()
+        assertEquals(true, cleared["onWishlist"].asBoolean())
+        assertEquals(true, cleared["wishlistMaxPriceCents"].isNull)
+    }
+
+    private fun maxPrice(session: jakarta.servlet.http.Cookie, externalId: String, cents: Long?) =
+        mockMvc.perform(put("/v1/wishlist/cards/${card(externalId).id}/max-price").cookie(session).json(mapOf("maxPriceCents" to cents)))
 
     private fun single(externalId: String, condition: String) = mapOf("cardId" to card(externalId).id, "condition" to condition)
 }

@@ -30,6 +30,10 @@ class CardWishlistEntry(
     @Column(nullable = false, updatable = false)
     val addedAt: Instant,
 
+    /** The most the customer wants to pay for it in the shop, in euro cents. Null: no maximum. */
+    @Column
+    var maxPriceCents: Long? = null,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,

@@ -180,6 +180,12 @@ export default {
       choose: 'Naar slide {number}',
     },
     wantedForSale: 'Van je verlanglijst, nu te koop',
+    wanted: {
+      aboveMax: 'Duurder dan je max. van {price}',
+      withinMax: 'Binnen je max. van {price}',
+      within: 'Nog niet in je collectie',
+      owned: 'Al in je collectie',
+    },
     newArrivals: 'Nieuw binnen',
     newArrivalsEmpty: 'Zodra er nieuwe voorraad binnen is, zie je die hier.',
     bestsellers: 'Populair',
@@ -1420,6 +1426,13 @@ export default {
       binderHint: 'Je binder op de homepage toont nu iets anders. Kies "Mijn eigen selectie" bij je accountinstellingen.',
       guest: 'Log in om deze kaart aan je collectie toe te voegen.',
       guestAction: 'Inloggen',
+      maxPrice: 'Wat wil je er in de shop maximaal voor betalen?',
+      maxPricePlaceholder: 'Geen maximum',
+      maxPriceSave: 'Opslaan',
+      maxPriceSaved: 'Opgeslagen.',
+      maxPriceHint:
+        'Is deze kaart te koop, dan staat hij bovenaan de homepage. Een rode rand betekent: duurder dan je maximum. Laat het leeg voor geen maximum.',
+      maxPriceInvalid: 'Vul een bedrag in, bijvoorbeeld 12,50.',
     },
     conditions: {
       MINT: 'Mint',

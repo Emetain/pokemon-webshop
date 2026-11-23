@@ -152,8 +152,13 @@ export const pokedexApi = {
 
 export const wishlistApi = {
   cards: (params) => request('GET', `/wishlist/cards${queryString(params)}`),
-  /** The cards on the wishlist that are for sale now: one product per card, the newest arrival first. */
+  /**
+   * The cards on the wishlist that are for sale now: one product per card, the newest arrival first, each as
+   * `{ product, match, maxPriceCents }` with the colour of its frame (ABOVE_MAX, OWNED or WITHIN).
+   */
   forSale: (limit) => request('GET', `/wishlist/cards/for-sale${queryString({ limit })}`),
+  /** The most the customer wants to pay for the card in the shop, in euro cents; null for no maximum. */
+  setMaxPrice: (cardId, maxPriceCents) => request('PUT', `/wishlist/cards/${cardId}/max-price`, { maxPriceCents }),
   add: (cardId) => request('PUT', `/wishlist/cards/${cardId}`),
   remove: (cardId) => request('DELETE', `/wishlist/cards/${cardId}`),
 }

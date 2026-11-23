@@ -63,7 +63,8 @@ watch(
     wishlistApi
       .forSale(ROW_SIZE)
       .then((result) => {
-        if (session.isLoggedIn.value) wanted.value = result
+        // A product with what the tile needs for its coloured frame.
+        if (session.isLoggedIn.value) wanted.value = result.map(({ product, match, maxPriceCents }) => ({ ...product, wanted: { match, maxPriceCents } }))
       })
       .catch(() => {})
   },
@@ -109,6 +110,7 @@ function onWished(product, wished) {
       v-if="wanted.length"
       :title="t('home.wantedForSale')"
       :products="wanted"
+      framed
       to="/verlanglijst"
       @wished="onWished"
       @error="error = $event"

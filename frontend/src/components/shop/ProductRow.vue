@@ -10,6 +10,8 @@ defineProps({
   to: { type: [String, Object], default: null },
   /** Skeleton tiles while the products load (2026-11-21). */
   loading: { type: Boolean, default: false },
+  /** Room around the tiles for the glowing frames of wanted cards (2026-11-23), which the scrolling list would cut off. */
+  framed: { type: Boolean, default: false },
 })
 
 const SKELETON_TILES = 6
@@ -32,7 +34,7 @@ const id = useId()
         <span class="skeleton line short"></span>
       </li>
     </ul>
-    <ul v-else class="scroller" tabindex="0" :aria-labelledby="id">
+    <ul v-else class="scroller" :class="{ framed }" tabindex="0" :aria-labelledby="id">
       <li v-for="product in products" :key="product.id" class="item">
         <ProductTile :product="product" @wished="emit('wished', product, $event)" @error="emit('error', $event)" />
       </li>
@@ -84,6 +86,15 @@ const id = useId()
 
 .item {
   scroll-snap-align: start;
+}
+
+/* The glow reaches past the tile. The list makes room for it on all sides and moves out by as much at the sides, so
+   the tiles still line up with the rest of the page. Less than the page gutter, so the page never scrolls sideways. */
+.scroller.framed {
+  --glow-room: var(--space-3);
+  margin-inline: calc(-1 * var(--glow-room));
+  padding: var(--glow-room) var(--glow-room) calc(var(--glow-room) + var(--space-1));
+  scroll-padding-inline: var(--glow-room);
 }
 
 .skeleton-tile {

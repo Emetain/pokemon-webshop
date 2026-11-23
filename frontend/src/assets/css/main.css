@@ -42,6 +42,13 @@
   --color-warning-soft: #fff1dc;
   --color-muted-soft: #edf0f5;
 
+  /* Wanted cards on the home page (2026-11-23): the frame around a card from the wishlist that's for sale. Fixed
+     colours, the same in every colour theme, because they mean something: red above the customer's maximum, blue
+     already in the collection, green not in it yet. */
+  --color-wanted-above: #d42a3c;
+  --color-wanted-owned: #1a56db;
+  --color-wanted-within: #12965a;
+
   /* Game accents. Every game has a colour and the text colour that is readable on it.
      Pokémon is the main game of the shop, so it uses the brand blue. */
   --game-pokemon: #1a56db;
@@ -263,6 +270,9 @@
   --color-warning: #ffc069;
   --color-warning-soft: #3a2b12;
   --color-muted-soft: #1a2335;
+  --color-wanted-above: #ff6b7b;
+  --color-wanted-owned: #5b8dff;
+  --color-wanted-within: #3fcf8e;
   --color-shadow: rgb(0 0 0 / 45%);
   --game-pokemon: #346ce0;
   --color-skeleton-shine: rgb(255 255 255 / 7%);

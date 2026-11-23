@@ -7,4 +7,6 @@ interface CardWishlistEntryRepository : JpaRepository<CardWishlistEntry, Long> {
     fun existsByUserIdAndCardId(userId: Long, cardId: Long): Boolean
 
     fun findByUserIdAndCardId(userId: Long, cardId: Long): CardWishlistEntry?
+
+    fun findAllByUserIdAndCardIdIn(userId: Long, cardIds: Collection<Long>): List<CardWishlistEntry>
 }

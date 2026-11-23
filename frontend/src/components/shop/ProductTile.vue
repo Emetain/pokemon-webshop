@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { LoaderCircle, ShoppingBag } from 'lucide-vue-next'
 import PriceTag from './PriceTag.vue'
 import ProductBadges from './ProductBadges.vue'
@@ -8,9 +8,14 @@ import WishlistToggle from './WishlistToggle.vue'
 import { productFacts, productLink } from '../../data/shop'
 import { findGame } from '../../data/games'
 import { useCart } from '../../stores/cart'
+import { formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
-/** A product in a list. The cart button adds one and opens the cart drawer. */
+/**
+ * A product in a list. The cart button adds one and opens the cart drawer. A card from the customer's wishlist
+ * (`product.wanted`, on the home page) gets a glowing frame around its picture and a line that says why it has that
+ * colour, so the colour is never the only sign.
+ */
 const props = defineProps({
   product: { type: Object, required: true },
   eager: { type: Boolean, default: false },
@@ -19,6 +24,15 @@ const props = defineProps({
 const emit = defineEmits(['wished', 'error'])
 
 const accent = props.product.game ? findGame(props.product.game)?.accent : null
+
+const wantedNote = computed(() => {
+  const wanted = props.product.wanted
+  if (!wanted) return ''
+  const price = wanted.maxPriceCents != null ? formatMoney(wanted.maxPriceCents, 'EUR') : null
+  if (wanted.match === 'ABOVE_MAX') return t('home.wanted.aboveMax', { price })
+  if (wanted.match === 'OWNED') return t('home.wanted.owned')
+  return price ? t('home.wanted.withinMax', { price }) : t('home.wanted.within')
+})
 
 const cart = useCart()
 const adding = ref(false)
@@ -38,15 +52,22 @@ async function addToCart() {
 <template>
   <article class="tile">
     <router-link class="tile-link" :to="productLink(product)">
-      <ProductImage
-        :src="product.imageUrl"
-        :is-card="product.imageIsCard"
-        :alt="product.name"
-        :set-logo="product.setLogoUrl"
-        :type="product.type"
-        :game="accent"
-        :eager="eager"
-      />
+      <!-- The frame sits around the picture with a gap, so nothing touches or covers a card image. -->
+      <div class="picture" :data-wanted="product.wanted?.match">
+        <ProductImage
+          :src="product.imageUrl"
+          :is-card="product.imageIsCard"
+          :alt="product.name"
+          :set-logo="product.setLogoUrl"
+          :type="product.type"
+          :game="accent"
+          :eager="eager"
+        />
+      </div>
+      <span v-if="wantedNote" class="wanted-note" :data-wanted="product.wanted.match">
+        <span class="dot" aria-hidden="true"></span>
+        {{ wantedNote }}
+      </span>
       <ProductBadges class="badges" :product="product" />
       <span class="name">{{ product.name }}</span>
       <span class="facts">
@@ -92,6 +113,49 @@ async function addToCart() {
   flex-direction: column;
   color: var(--color-ink);
   text-decoration: none;
+}
+
+.picture[data-wanted] {
+  --wanted: var(--color-wanted-within);
+  padding: var(--frame-gap);
+  border: var(--frame-width) solid var(--wanted);
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 0 10px 1px color-mix(in srgb, var(--wanted) 55%, transparent),
+    0 0 2px var(--wanted);
+}
+
+.picture[data-wanted='OWNED'],
+.wanted-note[data-wanted='OWNED'] {
+  --wanted: var(--color-wanted-owned);
+}
+
+.picture[data-wanted='ABOVE_MAX'],
+.wanted-note[data-wanted='ABOVE_MAX'] {
+  --wanted: var(--color-wanted-above);
+}
+
+.wanted-note {
+  --wanted: var(--color-wanted-within);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  color: var(--color-ink);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.dot {
+  flex: none;
+  width: 0.6rem;
+  height: 0.6rem;
+  /* In the middle of the first line, also when the text runs over two. */
+  margin-top: calc((1.35em - 0.6rem) / 2);
+  border-radius: 50%;
+  background: var(--wanted);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--wanted) 70%, transparent);
 }
 
 .badges {

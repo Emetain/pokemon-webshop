@@ -6,6 +6,7 @@ import QuantityStepper from './QuantityStepper.vue'
 import { binderApi, collectionApi, wishlistApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { variantLabel } from '../../utils/catalog'
+import { formatMoney, parseMoneyInput } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
 const CONDITIONS = ['MINT', 'NEAR_MINT', 'EXCELLENT', 'GOOD', 'LIGHT_PLAYED', 'PLAYED', 'POOR']
@@ -36,15 +37,46 @@ const rows = computed(() =>
 
 const binderHint = computed(() => state.value?.inBinder && session.state.user?.binderSource !== 'OWN_SELECTION')
 
+// The most the customer wants to pay in the shop (2026-11-23), as typed. Shop prices are in euros, whatever currency
+// the card prices are shown in.
+const maxText = ref('')
+const maxSaved = ref(false)
+const amountText = (cents) => (cents == null ? '' : formatMoney(cents, 'EUR').replace(/[^\d.,]/g, ''))
+
 async function load() {
   state.value = null
   pending.value = {}
+  maxText.value = ''
+  maxSaved.value = false
   if (!session.isLoggedIn.value) return
   try {
     state.value = await collectionApi.card(props.card.id)
+    maxText.value = amountText(state.value.wishlistMaxPriceCents)
   } catch (exception) {
     error.value = exception.message
   }
+}
+
+// "Opgeslagen" goes once the customer types something else than what was saved.
+watch(maxText, (text) => {
+  if (text !== amountText(state.value?.wishlistMaxPriceCents)) maxSaved.value = false
+})
+
+function saveMaxPrice() {
+  const text = maxText.value.trim()
+  const cents = text ? parseMoneyInput(text) : null
+  if (text && !cents) {
+    error.value = t('collection.card.maxPriceInvalid')
+    return
+  }
+  const cardId = props.card.id
+  run(async () => {
+    await wishlistApi.setMaxPrice(cardId, cents)
+    if (props.card.id !== cardId || !state.value) return
+    state.value.wishlistMaxPriceCents = cents
+    maxText.value = amountText(cents)
+    maxSaved.value = true
+  })
 }
 
 /*
@@ -117,6 +149,11 @@ const toggleWishlist = () =>
     const on = state.value.onWishlist
     await (on ? wishlistApi.remove(props.card.id) : wishlistApi.add(props.card.id))
     state.value.onWishlist = !on
+    // Off the wishlist, the maximum goes with it.
+    if (on) {
+      state.value.wishlistMaxPriceCents = null
+      maxText.value = ''
+    }
   })
 
 const toggleBinder = () =>
@@ -181,6 +218,28 @@ watch(() => props.card.id, load, { immediate: true })
       <p v-if="binderHint" class="hint">
         <router-link :to="{ path: '/account', hash: '#binder' }">{{ t('collection.card.binderHint') }}</router-link>
       </p>
+
+      <form v-if="state.onWishlist" class="max-price" @submit.prevent="saveMaxPrice">
+        <label class="max-label" :for="`${id}-max`">{{ t('collection.card.maxPrice') }}</label>
+        <div class="max-row">
+          <span class="max-field">
+            <span class="euro" aria-hidden="true">€</span>
+            <input
+              :id="`${id}-max`"
+              v-model="maxText"
+              class="max-input"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              :placeholder="t('collection.card.maxPricePlaceholder')"
+              :aria-describedby="`${id}-max-hint`"
+            />
+          </span>
+          <button class="btn btn-secondary btn-small" type="submit" :disabled="busy">{{ t('collection.card.maxPriceSave') }}</button>
+          <span v-if="maxSaved" class="saved" role="status">{{ t('collection.card.maxPriceSaved') }}</span>
+        </div>
+        <p :id="`${id}-max-hint`" class="hint">{{ t('collection.card.maxPriceHint') }}</p>
+      </form>
     </template>
 
     <p v-if="error" class="error" role="alert">{{ error }}</p>
@@ -267,6 +326,69 @@ watch(() => props.card.id, load, { immediate: true })
 
 .hint {
   font-size: var(--text-xs);
+}
+
+.max-price {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-line);
+}
+
+.max-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.max-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.max-field {
+  display: inline-flex;
+  align-items: center;
+  height: var(--touch-target);
+  padding-inline: var(--space-2);
+  border: 1.5px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.max-field:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.euro {
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+}
+
+/* 16px, so a phone doesn't zoom in when the field gets focus. */
+.max-input {
+  width: 7.5rem;
+  height: 100%;
+  padding-inline: var(--space-1);
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font-size: 1rem;
+  outline: none;
+}
+
+.saved {
+  color: var(--color-success);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.max-price .hint {
+  margin: 0;
+  color: var(--color-ink-soft);
 }
 
 .error {

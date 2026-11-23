@@ -179,6 +179,12 @@ export default {
       choose: 'Go to slide {number}',
     },
     wantedForSale: 'From your wishlist, for sale now',
+    wanted: {
+      aboveMax: 'More than your max of {price}',
+      withinMax: 'Within your max of {price}',
+      within: 'Not in your collection yet',
+      owned: 'Already in your collection',
+    },
     newArrivals: 'New arrivals',
     newArrivalsEmpty: "As soon as new stock arrives, you'll see it here.",
     bestsellers: 'Popular',
@@ -1454,6 +1460,13 @@ export default {
       binderHint: 'Your binder on the home page shows something else right now. Choose "My own selection" in your account settings.',
       guest: 'Log in to add this card to your collection.',
       guestAction: 'Log in',
+      maxPrice: 'What is the most you want to pay for it in the shop?',
+      maxPricePlaceholder: 'No maximum',
+      maxPriceSave: 'Save',
+      maxPriceSaved: 'Saved.',
+      maxPriceHint:
+        'When this card is for sale, it shows at the top of the home page. A red frame means: more than your maximum. Leave it empty for no maximum.',
+      maxPriceInvalid: 'Enter an amount, for example 12.50.',
     },
     conditions: {
       MINT: 'Mint',

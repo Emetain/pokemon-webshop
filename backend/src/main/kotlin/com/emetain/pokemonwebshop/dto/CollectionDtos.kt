@@ -13,6 +13,7 @@ import com.emetain.pokemonwebshop.service.GameStats
 import com.emetain.pokemonwebshop.service.Progress
 import com.emetain.pokemonwebshop.service.SetStats
 import com.emetain.pokemonwebshop.service.StartedSet
+import com.emetain.pokemonwebshop.service.WantedMatch
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.Size
 import java.time.LocalDate
@@ -95,6 +96,8 @@ data class CardCollectionDto(
     val entries: List<OwnedEntryDto>,
     val onWishlist: Boolean,
     val inBinder: Boolean,
+    /** The most the customer wants to pay for it in the shop, in euro cents (2026-11-23). Null: no maximum. */
+    val wishlistMaxPriceCents: Long? = null,
 )
 
 data class StartedSetDto(
@@ -178,4 +181,19 @@ data class CollectionHistoryDto(
 data class SharedCollectionDto(
     val ownerName: String,
     val collection: CollectionOverviewDto,
+)
+
+/** The most a customer wants to pay for a wishlist card in the shop, in euro cents. Null takes it away. */
+data class WishlistMaxPriceRequest(
+    val maxPriceCents: Long? = null,
+)
+
+/**
+ * A product of a card on the wishlist that's for sale (2026-11-23), with the colour of its frame and the customer's
+ * maximum for the card, so the tile can say why it has that colour.
+ */
+data class WantedProductDto(
+    val product: ProductSummaryDto,
+    val match: WantedMatch,
+    val maxPriceCents: Long?,
 )

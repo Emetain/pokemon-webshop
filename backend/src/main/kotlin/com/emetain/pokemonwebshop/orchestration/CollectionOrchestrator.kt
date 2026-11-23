@@ -87,11 +87,15 @@ class CollectionOrchestrator(
         return SetProgressDto.from(statsService.set(user.id, set.id, user.currency))
     }
 
-    fun card(user: User, cardId: Long): CardCollectionDto = CardCollectionDto(
-        entries = ownedEntries(user, cardId),
-        onWishlist = wishlistService.contains(user.id, cardId),
-        inBinder = binderService.isSelected(user.id, cardId),
-    )
+    fun card(user: User, cardId: Long): CardCollectionDto {
+        val wish = wishlistService.entry(user.id, cardId)
+        return CardCollectionDto(
+            entries = ownedEntries(user, cardId),
+            onWishlist = wish != null,
+            inBinder = binderService.isSelected(user.id, cardId),
+            wishlistMaxPriceCents = wish?.maxPriceCents,
+        )
+    }
 
     fun addEntry(user: User, request: AddCollectionEntryRequest): CollectionChangeDto {
         retryingOnConflict {
