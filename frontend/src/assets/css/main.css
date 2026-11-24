@@ -1,7 +1,8 @@
 /* Design tokens. Components only use these variables, never raw values for colour. */
 :root {
-  /* Page and surfaces */
-  --color-page: #ffffff;
+  /* Page and surfaces. The page is a very light grey (2026-11-24, the owner's wish), so white buttons, fields, panels
+     and popups stand out from it a little. */
+  --color-page: #f5f7fa;
   --color-surface: #ffffff;
   --color-tint: #eef4fe;
   --color-tint-strong: #dbe7fd;
@@ -40,7 +41,8 @@
   --color-sale-soft: #fdebee;
   --color-warning: #8a4600;
   --color-warning-soft: #fff1dc;
-  --color-muted-soft: #edf0f5;
+  /* A step darker than the grey page, so "Uitverkocht" and disabled buttons still show their shape on it. */
+  --color-muted-soft: #e5e9f0;
 
   /* Wanted cards on the home page (2026-11-23): the frame around a card from the wishlist that's for sale. Fixed
      colours, the same in every colour theme, because they mean something: red above the customer's maximum, blue
