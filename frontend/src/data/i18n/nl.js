@@ -1613,6 +1613,13 @@ export default {
     emptyAction: 'Bekijk de Pokémon-sets',
     remove: 'Verwijderen',
     removeLabel: '{name} van je verlanglijst halen',
+    max: {
+      set: 'Max. {price}',
+      none: 'Maximum instellen',
+      title: 'Maximum voor {name}',
+      clear: 'Geen maximum',
+      close: 'Sluiten',
+    },
     products: 'Producten',
     cards: 'Kaarten',
     productsEmpty: 'Nog geen producten. Kies "Op mijn verlanglijst" bij een product.',

@@ -30,14 +30,21 @@ class CardWishlistOrchestrator(
     private val collectionEntryRepository: CollectionEntryRepository,
 ) {
 
-    /** Numbers mean nothing across sets, so these start with the most valuable card. */
+    /**
+     * Numbers mean nothing across sets, so these start with the most valuable card. Each card comes with the
+     * customer's maximum for it, which they can change on this page (2026-11-24).
+     */
     @Transactional(readOnly = true)
     fun cards(user: User, request: CardListRequest): CardPageDto {
         val sort = CardSort.fromParam(request.sort.filterValue()) ?: CardSort.PRICE_HIGHEST
         val filters = cardList.filters(request, user) +
             CardSpecifications.onWishlistOf(user.id) +
             CardSpecifications.sortedBy(sort)
-        return cardList.page(filters, request, user)
+        val page = cardList.page(filters, request, user)
+        if (page.items.isEmpty()) return page
+        val maxPrices = wishlistRepository.findAllByUserIdAndCardIdIn(user.id, page.items.map { it.id })
+            .associate { it.card.id to it.maxPriceCents }
+        return page.copy(items = page.items.map { it.copy(wishlistMaxPriceCents = maxPrices[it.id]) })
     }
 
     /**

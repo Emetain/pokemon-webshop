@@ -6,7 +6,7 @@ import QuantityStepper from './QuantityStepper.vue'
 import { binderApi, collectionApi, wishlistApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { variantLabel } from '../../utils/catalog'
-import { formatMoney, parseMoneyInput } from '../../utils/format'
+import { formatAmountInput, parseMoneyInput } from '../../utils/format'
 import { t } from '../../utils/i18n'
 
 const CONDITIONS = ['MINT', 'NEAR_MINT', 'EXCELLENT', 'GOOD', 'LIGHT_PLAYED', 'PLAYED', 'POOR']
@@ -41,7 +41,6 @@ const binderHint = computed(() => state.value?.inBinder && session.state.user?.b
 // the card prices are shown in.
 const maxText = ref('')
 const maxSaved = ref(false)
-const amountText = (cents) => (cents == null ? '' : formatMoney(cents, 'EUR').replace(/[^\d.,]/g, ''))
 
 async function load() {
   state.value = null
@@ -51,7 +50,7 @@ async function load() {
   if (!session.isLoggedIn.value) return
   try {
     state.value = await collectionApi.card(props.card.id)
-    maxText.value = amountText(state.value.wishlistMaxPriceCents)
+    maxText.value = formatAmountInput(state.value.wishlistMaxPriceCents)
   } catch (exception) {
     error.value = exception.message
   }
@@ -59,7 +58,7 @@ async function load() {
 
 // "Opgeslagen" goes once the customer types something else than what was saved.
 watch(maxText, (text) => {
-  if (text !== amountText(state.value?.wishlistMaxPriceCents)) maxSaved.value = false
+  if (text !== formatAmountInput(state.value?.wishlistMaxPriceCents)) maxSaved.value = false
 })
 
 function saveMaxPrice() {
@@ -74,7 +73,7 @@ function saveMaxPrice() {
     await wishlistApi.setMaxPrice(cardId, cents)
     if (props.card.id !== cardId || !state.value) return
     state.value.wishlistMaxPriceCents = cents
-    maxText.value = amountText(cents)
+    maxText.value = formatAmountInput(cents)
     maxSaved.value = true
   })
 }

@@ -126,10 +126,16 @@ class WantedForSaleIntegrationTest : ShopTestSupport() {
         assertEquals(true, state["onWishlist"].asBoolean())
         assertEquals(1250, state["wishlistMaxPriceCents"].asLong())
 
+        // The wishlist page shows it with the card, so it can be changed there too.
+        val wishlist = mockMvc.perform(get("/v1/wishlist/cards").cookie(customer)).andExpect(status().isOk).json()
+        assertEquals(1250, wishlist["items"][0]["wishlistMaxPriceCents"].asLong())
+
         maxPrice(customer, id, null).andExpect(status().isNoContent)
         val cleared = mockMvc.perform(get("/v1/collection/cards/$cardId").cookie(customer)).json()
         assertEquals(true, cleared["onWishlist"].asBoolean())
         assertEquals(true, cleared["wishlistMaxPriceCents"].isNull)
+        val clearedList = mockMvc.perform(get("/v1/wishlist/cards").cookie(customer)).json()
+        assertEquals(true, clearedList["items"][0]["wishlistMaxPriceCents"].isNull)
     }
 
     private fun maxPrice(session: jakarta.servlet.http.Cookie, externalId: String, cents: Long?) =

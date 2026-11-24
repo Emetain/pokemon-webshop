@@ -1653,6 +1653,13 @@ export default {
     emptyAction: 'See the Pokémon sets',
     remove: 'Remove',
     removeLabel: 'Remove {name} from your wishlist',
+    max: {
+      set: 'Max. {price}',
+      none: 'Set a maximum',
+      title: 'Maximum for {name}',
+      clear: 'No maximum',
+      close: 'Close',
+    },
     products: 'Products',
     cards: 'Cards',
     productsEmpty: 'No products yet. Choose "Add to my wishlist" on a product.',

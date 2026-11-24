@@ -81,6 +81,8 @@ data class CardSummaryDto(
     val owned: List<OwnedEntryDto>?,
     /** The cheapest single of this card that the shop has in stock, if any. */
     val forSale: CardOfferDto? = null,
+    /** Only on the wishlist (2026-11-24): the most the customer wants to pay for it in the shop, in euro cents. */
+    val wishlistMaxPriceCents: Long? = null,
 ) {
     companion object {
         fun from(

@@ -98,6 +98,11 @@ export function daysUntil(date, now = new Date()) {
   return Math.round((Date.parse(date) - Date.parse(today)) / 86_400_000)
 }
 
+/** Euro cents as they go in a field next to a "€": "12,50" in Dutch, "12.50" in English. Empty for null. */
+export function formatAmountInput(cents) {
+  return cents == null ? '' : formatMoney(cents, 'EUR').replace(/[^\d.,]/g, '')
+}
+
 /**
  * An amount typed by a customer as cents: "12,50", "12.50", "€ 1.234,50" and "12" all work. With both a point and a
  * comma, the last one is the decimal separator. Null for anything that isn't an amount.

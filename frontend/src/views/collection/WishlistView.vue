@@ -1,6 +1,7 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Tag } from 'lucide-vue-next'
 import BreadcrumbTrail from '../../components/catalog/BreadcrumbTrail.vue'
 import CardFilters from '../../components/catalog/CardFilters.vue'
 import CardGrid from '../../components/catalog/CardGrid.vue'
@@ -8,10 +9,12 @@ import CatalogBand from '../../components/catalog/CatalogBand.vue'
 import CatalogNotice from '../../components/catalog/CatalogNotice.vue'
 import ListEnd from '../../components/catalog/ListEnd.vue'
 import GuestInvite from '../../components/collection/GuestInvite.vue'
+import WishlistMaxPriceDialog from '../../components/collection/WishlistMaxPriceDialog.vue'
 import ProductGrid from '../../components/shop/ProductGrid.vue'
 import { productWishlistApi, wishlistApi } from '../../services/api'
 import { useSession } from '../../stores/session'
 import { cardCountLabel, filterQuery, pageFromQuery } from '../../utils/catalog'
+import { formatMoney } from '../../utils/format'
 import { t } from '../../utils/i18n'
 import { useInfiniteList } from '../../utils/infiniteList'
 
@@ -71,6 +74,14 @@ async function remove(card) {
 
 function onCollectionChange(card, change) {
   card.owned = change.entries
+}
+
+/** The card whose maximum is being changed in the popup (2026-11-24), or null. */
+const maxCard = ref(null)
+
+function onMaxSaved(card, cents) {
+  card.wishlistMaxPriceCents = cents
+  maxCard.value = null
 }
 
 const PRODUCTS_SHOWN = 48
@@ -156,20 +167,34 @@ loadProducts()
       <template v-else>
         <CardGrid :cards="cards.items" show-set @change="onCollectionChange">
           <template #actions="{ card }">
-            <button
-              class="remove"
-              type="button"
-              :aria-label="t('wishlist.removeLabel', { name: card.name })"
-              @click="remove(card)"
-            >
-              {{ t('wishlist.remove') }}
-            </button>
+            <div class="card-actions">
+              <!-- The most the customer wants to pay: red, blue or green on the home page once the card is for sale. -->
+              <button class="max" type="button" aria-haspopup="dialog" @click="maxCard = card">
+                <Tag :size="14" aria-hidden="true" />
+                <span class="visually-hidden">{{ card.name }}:</span>
+                {{
+                  card.wishlistMaxPriceCents != null
+                    ? t('wishlist.max.set', { price: formatMoney(card.wishlistMaxPriceCents, 'EUR') })
+                    : t('wishlist.max.none')
+                }}
+              </button>
+              <button
+                class="remove"
+                type="button"
+                :aria-label="t('wishlist.removeLabel', { name: card.name })"
+                @click="remove(card)"
+              >
+                {{ t('wishlist.remove') }}
+              </button>
+            </div>
           </template>
         </CardGrid>
         <ListEnd :list="cards" />
       </template>
     </template>
   </div>
+
+  <WishlistMaxPriceDialog :card="maxCard" @saved="onMaxSaved" @close="maxCard = null" />
 </template>
 
 <style scoped>
@@ -203,6 +228,34 @@ loadProducts()
   margin-block: var(--space-3);
   color: var(--color-ink-soft);
   font-size: var(--text-sm);
+}
+
+/* Always below each other: side by side they fit on some tiles and not on others, and the prices in a row would no
+   longer line up. */
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.max {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-link);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .max:hover {
+    text-decoration: underline;
+  }
 }
 
 .remove {
